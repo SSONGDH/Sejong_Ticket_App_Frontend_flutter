@@ -11,7 +11,7 @@ class TicketDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // ✅ 배경색 통일
+      backgroundColor: Colors.white, // ✅ 배경색 통일
       appBar: const CustomAppBar(
           title: "입장권", backgroundColor: Color(0xFFB93234)), // ✅ 동적 색상 적용
       body: Center(

@@ -30,7 +30,7 @@ class TicketScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // ✅ 배경색 통일
+      backgroundColor: Colors.white, // ✅ 배경색 통일
       appBar: const CustomAppBar(
         title: "입장권",
         backgroundColor: Color(0xFFB93234),

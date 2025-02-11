@@ -6,11 +6,10 @@ class AddTicketScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // ✅ 배경색 통일
-      appBar: const CustomAppBar(
-          title: "입장권 추가", backgroundColor: Color(0xFFB93234)),
-      body: const Center(
+    return const Scaffold(
+      backgroundColor: Colors.white, // ✅ 배경색 통일
+      appBar: CustomAppBar(title: "입장권 추가", backgroundColor: Color(0xFFB93234)),
+      body: Center(
         child: Text(
           "새로운 입장권을 추가하세요.",
           style: TextStyle(fontSize: 18),
