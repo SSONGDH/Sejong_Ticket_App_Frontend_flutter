@@ -19,10 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // WidgetsBinding을 사용해 위젯 트리가 완전히 렌더링된 후에 포커스를 설정
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   FocusScope.of(context).requestFocus(_idFocusNode); // 아이디 필드에 포커스를 준다
-    // });
   }
 
   @override
