@@ -29,9 +29,9 @@ class TicketCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) => TicketDetailScreen(
-              title: title, // 제목을 전달하여 상세 화면으로 이동
-              appBarColor: appBarColor, // 앱바 색상 전달
-            ),
+                // title: title, // 제목을 전달하여 상세 화면으로 이동
+                // appBarColor: appBarColor, // 앱바 색상 전달
+                ),
           ),
         );
       },
