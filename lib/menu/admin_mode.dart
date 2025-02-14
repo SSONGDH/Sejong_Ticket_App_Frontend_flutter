@@ -7,7 +7,7 @@ class AdminModeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Colors.white, // ✅ 배경색 통일
+      backgroundColor: Colors.white,
       appBar: CustomAppBar(title: "관리자 모드", backgroundColor: Color(0xFF282727)),
       body: Center(
         child: Text(

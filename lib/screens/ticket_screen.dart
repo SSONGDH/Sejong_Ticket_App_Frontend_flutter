@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:passtime/widgets/app_bar.dart';
 import 'package:passtime/widgets/ticket_card.dart';
 import 'package:passtime/menu/send_payment.dart';
-import 'package:passtime/menu/add_ticket.dart';
+import 'package:passtime/menu/add_ticket_code.dart';
+import 'package:passtime/menu/add_ticket_nfc.dart';
 import 'package:passtime/menu/request_refund.dart';
 import 'package:passtime/menu/settings.dart';
 import 'package:passtime/menu/admin_mode.dart';
@@ -76,7 +77,7 @@ class TicketScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    title: const Text('납부내역 보내기'),
+                    title: const Text('납부 내역 보내기'),
                     onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -84,10 +85,48 @@ class TicketScreen extends StatelessWidget {
                   ),
                   ListTile(
                     title: const Text('입장권 추가'),
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AddTicketScreen())),
+                    onTap: () {
+                      // '입장권 추가' 클릭 시 두 번째 하위 메뉴가 뜨도록 추가
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.white,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(16)),
+                        ),
+                        builder: (context) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                title: const Text('CODE'),
+                                onTap: () {
+                                  // CODE 항목 클릭 시 AddTicketCodeScreen으로 이동
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            const AddTicketCodeScreen()),
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                title: const Text('NFC'),
+                                onTap: () {
+                                  // NFC 항목 클릭 시 AddTicketNfcScreen으로 이동
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            const AddTicketNfcScreen()),
+                                  );
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                   ListTile(
                     title: const Text('환불 신청'),

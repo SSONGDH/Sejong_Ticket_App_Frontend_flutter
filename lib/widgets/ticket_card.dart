@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:passtime/screens/ticket_detail_screen.dart'; // ticket_detail_screen.dart import
+import 'package:passtime/screens/ticket_detail_screen.dart';
 
 class TicketCard extends StatelessWidget {
   final String title;
@@ -28,7 +28,7 @@ class TicketCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => TicketDetailScreen(
+            builder: (context) => const TicketDetailScreen(
                 // title: title, // 제목을 전달하여 상세 화면으로 이동
                 // appBarColor: appBarColor, // 앱바 색상 전달
                 ),
@@ -39,7 +39,7 @@ class TicketCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F8FF),
+          color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Column(

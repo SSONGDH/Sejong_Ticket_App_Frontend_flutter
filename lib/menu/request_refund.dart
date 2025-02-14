@@ -7,7 +7,7 @@ class RequestRefundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Colors.white, // ✅ 배경색 통일
+      backgroundColor: Colors.white,
       appBar: CustomAppBar(title: "환불 신청", backgroundColor: Color(0xFFB93234)),
       body: Center(
         child: Text(
