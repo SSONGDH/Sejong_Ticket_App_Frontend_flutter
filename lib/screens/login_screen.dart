@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'ticket_screen.dart';
 import 'package:passtime/widgets/click_button.dart';
 
@@ -16,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _idFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
+  bool _isLoading = false; // 로딩 상태 추가
 
   @override
   void dispose() {
@@ -24,6 +28,54 @@ class _LoginScreenState extends State<LoginScreen> {
     _idFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    FocusScope.of(context).unfocus(); // 키보드 닫기
+    setState(() => _isLoading = true); // 로딩 시작
+
+    final String baseUrl =
+        dotenv.env['API_BASE_URL'] ?? ''; // 환경 변수에서 API URL 가져오기
+    final String url = '$baseUrl/login'; // 로그인 엔드포인트
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "userid": _idController.text.trim(),
+        "password": _passwordController.text.trim(),
+      }),
+    );
+
+    setState(() => _isLoading = false); // 로딩 종료
+
+    if (response.statusCode == 200) {
+      // 로그인 성공 -> TicketScreen으로 이동
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const TicketScreen()),
+      );
+    } else {
+      // 로그인 실패 -> 오류 메시지 출력
+      final responseBody = jsonDecode(response.body);
+      _showErrorDialog(responseBody['message'] ?? '로그인에 실패했습니다.');
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('로그인 실패'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -94,20 +146,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // 로그인 버튼 (CustomButton 적용)
                 CustomButton(
-                  onPressed: () {
-                    FocusScope.of(context).unfocus();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const TicketScreen(),
-                      ),
-                    );
-                  },
-                  color: const Color(0xFFB93234), // 빨간색 버튼
-                  child: const Text(
-                    '로그인',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
+                  onPressed:
+                      _login, // Keep the button active, regardless of loading state
+                  color: const Color(0xFFB93234), // Red button
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          '로그인',
+                          style: TextStyle(color: Colors.white, fontSize: 18),
+                        ),
                 ),
 
                 const SizedBox(height: 60),
