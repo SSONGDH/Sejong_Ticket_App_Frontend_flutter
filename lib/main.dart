@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'screens/login_screen.dart';
+// import 'screens/login_screen.dart';
+import 'admin/admin_ticket_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 비동기 초기화 수행
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginScreen(),
+      home: AdminTicketScreen(),
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:passtime/widgets/app_bar.dart';
-import 'package:passtime/widgets/ticket_card.dart';
-// import 'package:passtime/admin/ticket_edit.dart';
+import 'package:passtime/admin/ticket_edit.dart';
 import 'package:passtime/admin/ticket_produce.dart';
 import 'package:passtime/admin/request_refund_list.dart';
 import 'package:passtime/admin/send_payment_list.dart';
@@ -11,20 +10,20 @@ class AdminTicketScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, String>> tickets = [
+    final List<Map<String, dynamic>> tickets = [
       {
         'title': '컴공OT 뒤풀이',
         'dateTime': '2025.02.28(금) / 18:00',
         'location': '지그재그',
         'status': '사용가능',
-        'statusColor': '0xFF444444',
+        'statusColor': const Color(0xFF6035FB),
       },
       {
         'title': '행사 제목',
         'dateTime': '2025.03.01(토) / 19:00',
         'location': '서울역',
         'status': '환불중',
-        'statusColor': '0xFF444444',
+        'statusColor': const Color(0xFFDE4244),
       },
     ];
 
@@ -40,22 +39,67 @@ class AdminTicketScreen extends StatelessWidget {
               ),
             )
           : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ListView.builder(
-                itemCount: tickets.length + 1,
+                itemCount: tickets.length,
                 itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return const SizedBox(height: 16);
-                  }
-
-                  final ticket = tickets[index - 1];
-                  return TicketCard(
-                    title: ticket['title']!,
-                    dateTime: ticket['dateTime']!,
-                    location: ticket['location']!,
-                    status: ticket['status']!,
-                    statusColor: Color(int.parse(ticket['statusColor']!)),
-                    appBarColor: Color(int.parse(ticket['statusColor']!)),
+                  final ticket = tickets[index];
+                  return GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const TicketEditScreen()),
+                    ),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                ticket['title']!,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(
+                                width: 65,
+                                height: 29,
+                                child: ElevatedButton(
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: ticket['statusColor'],
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: Text(
+                                    ticket['status']!,
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 14),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text("시간  ${ticket['dateTime']}",
+                              style: const TextStyle(fontSize: 14)),
+                          Text("장소  ${ticket['location']}",
+                              style: const TextStyle(fontSize: 14)),
+                        ],
+                      ),
+                    ),
                   );
                 },
               ),
