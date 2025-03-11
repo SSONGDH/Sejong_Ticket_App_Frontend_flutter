@@ -38,27 +38,49 @@ class _LoginScreenState extends State<LoginScreen> {
         dotenv.env['API_BASE_URL'] ?? ''; // 환경 변수에서 API URL 가져오기
     final String url = '$baseUrl/login'; // 로그인 엔드포인트
 
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "userid": _idController.text.trim(),
-        "password": _passwordController.text.trim(),
-      }),
-    );
+    print('🔹 API 요청 URL: $url'); // 요청 URL 출력
 
-    setState(() => _isLoading = false); // 로딩 종료
-
-    if (response.statusCode == 200) {
-      // 로그인 성공 -> TicketScreen으로 이동
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const TicketScreen()),
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "userId": _idController.text.trim(),
+          "password": _passwordController.text.trim(),
+        }),
       );
-    } else {
-      // 로그인 실패 -> 오류 메시지 출력
-      final responseBody = jsonDecode(response.body);
-      _showErrorDialog(responseBody['message'] ?? '로그인에 실패했습니다.');
+
+      print('🔹 응답 코드: ${response.statusCode}'); // 응답 코드 출력
+      print('🔹 응답 본문: ${response.body}'); // 응답 내용 출력
+
+      setState(() => _isLoading = false); // 로딩 종료
+
+      switch (response.statusCode) {
+        case 200:
+          // 로그인 성공 -> TicketScreen으로 이동
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const TicketScreen()),
+          );
+          break;
+        case 404:
+          _showErrorDialog('요청한 페이지를 찾을 수 없습니다.'); // 404 오류 처리
+          break;
+        case 400:
+          _showErrorDialog('잘못된 요청입니다.'); // 400 오류 처리
+          break;
+        case 500:
+          _showErrorDialog('서버 오류가 발생했습니다.'); // 500 오류 처리
+          break;
+        default:
+          // 그 외의 상태 코드 처리
+          _showErrorDialog('예상치 못한 오류가 발생했습니다. 상태 코드: ${response.statusCode}');
+          break;
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print('❌ API 요청 오류: $e'); // 예외 발생 시 오류 메시지 출력
+      _showErrorDialog('네트워크 오류가 발생했습니다.');
     }
   }
 
