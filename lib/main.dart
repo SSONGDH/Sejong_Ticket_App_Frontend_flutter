@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/login_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // 비동기 초기화 수행
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env"); // 환경 변수 로드
 
   runApp(const MyApp());

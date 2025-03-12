@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'ticket_screen.dart';
+import 'package:dio/dio.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:passtime/widgets/click_button.dart';
+import 'ticket_screen.dart';
+import '../cookiejar_singleton.dart'; // CookieJarSingleton import 추가
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,13 +15,23 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool isRememberId = true; // 아이디 저장 여부
-  bool isAutoLogin = false; // 자동 로그인 여부
+  bool isRememberId = true;
+  bool isAutoLogin = false;
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _idFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
-  bool _isLoading = false; // 로딩 상태 추가
+  bool _isLoading = false;
+
+  final Dio _dio = Dio(); // Dio 인스턴스
+
+  @override
+  void initState() {
+    super.initState();
+    // 전역에서 관리하는 CookieJar 인스턴스 사용
+    _dio.interceptors.add(
+        CookieManager(CookieJarSingleton().cookieJar)); // CookieJarSingleton 사용
+  }
 
   @override
   void dispose() {
@@ -34,53 +46,53 @@ class _LoginScreenState extends State<LoginScreen> {
     FocusScope.of(context).unfocus(); // 키보드 닫기
     setState(() => _isLoading = true); // 로딩 시작
 
-    final String baseUrl =
-        dotenv.env['API_BASE_URL'] ?? ''; // 환경 변수에서 API URL 가져오기
-    final String url = '$baseUrl/login'; // 로그인 엔드포인트
-
-    print('🔹 API 요청 URL: $url'); // 요청 URL 출력
+    final String baseUrl = dotenv.env['API_BASE_URL'] ?? '';
+    final String url = '$baseUrl/login';
 
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final response = await _dio.post(
+        url,
+        data: {
           "userId": _idController.text.trim(),
           "password": _passwordController.text.trim(),
-        }),
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
       );
 
-      print('🔹 응답 코드: ${response.statusCode}'); // 응답 코드 출력
-      print('🔹 응답 본문: ${response.body}'); // 응답 내용 출력
+      if (response.statusCode == 200) {
+        // 로그인 성공 후 쿠키 저장 확인
+        final cookies = response.headers['set-cookie'];
+        if (cookies != null) {
+          final uri = Uri.parse(baseUrl); // base URL을 URI로 변환
+          final parsedCookies = cookies
+              .map((cookie) => Cookie.fromSetCookieValue(cookie.toString()))
+              .toList();
 
-      setState(() => _isLoading = false); // 로딩 종료
+          // 쿠키를 CookieJarSingleton에 저장
+          await CookieJarSingleton()
+              .cookieJar
+              .saveFromResponse(uri, parsedCookies);
 
-      switch (response.statusCode) {
-        case 200:
-          // 로그인 성공 -> TicketScreen으로 이동
+          // 로그인 성공 시 TicketScreen으로 이동
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const TicketScreen()),
           );
-          break;
-        case 404:
-          _showErrorDialog('요청한 페이지를 찾을 수 없습니다.'); // 404 오류 처리
-          break;
-        case 400:
-          _showErrorDialog('잘못된 요청입니다.'); // 400 오류 처리
-          break;
-        case 500:
-          _showErrorDialog('서버 오류가 발생했습니다.'); // 500 오류 처리
-          break;
-        default:
-          // 그 외의 상태 코드 처리
-          _showErrorDialog('예상치 못한 오류가 발생했습니다. 상태 코드: ${response.statusCode}');
-          break;
+        } else {
+          _showErrorDialog('로그인 실패: 쿠키를 받을 수 없습니다.');
+        }
+      } else {
+        _showErrorDialog('로그인 실패');
       }
+
+      setState(() => _isLoading = false);
     } catch (e) {
       setState(() => _isLoading = false);
-      print('❌ API 요청 오류: $e'); // 예외 발생 시 오류 메시지 출력
-      _showErrorDialog('네트워크 오류가 발생했습니다.');
+      _showErrorDialog('학번과 비밀번호가 일치하지 않습니다.');
     }
   }
 
@@ -104,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).unfocus(); // 화면 클릭하면 키보드 닫힘
+        FocusScope.of(context).unfocus();
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -121,8 +133,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 175,
                 ),
                 const SizedBox(height: 110),
-
-                // 입력 필드
                 _buildInputField(
                   controller: _idController,
                   focusNode: _idFocusNode,
@@ -138,39 +148,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: Icons.lock,
                   isPassword: true,
                 ),
-                const SizedBox(height: 15),
-
-                // 아이디 저장 & 자동 로그인 토글
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildToggleOption(
-                      text: '아이디저장',
-                      isSelected: isRememberId,
-                      onTap: () {
-                        setState(() {
-                          isRememberId = !isRememberId;
-                        });
-                      },
-                    ),
-                    _buildToggleOption(
-                      text: '자동로그인',
-                      isSelected: isAutoLogin,
-                      onTap: () {
-                        setState(() {
-                          isAutoLogin = !isAutoLogin;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-
-                // 로그인 버튼 (CustomButton 적용)
+                const SizedBox(height: 50),
                 CustomButton(
-                  onPressed:
-                      _login, // Keep the button active, regardless of loading state
-                  color: const Color(0xFFB93234), // Red button
+                  onPressed: _login,
+                  color: const Color(0xFFB93234),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
@@ -178,10 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(color: Colors.white, fontSize: 18),
                         ),
                 ),
-
                 const SizedBox(height: 60),
-
-                // 하단 텍스트
                 const Text(
                   'PASSTIME',
                   style: TextStyle(fontSize: 22, color: Colors.grey),
@@ -194,7 +172,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// ✅ 입력 필드 위젯
   Widget _buildInputField({
     required TextEditingController controller,
     required FocusNode focusNode,
@@ -218,41 +195,6 @@ class _LoginScreenState extends State<LoginScreen> {
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
         ),
       ),
-    );
-  }
-
-  /// ✅ 토글 버튼 위젯 (아이디 저장 & 자동 로그인)
-  Widget _buildToggleOption({
-    required String text,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Row(
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? const Color(0xFFB93234) : Colors.grey,
-                width: 2,
-              ),
-              color: isSelected ? const Color(0xFFB93234) : Colors.transparent,
-            ),
-            child: isSelected
-                ? const Icon(Icons.check, color: Colors.white, size: 16)
-                : null,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ],
     );
   }
 }
