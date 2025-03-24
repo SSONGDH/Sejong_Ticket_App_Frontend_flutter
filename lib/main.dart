@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/login_screen.dart';
+import 'screens/ticket_screen.dart';
+import 'admin/admin_ticket_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -2,36 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:passtime/screens/ticket_detail_screen.dart';
 
 class TicketCard extends StatelessWidget {
+  final String ticketId; // ✅ 추가: ticketId 변수
   final String title;
   final String dateTime;
   final String location;
   final String status;
   final Color statusColor;
-  final Color appBarColor; // 추가: 앱바 색상 변수
+  final Color appBarColor;
 
   const TicketCard({
     super.key,
+    required this.ticketId, // ✅ 추가: ticketId 필수 값
     required this.title,
     required this.dateTime,
     required this.location,
     required this.status,
     required this.statusColor,
-    required this.appBarColor, // 추가: 앱바 색상 전달
+    required this.appBarColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      // GestureDetector를 사용하여 탭 이벤트 추가
       onTap: () {
-        // 카드가 클릭되면 ticket_detail_screen.dart로 이동
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const TicketDetailScreen(
-                // title: title, // 제목을 전달하여 상세 화면으로 이동
-                // appBarColor: appBarColor, // 앱바 색상 전달
-                ),
+            builder: (context) => TicketDetailScreen(
+              ticketId: ticketId, // ✅ ticketId 전달
+            ),
           ),
         );
       },

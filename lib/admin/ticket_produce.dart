@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:passtime/widgets/app_bar.dart';
 import 'package:passtime/widgets/click_button.dart';
 import 'package:passtime/admin/admin_ticket_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TicketProduceScreen extends StatefulWidget {
   const TicketProduceScreen({super.key});
@@ -13,7 +18,28 @@ class TicketProduceScreen extends StatefulWidget {
 
 class _TicketProduceScreenState extends State<TicketProduceScreen> {
   String? selectedDate;
-  String? selectedTime;
+  String? selectedStartTime;
+  String? selectedEndTime;
+  File? _image;
+
+  final picker = ImagePicker();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _placeController = TextEditingController();
+  final TextEditingController _placeCommentController = TextEditingController();
+  final TextEditingController _eventCommentController = TextEditingController();
+  final TextEditingController _eventCodeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEnvVariables(); // 환경 변수 로드
+  }
+
+  // 환경 변수를 로드하는 함수
+  Future<void> _loadEnvVariables() async {
+    await dotenv.load();
+    print('API URL: ${dotenv.env['API_BASE_URL']}'); // 로드된 API_URL을 출력
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,25 +55,31 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel("제목"),
-            _buildTextField("플레이스 홀더"),
+            _buildTextField(_titleController, "제목을 입력하세요"),
             const SizedBox(height: 12),
             _buildLabel("날짜"),
             _buildDatePickerField(),
             const SizedBox(height: 12),
-            _buildLabel("시간"),
-            _buildTimePickerField(),
+            _buildLabel("시작 시간"),
+            _buildStartTimePickerField(),
+            const SizedBox(height: 12),
+            _buildLabel("종료 시간"),
+            _buildEndTimePickerField(),
             const SizedBox(height: 12),
             _buildLabel("장소"),
-            _buildTextField("플레이스 홀더"),
+            _buildTextField(_placeController, "장소를 입력하세요"),
             const SizedBox(height: 12),
             _buildLabel("장소 설명"),
-            _buildTextField("플레이스 홀더"),
-            const SizedBox(height: 12),
-            _buildLabel("장소 사진"),
-            _buildTextField("플레이스 홀더"),
+            _buildTextField(_placeCommentController, "장소 설명을 입력하세요"),
             const SizedBox(height: 12),
             _buildLabel("관리자 멘트"),
-            _buildTextField("플레이스 홀더"),
+            _buildTextField(_eventCommentController, "관리자 멘트를 입력하세요"),
+            const SizedBox(height: 12),
+            _buildLabel("행사 코드"),
+            _buildTextField(_eventCodeController, "행사 코드를 입력하세요"),
+            const SizedBox(height: 12),
+            _buildLabel("장소 사진"),
+            _buildImagePicker(),
           ],
         ),
       ),
@@ -67,6 +99,31 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     );
   }
 
+  Widget _buildImagePicker() {
+    return GestureDetector(
+      onTap: _pickImage,
+      child: _image == null
+          ? Container(
+              height: 55,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: Colors.grey),
+              ),
+              child: const Center(child: Text("사진을 선택하세요")),
+            )
+          : Image.file(_image!),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
+  }
+
   void _showConfirmationDialog() {
     showCupertinoDialog(
       context: context,
@@ -81,7 +138,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
             child: const Text("확인"),
             onPressed: () {
               Navigator.pop(context);
-              _navigateToAdminScreen();
+              _createTicket();
             },
           ),
         ],
@@ -89,8 +146,67 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     );
   }
 
+  Future<void> _createTicket() async {
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/createTicket');
+    print(dotenv.env['API_BASE_URL']); // 로드된 API_URL 출력
+
+    // 이미지가 선택되지 않았다면 선택하도록 유도
+    if (_image == null) {
+      await _pickImage();
+    }
+
+    // 폼 데이터 생성
+    final request = http.MultipartRequest('POST', url)
+      ..fields['eventTitle'] = _titleController.text
+      ..fields['eventDay'] = selectedDate!
+      ..fields['eventStartTime'] = selectedStartTime!
+      ..fields['eventEndTime'] = selectedEndTime!
+      ..fields['eventPlace'] = _placeController.text
+      ..fields['eventPlaceComment'] = _placeCommentController.text
+      ..fields['eventComment'] = _eventCommentController.text
+      ..fields['eventCode'] = _eventCodeController.text
+      ..files.add(
+          await http.MultipartFile.fromPath('eventPlacePicture', _image!.path));
+
+    // 디버그 로그: 전송되는 데이터 출력
+    print('Sending request with data:');
+    print('Title: ${_titleController.text}');
+    print('Event Day: $selectedDate');
+    print('Event Start Time: $selectedStartTime');
+    print('Event End Time: $selectedEndTime');
+    print('Event Place: ${_placeController.text}');
+    print('Event Place Comment: ${_placeCommentController.text}');
+    print('Event Comment: ${_eventCommentController.text}');
+    print('Event Code: ${_eventCodeController.text}');
+    print('Image Path: ${_image?.path}');
+
+    try {
+      final response = await request.send();
+
+      // 응답 상태와 바디를 확인합니다.
+      final responseBody = await response.stream.bytesToString();
+      print('Response status: ${response.statusCode}');
+      print('Response body: $responseBody');
+
+      // 서버에서 JSON을 반환하는 경우
+      if (response.statusCode == 200) {
+        final decodedResponse = json.decode(responseBody);
+        print('Success response: $decodedResponse');
+        if (decodedResponse['message'] != null) {
+          print('Server message: ${decodedResponse['message']}');
+        }
+        _navigateToAdminScreen();
+      } else {
+        print(
+            'Error: Server responded with status code ${response.statusCode}');
+        print('Error response: $responseBody');
+      }
+    } catch (e) {
+      print('Error during ticket creation: $e'); // 실제 예외 메시지를 출력
+    }
+  }
+
   void _navigateToAdminScreen() {
-    // 화면 전환 시 이전 화면으로 돌아가는 버튼을 유지하려면 push로 화면 전환
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const AdminTicketScreen()),
@@ -107,10 +223,11 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     );
   }
 
-  Widget _buildTextField(String hintText) {
+  Widget _buildTextField(TextEditingController controller, String hintText) {
     return SizedBox(
       height: 55,
       child: TextField(
+        controller: controller,
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(color: Colors.grey),
@@ -120,16 +237,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
             borderRadius: BorderRadius.circular(5),
             borderSide: const BorderSide(color: Colors.grey),
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(5),
-            borderSide: const BorderSide(color: Colors.grey),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(5),
-            borderSide: const BorderSide(color: Colors.grey),
-          ),
         ),
-        textInputAction: TextInputAction.done,
       ),
     );
   }
@@ -153,7 +261,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     );
   }
 
-  Widget _buildTimePickerField() {
+  Widget _buildStartTimePickerField() {
     return GestureDetector(
       onTap: () async {
         final TimeOfDay? pickedTime = await showTimePicker(
@@ -162,28 +270,44 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         );
         if (pickedTime != null) {
           setState(() {
-            selectedTime = pickedTime.format(context);
+            selectedStartTime = pickedTime.format(context);
           });
         }
       },
-      child: _buildDisplayField(selectedTime ?? "시간 선택"),
+      child: _buildDisplayField(selectedStartTime ?? "시작 시간 선택"),
     );
   }
 
+  Widget _buildEndTimePickerField() {
+    return GestureDetector(
+      onTap: () async {
+        final TimeOfDay? pickedTime = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.now(),
+        );
+        if (pickedTime != null) {
+          setState(() {
+            selectedEndTime = pickedTime.format(context);
+          });
+        }
+      },
+      child: _buildDisplayField(selectedEndTime ?? "종료 시간 선택"),
+    );
+  }
+
+  // 새로 추가된 메서드
   Widget _buildDisplayField(String text) {
     return Container(
       height: 55,
+      alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(5),
         border: Border.all(color: Colors.grey),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(text, style: const TextStyle(color: Colors.black)),
-          const Icon(Icons.calendar_today, color: Colors.grey),
-        ],
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 16),
       ),
     );
   }
