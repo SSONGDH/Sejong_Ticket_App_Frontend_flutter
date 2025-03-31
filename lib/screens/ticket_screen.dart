@@ -253,11 +253,54 @@ class _TicketScreenState extends State<TicketScreen> {
                   ),
                   ListTile(
                     title: const Text('관리자 모드'),
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AdminTicketScreen())),
-                  ),
+                    onTap: () async {
+                      try {
+                        final apiUrl =
+                            '${dotenv.env['API_BASE_URL']}/admin/connection';
+                        final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+
+                        // CookieJarSingleton을 사용하여 쿠키 가져오기
+                        final cookies = await CookieJarSingleton()
+                            .cookieJar
+                            .loadForRequest(uri);
+                        print("▶️ Stored Cookies: $cookies");
+
+                        final response = await _dio.get(
+                          apiUrl,
+                          options: Options(
+                            headers: {
+                              'Cookie': cookies,
+                            },
+                          ),
+                        );
+
+                        print("▶️ Server Response: ${response.statusCode}");
+                        print("▶️ Response Data: ${response.data}");
+
+                        if (response.statusCode == 200 &&
+                            response.data['isSuccess'] == true) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminTicketScreen(),
+                            ),
+                          );
+                        } else {
+                          print(
+                              "⚠️ Failed to access admin mode: ${response.data}");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('관리자 모드 접속에 실패했습니다.')),
+                          );
+                        }
+                      } catch (e) {
+                        print('❌ Error: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('관리자 모드 접속 중 오류가 발생했습니다.')),
+                        );
+                      }
+                    },
+                  )
                 ],
               );
             },
