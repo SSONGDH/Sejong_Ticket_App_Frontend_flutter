@@ -43,9 +43,10 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen> {
                   'studentInfo': refund['name'],
                   'visitTime':
                       '${refund['visitDate']} / ${refund['visitTime']}',
-                  'status':
-                      refund['permissionStatus'] == 'TRUE' ? '승인됨' : '미승인',
-                  'statusColor': refund['permissionStatus'] == 'TRUE'
+                  'status': refund['refundPermissionStatus'] == 'TRUE'
+                      ? '승인됨'
+                      : '미승인',
+                  'statusColor': refund['refundPermissionStatus'] == 'TRUE'
                       ? const Color(0xFF6035FB)
                       : const Color(0xFFDE4244),
                   'refundReason': refund['refundReason'], // refundReason 필드 추가
@@ -91,14 +92,18 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen> {
                 itemBuilder: (context, index) {
                   final refund = refundRequests[index]; // refund 정보 가져오기
                   return GestureDetector(
-                    onTap: () {
-                      // 나중에 디테일 스크린으로 이동하는 코드
-                      Navigator.push(
+                    onTap: () async {
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const RequestRefundDetailScreen(),
+                          builder: (_) => RequestRefundDetailScreen(
+                              refundId: refund['_id']),
                         ),
                       );
+
+                      if (result == true) {
+                        _fetchRefundRequests(); // 승인되었을 경우 목록 새로고침
+                      }
                     },
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 12),

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:passtime/widgets/app_bar.dart';
 import 'package:passtime/widgets/click_button.dart';
-import 'package:dio/dio.dart'; // Dio import
+import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../cookiejar_singleton.dart'; // CookieJarSingleton import
+import '../cookiejar_singleton.dart';
+import 'package:passtime/screens/ticket_screen.dart'; // 티켓 메인화면 추가
 
 class AddTicketCodeScreen extends StatefulWidget {
   const AddTicketCodeScreen({super.key});
@@ -16,19 +17,14 @@ class AddTicketCodeScreen extends StatefulWidget {
 class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
   final TextEditingController _controller = TextEditingController();
 
-  // 서버에 코드 전송하는 함수
   Future<void> _addTicketCode(String eventCode) async {
-    final apiUrl =
-        '${dotenv.env['API_BASE_URL']}/ticket/add'; // .env 파일에서 API_BASE_URL을 가져옴
-    final dio = Dio(); // Dio 객체 생성
+    final apiUrl = '${dotenv.env['API_BASE_URL']}/ticket/add';
+    final dio = Dio();
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
     final ssotoken = await CookieJarSingleton().cookieJar.loadForRequest(uri);
 
-    print(ssotoken);
-
-    // 요청 본문 출력
     final requestBody = json.encode({'eventCode': eventCode});
-    print('Request Body: $requestBody'); // 요청 본문 출력
+    print('Request Body: $requestBody');
 
     try {
       final response = await dio.post(
@@ -37,37 +33,40 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': ssotoken, // SSO 토큰을 Cookie 헤더에 포함
+            'Cookie': ssotoken,
           },
         ),
       );
 
       print('Response Status: ${response.statusCode}');
-      print('Response Body: ${response.data}'); // 응답 본문 출력
+      print('Response Body: ${response.data}');
 
       if (response.statusCode == 200) {
-        // 성공적인 응답 처리
         final responseBody = response.data;
         if (responseBody['isSuccess']) {
-          // 성공적인 티켓 생성 메시지 처리
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('티켓이 성공적으로 생성되었습니다!')),
+            const SnackBar(content: Text('입장권이 생성되었습니다!')),
           );
+
+          // 1초 후 TicketScreen으로 이동
+          Future.delayed(const Duration(seconds: 1), () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const TicketScreen()),
+            );
+          });
         } else {
-          // 실패 메시지 처리
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('코드 입력이 잘못되었습니다.')),
           );
         }
       } else {
-        // 서버와 연결할 수 없거나 다른 오류 처리
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('서버와 연결할 수 없습니다. 다시 시도해 주세요.')),
         );
       }
     } catch (e) {
       print('Error: $e');
-      // 예외 발생 시 처리
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('서버와 연결할 수 없습니다. 다시 시도해 주세요.')),
       );
@@ -123,10 +122,9 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
         padding: const EdgeInsets.all(30),
         child: CustomButton(
           onPressed: () {
-            // 코드가 입력되지 않은 경우 처리
             final eventCode = _controller.text.trim();
             if (eventCode.isNotEmpty) {
-              _addTicketCode(eventCode); // 서버에 코드 전송
+              _addTicketCode(eventCode);
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('코드를 입력해 주세요.')),

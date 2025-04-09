@@ -60,17 +60,15 @@ class _TicketScreenState extends State<TicketScreen> {
   }
 
   Future<void> _checkStoredCookies() async {
-    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
-    final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+    // final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+    // final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
 
-    print(uri);
-
-    if (cookies.isNotEmpty) {
-      print(
-          "Stored Cookies: ${cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')}");
-    } else {
-      print("No cookies found in CookieJar.");
-    }
+    // if (cookies.isNotEmpty) {
+    //   print(
+    //       "Stored Cookies: ${cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')}");
+    // } else {
+    //   print("No cookies found in CookieJar.");
+    // }
   }
 
   Future<List<Map<String, dynamic>>> fetchTickets() async {
@@ -95,12 +93,12 @@ class _TicketScreenState extends State<TicketScreen> {
         ),
       );
 
-      print('Status Code: ${response.statusCode}');
-      print('Response Body: ${response.data}');
+      // print('Status Code: ${response.statusCode}');
+      // print('Response Body: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
-        print('Response Data: $data');
+        // print('Response Data: $data');
         if (data['isSuccess'] == true) {
           return List<Map<String, dynamic>>.from(data['result']);
         } else {
@@ -159,7 +157,7 @@ class _TicketScreenState extends State<TicketScreen> {
                                 dateTime:
                                     '${ticket['eventDay']} / ${ticket['eventStartTime']}',
                                 location: ticket['eventPlace'],
-                                status: '사용가능',
+                                status: '승인됨',
                                 statusColor: const Color(0xFF6035FB),
                                 appBarColor: const Color(0xFF6035FB),
                               );
@@ -263,7 +261,7 @@ class _TicketScreenState extends State<TicketScreen> {
                         final cookies = await CookieJarSingleton()
                             .cookieJar
                             .loadForRequest(uri);
-                        print("▶️ Stored Cookies: $cookies");
+                        // print("▶️ Stored Cookies: $cookies");
 
                         final response = await _dio.get(
                           apiUrl,
@@ -274,8 +272,8 @@ class _TicketScreenState extends State<TicketScreen> {
                           ),
                         );
 
-                        print("▶️ Server Response: ${response.statusCode}");
-                        print("▶️ Response Data: ${response.data}");
+                        // print("▶️ Server Response: ${response.statusCode}");
+                        // print("▶️ Response Data: ${response.data}");
 
                         if (response.statusCode == 200 &&
                             response.data['isSuccess'] == true) {

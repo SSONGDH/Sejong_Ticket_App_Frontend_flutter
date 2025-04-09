@@ -15,7 +15,7 @@ class AdminTicketScreen extends StatelessWidget {
         'title': '컴공OT 뒤풀이',
         'dateTime': '2025.02.28(금) / 18:00',
         'location': '지그재그',
-        'status': '사용가능',
+        'status': '승인됨',
         'statusColor': const Color(0xFF6035FB),
       },
       {
