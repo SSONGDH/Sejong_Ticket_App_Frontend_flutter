@@ -31,7 +31,6 @@ class _TicketScreenState extends State<TicketScreen> {
       onRequest: (options, handler) async {
         final cookies =
             await CookieJarSingleton().cookieJar.loadForRequest(uri);
-
         options.headers['Cookie'] = cookies.isNotEmpty
             ? cookies
                 .map((cookie) => '${cookie.name}=${cookie.value}')
@@ -46,8 +45,6 @@ class _TicketScreenState extends State<TicketScreen> {
               .map((cookie) => Cookie.fromSetCookieValue(cookie.toString()))
               .toList();
           CookieJarSingleton().cookieJar.saveFromResponse(uri, parsedCookies);
-
-          _checkStoredCookies();
         }
         return handler.next(response);
       },
@@ -55,20 +52,6 @@ class _TicketScreenState extends State<TicketScreen> {
         return handler.next(error);
       },
     ));
-
-    _checkStoredCookies();
-  }
-
-  Future<void> _checkStoredCookies() async {
-    // final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
-    // final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
-
-    // if (cookies.isNotEmpty) {
-    //   print(
-    //       "Stored Cookies: ${cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')}");
-    // } else {
-    //   print("No cookies found in CookieJar.");
-    // }
   }
 
   Future<List<Map<String, dynamic>>> fetchTickets() async {
@@ -93,26 +76,35 @@ class _TicketScreenState extends State<TicketScreen> {
         ),
       );
 
-      // print('Status Code: ${response.statusCode}');
-      // print('Response Body: ${response.data}');
-
       if (response.statusCode == 200) {
         final data = response.data;
-        // print('Response Data: $data');
         if (data['isSuccess'] == true) {
           return List<Map<String, dynamic>>.from(data['result']);
         } else {
           throw Exception('No tickets found.');
         }
       } else if (response.statusCode == 404) {
-        print("No tickets found (404 error).");
         return [];
       } else {
         throw Exception('Failed to load tickets: ${response.statusCode}');
       }
     } catch (e) {
-      print("Error: $e");
       rethrow;
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case '승인됨':
+        return const Color(0xFF6035FB);
+      case '미승인':
+        return const Color(0xFF9E9E9E);
+      case '환불중':
+        return const Color(0xFFDE4244);
+      case '환불됨':
+        return const Color(0xFF282727);
+      default:
+        return const Color(0xFF9E9E9E);
     }
   }
 
@@ -133,39 +125,36 @@ class _TicketScreenState extends State<TicketScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return const Center(child: Text("현재 발급된 입장권이 없습니다"));
-                } else if (snapshot.hasData) {
-                  final tickets = snapshot.data ?? [];
-                  return tickets.isEmpty
-                      ? const Center(
-                          child: Text(
-                            '현재 발급된 입장권이 없습니다',
-                            style: TextStyle(
-                                fontSize: 22, color: Color(0xFFC1C1C1)),
-                          ),
-                        )
-                      : Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: ListView.builder(
-                            itemCount: tickets.length,
-                            itemBuilder: (context, index) {
-                              final ticket = tickets[index];
-                              return TicketCard(
-                                ticketId: ticket['_id'], // ✅ 추가: ticketId 전달
-                                title: ticket['eventTitle'],
-                                dateTime:
-                                    '${ticket['eventDay']} / ${ticket['eventStartTime']}',
-                                location: ticket['eventPlace'],
-                                status: '승인됨',
-                                statusColor: const Color(0xFF6035FB),
-                                appBarColor: const Color(0xFF6035FB),
-                              );
-                            },
-                          ),
+                } else if (snapshot.hasError ||
+                    !(snapshot.hasData && snapshot.data!.isNotEmpty)) {
+                  return const Center(
+                    child: Text(
+                      '현재 발급된 입장권이 없습니다',
+                      style: TextStyle(fontSize: 22, color: Color(0xFFC1C1C1)),
+                    ),
+                  );
+                } else {
+                  final tickets = snapshot.data!;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ListView.builder(
+                      itemCount: tickets.length,
+                      itemBuilder: (context, index) {
+                        final ticket = tickets[index];
+                        return TicketCard(
+                          ticketId: ticket['_id'],
+                          title: ticket['eventTitle'],
+                          dateTime:
+                              '${ticket['eventDay']} / ${ticket['eventStartTime']}',
+                          location: ticket['eventPlace'],
+                          status: '${ticket['status']}',
+                          statusColor: _getStatusColor(ticket['status']),
+                          appBarColor: const Color(0xFF6035FB),
                         );
+                      },
+                    ),
+                  );
                 }
-                return const SizedBox();
               },
             ),
           ),
@@ -175,7 +164,7 @@ class _TicketScreenState extends State<TicketScreen> {
         onPressed: () {
           showModalBottomSheet(
             context: context,
-            backgroundColor: Colors.white, // ✅ 배경색 고정
+            backgroundColor: Colors.white,
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
@@ -186,14 +175,14 @@ class _TicketScreenState extends State<TicketScreen> {
                   ListTile(
                     title: const Text('납부 내역 보내기'),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SendPaymentScreen())),
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SendPaymentScreen()),
+                    ),
                   ),
                   ListTile(
                     title: const Text('입장권 추가'),
                     onTap: () {
-                      // '입장권 추가' 클릭 시 두 번째 하위 메뉴가 뜨도록 추가
                       showModalBottomSheet(
                         context: context,
                         backgroundColor: Colors.white,
@@ -207,27 +196,21 @@ class _TicketScreenState extends State<TicketScreen> {
                             children: [
                               ListTile(
                                 title: const Text('CODE'),
-                                onTap: () {
-                                  // CODE 항목 클릭 시 AddTicketCodeScreen으로 이동
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const AddTicketCodeScreen()),
-                                  );
-                                },
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const AddTicketCodeScreen()),
+                                ),
                               ),
                               ListTile(
                                 title: const Text('NFC'),
-                                onTap: () {
-                                  // NFC 항목 클릭 시 AddTicketNfcScreen으로 이동
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const AddTicketNfcScreen()),
-                                  );
-                                },
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const AddTicketNfcScreen()),
+                                ),
                               ),
                             ],
                           );
@@ -238,16 +221,17 @@ class _TicketScreenState extends State<TicketScreen> {
                   ListTile(
                     title: const Text('환불 신청'),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const RequestRefundScreen())),
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const RequestRefundScreen()),
+                    ),
                   ),
                   ListTile(
                     title: const Text('설정'),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SettingsScreen())),
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    ),
                   ),
                   ListTile(
                     title: const Text('관리자 모드'),
@@ -256,55 +240,41 @@ class _TicketScreenState extends State<TicketScreen> {
                         final apiUrl =
                             '${dotenv.env['API_BASE_URL']}/admin/connection';
                         final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
-
-                        // CookieJarSingleton을 사용하여 쿠키 가져오기
                         final cookies = await CookieJarSingleton()
                             .cookieJar
                             .loadForRequest(uri);
-                        // print("▶️ Stored Cookies: $cookies");
 
                         final response = await _dio.get(
                           apiUrl,
-                          options: Options(
-                            headers: {
-                              'Cookie': cookies,
-                            },
-                          ),
+                          options: Options(headers: {'Cookie': cookies}),
                         );
-
-                        // print("▶️ Server Response: ${response.statusCode}");
-                        // print("▶️ Response Data: ${response.data}");
 
                         if (response.statusCode == 200 &&
                             response.data['isSuccess'] == true) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const AdminTicketScreen(),
-                            ),
+                                builder: (_) => const AdminTicketScreen()),
                           );
                         } else {
-                          print(
-                              "⚠️ Failed to access admin mode: ${response.data}");
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('관리자 모드 접속에 실패했습니다.')),
                           );
                         }
                       } catch (e) {
-                        print('❌ Error: $e');
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text('관리자 모드 접속 중 오류가 발생했습니다.')),
                         );
                       }
                     },
-                  )
+                  ),
                 ],
               );
             },
           );
         },
-        backgroundColor: const Color(0xFFB93234), // 버튼 색상
+        backgroundColor: const Color(0xFFB93234),
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
       ),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:passtime/screens/ticket_detail_screen.dart';
+import 'package:passtime/screens/refund_screen.dart';
 
 class TicketCard extends StatelessWidget {
-  final String ticketId; // ✅ 추가: ticketId 변수
+  final String ticketId;
   final String title;
   final String dateTime;
   final String location;
@@ -12,7 +13,7 @@ class TicketCard extends StatelessWidget {
 
   const TicketCard({
     super.key,
-    required this.ticketId, // ✅ 추가: ticketId 필수 값
+    required this.ticketId,
     required this.title,
     required this.dateTime,
     required this.location,
@@ -25,14 +26,35 @@ class TicketCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TicketDetailScreen(
-              ticketId: ticketId, // ✅ ticketId 전달
+        if (status == '환불중' || status == '환불됨') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RefundScreen(ticketId: ticketId),
             ),
-          ),
-        );
+          );
+        } else if (status == '미승인') {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("알림"),
+              content: const Text("아직 승인되지 않았습니다."),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text("확인"),
+                ),
+              ],
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TicketDetailScreen(ticketId: ticketId),
+            ),
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -47,13 +69,17 @@ class TicketCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 SizedBox(
                   width: 65,
                   height: 29,
