@@ -4,7 +4,7 @@ import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env"); // 환경 변수 로드
+  await dotenv.load(fileName: ".env");
 
   runApp(const MyApp());
 }

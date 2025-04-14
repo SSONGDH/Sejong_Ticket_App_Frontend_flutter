@@ -137,8 +137,10 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           CupertinoDialogAction(
             child: const Text("확인"),
             onPressed: () {
-              Navigator.pop(context);
-              _createTicket();
+              Navigator.pop(context); // ✅ 먼저 Alert 닫고
+              _createTicket(); // ✅ 티켓 생성 API 호출
+              Navigator.pop(context, 'created'); // ✅ 이전 화면으로 'created' 반환하며 pop
+              _navigateToAdminScreen();
             },
           ),
         ],
@@ -169,16 +171,16 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           await http.MultipartFile.fromPath('eventPlacePicture', _image!.path));
 
     // 디버그 로그: 전송되는 데이터 출력
-    print('Sending request with data:');
-    print('Title: ${_titleController.text}');
-    print('Event Day: $selectedDate');
-    print('Event Start Time: $selectedStartTime');
-    print('Event End Time: $selectedEndTime');
-    print('Event Place: ${_placeController.text}');
-    print('Event Place Comment: ${_placeCommentController.text}');
-    print('Event Comment: ${_eventCommentController.text}');
-    print('Event Code: ${_eventCodeController.text}');
-    print('Image Path: ${_image?.path}');
+    // print('Sending request with data:');
+    // print('Title: ${_titleController.text}');
+    // print('Event Day: $selectedDate');
+    // print('Event Start Time: $selectedStartTime');
+    // print('Event End Time: $selectedEndTime');
+    // print('Event Place: ${_placeController.text}');
+    // print('Event Place Comment: ${_placeCommentController.text}');
+    // print('Event Comment: ${_eventCommentController.text}');
+    // print('Event Code: ${_eventCodeController.text}');
+    // print('Image Path: ${_image?.path}');
 
     try {
       final response = await request.send();
@@ -195,7 +197,12 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         if (decodedResponse['message'] != null) {
           print('Server message: ${decodedResponse['message']}');
         }
-        _navigateToAdminScreen();
+
+        if (!mounted) return; // context 안전하게 체크!
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminTicketScreen()),
+        );
       } else {
         print(
             'Error: Server responded with status code ${response.statusCode}');
@@ -207,9 +214,9 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   }
 
   void _navigateToAdminScreen() {
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const AdminTicketScreen()),
+      MaterialPageRoute(builder: (context) => const AdminTicketScreen()),
     );
   }
 

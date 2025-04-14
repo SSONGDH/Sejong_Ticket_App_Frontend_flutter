@@ -1,6 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:passtime/widgets/app_bar.dart';
 import 'package:passtime/widgets/click_button.dart';
+import 'package:passtime/screens/ticket_screen.dart';
+import '../cookiejar_singleton.dart';
 
 class RequestRefundScreen extends StatefulWidget {
   const RequestRefundScreen({super.key});
@@ -12,6 +18,100 @@ class RequestRefundScreen extends StatefulWidget {
 class _RequestRefundScreenState extends State<RequestRefundScreen> {
   String? selectedDate;
   String? selectedTime;
+  String? selectedTicketId;
+  String? refundReason;
+  String? phoneNumber;
+  List<Map<String, dynamic>> tickets = [];
+
+  final Dio _dio = Dio();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupDio();
+    _fetchTickets();
+  }
+
+  void _setupDio() {
+    final uri = Uri.parse(dotenv.env['API_BASE_URL']!);
+
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final cookies =
+            await CookieJarSingleton().cookieJar.loadForRequest(uri);
+        if (cookies.isNotEmpty) {
+          options.headers[HttpHeaders.cookieHeader] = cookies
+              .map((cookie) => '${cookie.name}=${cookie.value}')
+              .join('; ');
+        }
+        handler.next(options);
+      },
+    ));
+  }
+
+  Future<void> _fetchTickets() async {
+    try {
+      final response =
+          await _dio.get('${dotenv.env['API_BASE_URL']}/ticket/List');
+      final List<dynamic> data = response.data['result'];
+      setState(() {
+        tickets = data.cast<Map<String, dynamic>>();
+      });
+    } catch (e) {
+      debugPrint('티켓 불러오기 실패: $e');
+    }
+  }
+
+  Future<void> _submitRefundRequest() async {
+    if (selectedTicketId == null ||
+        refundReason == null ||
+        selectedDate == null ||
+        selectedTime == null ||
+        phoneNumber == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('모든 필드를 입력해주세요.')));
+      return;
+    }
+
+    final body = {
+      "phone": phoneNumber,
+      "refundReason": refundReason,
+      "visitDate": selectedDate!,
+      "visitTime": selectedTime!,
+      "ticketId": selectedTicketId!,
+    };
+
+    try {
+      final response = await _dio.post(
+        '${dotenv.env['API_BASE_URL']}/refund/request',
+        data: json.encode(body),
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+        ),
+      );
+
+      final result = response.data;
+      if (result['isSuccess']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('환불 요청이 완료되었습니다.')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const TicketScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? '오류가 발생했습니다.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('요청 중 오류 발생: $e')),
+      );
+    }
+  }
+
+  // 아래 부분은 UI이며 기존 코드 그대로 유지합니다
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +125,21 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel("행사"),
-            _buildTextField("플레이스 홀더"),
+            _buildTicketDropdown(),
             const SizedBox(height: 12),
             _buildLabel("환불 사유"),
-            _buildTextField("플레이스 홀더"),
+            _buildTextField("플레이스 홀더", onChanged: (val) => refundReason = val),
             const SizedBox(height: 12),
             _buildLabel("방문 가능 날짜"),
             _buildDatePickerField(),
             const SizedBox(height: 12),
             _buildLabel("방문 가능 시간"),
             _buildTimePickerField(),
+            const SizedBox(height: 12),
+            _buildLabel("전화번호"),
+            _buildTextField("010-0000-0000",
+                keyboardType: TextInputType.phone,
+                onChanged: (val) => phoneNumber = val),
             const SizedBox(height: 8),
             const Text(
               "현금 수령을 해야 하므로 방문이 필요합니다",
@@ -46,9 +151,7 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(30),
         child: CustomButton(
-          onPressed: () {
-            // 버튼 클릭 시 동작 추가 가능
-          },
+          onPressed: _submitRefundRequest,
           color: const Color(0xFFB93234),
           borderRadius: 5,
           height: 55,
@@ -71,10 +174,14 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     );
   }
 
-  Widget _buildTextField(String hintText) {
+  Widget _buildTextField(String hintText,
+      {TextInputType keyboardType = TextInputType.text,
+      void Function(String)? onChanged}) {
     return SizedBox(
-      height: 55, // 버튼과 높이 일치
+      height: 55,
       child: TextField(
+        keyboardType: keyboardType,
+        onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(color: Colors.grey),
@@ -98,6 +205,35 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     );
   }
 
+  Widget _buildTicketDropdown() {
+    return Container(
+      height: 55,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selectedTicketId,
+          hint: const Text('행사 선택'),
+          isExpanded: true,
+          items: tickets.map((ticket) {
+            return DropdownMenuItem<String>(
+              value: ticket['_id'],
+              child: Text(ticket['eventTitle']),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              selectedTicketId = value;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildDatePickerField() {
     return GestureDetector(
       onTap: () async {
@@ -110,7 +246,7 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
         if (pickedDate != null) {
           setState(() {
             selectedDate =
-                "${pickedDate.toLocal()}".split(' ')[0]; // 선택된 날짜를 텍스트로 변환
+                "${pickedDate.year}.${pickedDate.month.toString().padLeft(2, '0')}.${pickedDate.day.toString().padLeft(2, '0')}(${_getKoreanWeekday(pickedDate.weekday)})";
           });
         }
       },
@@ -127,7 +263,9 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
         );
         if (pickedTime != null) {
           setState(() {
-            selectedTime = pickedTime.format(context); // 선택된 시간
+            selectedTime = pickedTime.period == DayPeriod.am
+                ? "오전 ${pickedTime.hourOfPeriod}시"
+                : "오후 ${pickedTime.hourOfPeriod}시";
           });
         }
       },
@@ -151,5 +289,10 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
         ],
       ),
     );
+  }
+
+  String _getKoreanWeekday(int weekday) {
+    const weekdays = ["월", "화", "수", "목", "금", "토", "일"];
+    return weekdays[weekday - 1];
   }
 }

@@ -1,109 +1,188 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:passtime/widgets/app_bar.dart';
 import 'package:passtime/admin/ticket_edit.dart';
 import 'package:passtime/admin/ticket_produce.dart';
 import 'package:passtime/admin/request_refund_list.dart';
 import 'package:passtime/admin/send_payment_list.dart';
+import 'package:passtime/cookiejar_singleton.dart';
 
-class AdminTicketScreen extends StatelessWidget {
+class AdminTicketScreen extends StatefulWidget {
   const AdminTicketScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> tickets = [
-      {
-        'title': '컴공OT 뒤풀이',
-        'dateTime': '2025.02.28(금) / 18:00',
-        'location': '지그재그',
-        'status': '승인됨',
-        'statusColor': const Color(0xFF6035FB),
-      },
-      {
-        'title': '행사 제목',
-        'dateTime': '2025.03.01(토) / 19:00',
-        'location': '서울역',
-        'status': '환불중',
-        'statusColor': const Color(0xFFDE4244),
-      },
-    ];
+  State<AdminTicketScreen> createState() => _AdminTicketScreenState();
+}
 
+class _AdminTicketScreenState extends State<AdminTicketScreen> {
+  List<Map<String, dynamic>> tickets = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTickets(); // 초기 데이터 로딩
+  }
+
+  // 데이터를 API에서 가져오는 함수
+  Future<void> fetchTickets() async {
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/List');
+    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+
+    try {
+      // 쿠키 가져오기
+      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+      final cookieHeader = cookies.isNotEmpty
+          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
+          : '';
+
+      // HTTP 요청
+      final response = await http.get(
+        url,
+        headers: {
+          'Cookie': cookieHeader, // 쿠키 헤더 추가
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['isSuccess'] == true) {
+          final List<dynamic> result = data['result'];
+
+          setState(() {
+            tickets = result.map((item) {
+              return {
+                'ticketId': item['_id'],
+                'title': item['eventTitle'],
+                'dateTime':
+                    '${item['eventDay']} / ${item['eventStartTime'].toString().substring(0, 5)}',
+                'location': item['eventPlace'],
+                'status': '수정',
+                'statusColor': const Color(0xFF282727),
+              };
+            }).toList();
+            isLoading = false; // 데이터 로딩 완료 후 상태 갱신
+          });
+        } else {
+          showErrorSnackbar('데이터를 불러오는데 실패했습니다.');
+        }
+      } else {
+        showErrorSnackbar('서버 응답 오류: ${response.statusCode}');
+      }
+    } catch (e) {
+      showErrorSnackbar('에러 발생: $e');
+    }
+  }
+
+  // 에러 메시지를 보여주는 함수
+  void showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+    setState(() {
+      isLoading = false; // 에러 발생 시 로딩 종료
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const CustomAppBar(
-          title: "행사 관리", backgroundColor: Color(0xFF282727)),
-      body: tickets.isEmpty
-          ? const Center(
-              child: Text(
-                '현재 발급된 입장권이 없습니다',
-                style: TextStyle(fontSize: 22, color: Color(0xFFC1C1C1)),
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListView.builder(
-                itemCount: tickets.length,
-                itemBuilder: (context, index) {
-                  final ticket = tickets[index];
-                  return GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const TicketEditScreen()),
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        title: "행사 관리",
+        backgroundColor: Color(0xFF282727),
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator()) // 로딩 중 표시
+          : tickets.isEmpty
+              ? const Center(
+                  child: Text(
+                    '현재 발급된 입장권이 없습니다',
+                    style: TextStyle(fontSize: 22, color: Color(0xFFC1C1C1)),
+                  ),
+                )
+              : Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListView.builder(
+                    itemCount: tickets.length,
+                    itemBuilder: (context, index) {
+                      final ticket = tickets[index];
+                      return GestureDetector(
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TicketEditScreen(
+                                ticketId: ticket['ticketId'],
+                              ),
+                            ),
+                          );
+                          if (result == 'modified') {
+                            fetchTickets(); // 수정 후 데이터 새로고침
+                          }
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                ticket['title']!,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(
-                                width: 65,
-                                height: 29,
-                                child: ElevatedButton(
-                                  onPressed: () {},
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: ticket['statusColor'],
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                  child: Text(
-                                    ticket['status']!,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    ticket['title']!,
                                     style: const TextStyle(
-                                        color: Colors.white, fontSize: 14),
-                                    textAlign: TextAlign.center,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
+                                  SizedBox(
+                                    width: 65,
+                                    height: 29,
+                                    child: ElevatedButton(
+                                      onPressed: () {},
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: ticket['statusColor'],
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                      child: Text(
+                                        ticket['status']!,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 8),
+                              Text("시간  ${ticket['dateTime']}",
+                                  style: const TextStyle(fontSize: 14)),
+                              Text("장소  ${ticket['location']}",
+                                  style: const TextStyle(fontSize: 14)),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text("시간  ${ticket['dateTime']}",
-                              style: const TextStyle(fontSize: 14)),
-                          Text("장소  ${ticket['location']}",
-                              style: const TextStyle(fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showModalBottomSheet(
@@ -119,23 +198,34 @@ class AdminTicketScreen extends StatelessWidget {
                   ListTile(
                     title: const Text('행사 제작'),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const TicketProduceScreen())),
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const TicketProduceScreen()),
+                    ),
                   ),
                   ListTile(
                     title: const Text('환불 신청 목록'),
-                    onTap: () => Navigator.push(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const RequestRefundListScreen())),
+                          builder: (_) => const RequestRefundListScreen(),
+                        ),
+                      );
+                    },
                   ),
                   ListTile(
                     title: const Text('납부 내역 목록'),
-                    onTap: () => Navigator.push(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const SendPaymentListScreen())),
+                          builder: (_) => const SendPaymentListScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               );
