@@ -61,7 +61,9 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
                     '${item['eventDay']} / ${item['eventStartTime'].toString().substring(0, 5)}',
                 'location': item['eventPlace'],
                 'status': '수정',
+                'status2': '삭제',
                 'statusColor': const Color(0xFF282727),
+                'statusColor2': const Color(0xFFDE4244),
               };
             }).toList();
             isLoading = false; // 데이터 로딩 완료 후 상태 갱신
@@ -136,16 +138,19 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    ticket['title']!,
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
+                                  Expanded(
+                                    child: Text(
+                                      ticket['title']!,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow:
+                                          TextOverflow.ellipsis, // 너무 길면 ... 표시
                                     ),
                                   ),
+                                  const SizedBox(width: 12),
                                   SizedBox(
                                     width: 65,
                                     height: 29,
@@ -161,6 +166,96 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
                                       ),
                                       child: Text(
                                         ticket['status']!,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 65,
+                                    height: 29,
+                                    child: ElevatedButton(
+                                      onPressed: () async {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text("정말 삭제하시겠습니까?"),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.of(context)
+                                                        .pop(false),
+                                                child: const Text("취소"),
+                                              ),
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.of(context)
+                                                        .pop(true),
+                                                child: const Text("삭제"),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+
+                                        if (confirm != true) return;
+
+                                        final url = Uri.parse(
+                                            '${dotenv.env['API_BASE_URL']}/ticket/delete');
+
+                                        try {
+                                          final response = await http.put(
+                                            url,
+                                            headers: {
+                                              'Content-Type':
+                                                  'application/json',
+                                            },
+                                            body: json.encode({
+                                              'ticketId': ticket['ticketId']
+                                            }),
+                                          );
+
+                                          final data =
+                                              json.decode(response.body);
+                                          if (data['isSuccess'] == true) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      data['message'] ??
+                                                          '삭제되었습니다.')),
+                                            );
+                                            fetchTickets(); // 삭제 후 목록 갱신
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      data['message'] ??
+                                                          '삭제 실패')),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content: Text('에러 발생: $e')),
+                                          );
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: ticket['statusColor2'],
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                      child: Text(
+                                        ticket['status2']!,
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 14,
