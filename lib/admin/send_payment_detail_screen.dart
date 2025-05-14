@@ -146,7 +146,7 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-                _buildPaymentImage(data["paymentPictures"]),
+                _buildPaymentImage(data["paymentPicture"]),
                 const SizedBox(height: 30),
                 _buildInfoTile("이름", data["name"]),
                 _buildInfoTile("학번", data["studentId"]),

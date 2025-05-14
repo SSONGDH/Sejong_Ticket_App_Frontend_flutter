@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "27155348743",
+    "project_id": "passtime-95bad",
+    "storage_bucket": "passtime-95bad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:27155348743:android:e5d473ebfe8afda3c1d9a2",
+        "android_client_info": {
+          "package_name": "com.example.passtime"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCgjqd22m_YCNrZXxh_rFd159YkpWKUsxU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

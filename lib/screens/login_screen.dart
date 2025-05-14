@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:passtime/widgets/click_button.dart';
 import 'ticket_screen.dart';
 import '../cookiejar_singleton.dart'; // CookieJarSingleton import 추가
@@ -30,7 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     // 전역에서 관리하는 CookieJar 인스턴스 사용
     _dio.interceptors.add(
-        CookieManager(CookieJarSingleton().cookieJar)); // CookieJarSingleton 사용
+      CookieManager(CookieJarSingleton().cookieJar),
+    );
   }
 
   @override
@@ -64,20 +66,28 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (response.statusCode == 200) {
-        // 로그인 성공 후 쿠키 저장 확인
         final cookies = response.headers['set-cookie'];
         if (cookies != null) {
-          final uri = Uri.parse(baseUrl); // base URL을 URI로 변환
+          final uri = Uri.parse(baseUrl);
           final parsedCookies = cookies
               .map((cookie) => Cookie.fromSetCookieValue(cookie.toString()))
               .toList();
-
-          // 쿠키를 CookieJarSingleton에 저장
           await CookieJarSingleton()
               .cookieJar
               .saveFromResponse(uri, parsedCookies);
 
-          // 로그인 성공 시 TicketScreen으로 이동
+          // ✅ FCM 토큰 발급 및 출력
+          try {
+            String? fcmToken = await FirebaseMessaging.instance.getToken();
+            if (fcmToken != null) {
+              print('FCM Token: $fcmToken');
+            } else {
+              print('FCM Token을 가져오지 못했습니다.');
+            }
+          } catch (e) {
+            print('FCM 토큰 요청 중 오류 발생: $e');
+          }
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const TicketScreen()),

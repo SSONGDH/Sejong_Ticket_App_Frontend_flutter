@@ -214,10 +214,13 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   }
 
   void _navigateToAdminScreen() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const AdminTicketScreen()),
-    );
+    // 1초 후 TicketScreen으로 이동
+    Future.delayed(const Duration(seconds: 1), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AdminTicketScreen()),
+      );
+    });
   }
 
   Widget _buildLabel(String text) {

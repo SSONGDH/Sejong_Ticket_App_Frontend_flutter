@@ -208,8 +208,8 @@ class _TicketScreenState extends State<TicketScreen> {
                                 onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (_) =>
-                                          const AddTicketNfcScreen()),
+                                    builder: (_) => const AddTicketNfcScreen(),
+                                  ),
                                 ),
                               ),
                             ],
@@ -257,8 +257,18 @@ class _TicketScreenState extends State<TicketScreen> {
                                 builder: (_) => const AdminTicketScreen()),
                           );
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('관리자 모드 접속에 실패했습니다.')),
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('알림'),
+                              content: const Text('지정된 관리자가 아닙니다.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('확인'),
+                                ),
+                              ],
+                            ),
                           );
                         }
                       } catch (e) {

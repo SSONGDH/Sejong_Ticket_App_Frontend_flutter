@@ -23,16 +23,14 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
   @override
   void initState() {
     super.initState();
-    fetchTickets(); // 초기 데이터 로딩
+    fetchTickets();
   }
 
-  // 데이터를 API에서 가져오는 함수
   Future<void> fetchTickets() async {
     final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/List');
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
     try {
-      // 쿠키 가져오기
       final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
       final cookieHeader = cookies.isNotEmpty
           ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')

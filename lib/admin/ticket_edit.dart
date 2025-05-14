@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:passtime/widgets/app_bar.dart';
+import 'package:passtime/admin/admin_ticket_screen.dart';
 
 class TicketEditScreen extends StatefulWidget {
   final String ticketId;
@@ -101,6 +102,14 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("수정 완료!")),
         );
+
+        // 1초 후 TicketScreen으로 이동
+        Future.delayed(const Duration(seconds: 1), () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminTicketScreen()),
+          );
+        });
       } else {
         debugPrint("응답 본문: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(

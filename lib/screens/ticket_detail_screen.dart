@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
 import 'package:passtime/widgets/app_bar.dart';
 import 'package:marquee/marquee.dart';
+import 'package:passtime/menu/request_refund.dart';
 
 class TicketDetailScreen extends StatefulWidget {
   final String ticketId;
@@ -94,9 +95,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
                             // 취소/환불 요청 버튼
                             TextButton(
-                              onPressed: () {
-                                // TODO: 환불 요청 화면으로 이동
-                              },
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const RequestRefundScreen()),
+                              ),
                               style: TextButton.styleFrom(
                                 backgroundColor: const Color(0xFFF8F8FF),
                                 padding: const EdgeInsets.symmetric(

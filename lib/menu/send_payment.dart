@@ -85,10 +85,10 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLabel("전화번호"),
-                    _buildPhoneField(),
                     _buildLabel("행사"),
                     _buildTicketDropdown(),
+                    _buildLabel("전화번호"),
+                    _buildPhoneField(),
                     _buildLabel("납부 내역 사진"),
                     _buildImagePickerField(),
                   ],

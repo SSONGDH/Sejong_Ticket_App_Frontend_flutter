@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../cookiejar_singleton.dart';
-import 'package:passtime/screens/ticket_screen.dart'; // 티켓 메인화면 추가
+import 'package:passtime/screens/ticket_screen.dart';
 
 class AddTicketCodeScreen extends StatefulWidget {
   const AddTicketCodeScreen({super.key});

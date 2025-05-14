@@ -52,7 +52,7 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
   Future<void> _fetchTickets() async {
     try {
       final response =
-          await _dio.get('${dotenv.env['API_BASE_URL']}/ticket/List');
+          await _dio.get('${dotenv.env['API_BASE_URL']}/ticket/main');
       final List<dynamic> data = response.data['result'];
       setState(() {
         tickets = data.cast<Map<String, dynamic>>();
