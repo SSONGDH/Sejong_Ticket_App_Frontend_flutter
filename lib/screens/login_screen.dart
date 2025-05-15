@@ -52,6 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final String url = '$baseUrl/login';
 
     try {
+      print('🚀 로그인 요청 URI: $url');
+      print(
+          '📝 로그인 요청 데이터: { "userId": "${_idController.text.trim()}", "password": "******" }');
+
       final response = await _dio.post(
         url,
         data: {
@@ -76,16 +80,36 @@ class _LoginScreenState extends State<LoginScreen> {
               .cookieJar
               .saveFromResponse(uri, parsedCookies);
 
-          // ✅ FCM 토큰 발급 및 출력
+          // FCM 토큰 발급 및 서버 전송
           try {
             String? fcmToken = await FirebaseMessaging.instance.getToken();
             if (fcmToken != null) {
               print('FCM Token: $fcmToken');
+
+              final fcmUrl = '$baseUrl/fcm/tokenAdd';
+              print('🚀 FCM 토큰 전송 URI: $fcmUrl');
+              print('📝 FCM 토큰 전송 데이터: { "fcmToken": "$fcmToken" }');
+
+              final fcmResponse = await _dio.post(
+                fcmUrl,
+                data: {"fcmToken": fcmToken},
+                options: Options(
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                ),
+              );
+
+              if (fcmResponse.statusCode == 200) {
+                print('✅ FCM 토큰 서버 전송 성공');
+              } else {
+                print('⚠️ FCM 토큰 서버 전송 실패: ${fcmResponse.statusCode}');
+              }
             } else {
               print('FCM Token을 가져오지 못했습니다.');
             }
           } catch (e) {
-            print('FCM 토큰 요청 중 오류 발생: $e');
+            print('FCM 토큰 요청/전송 중 오류 발생: $e');
           }
 
           Navigator.pushReplacement(
