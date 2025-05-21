@@ -8,7 +8,6 @@ import 'package:logger/logger.dart';
 
 final logger = Logger();
 
-/// 🔁 백그라운드 메시지 핸들러 (top-level 함수)
 Future<void> _onBackgroundMessage(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
