@@ -113,22 +113,22 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Firebase: 1fe1c0a7d9aaea32efe01fbea5f0ebd8d70e53a2
-  firebase_core: 432718558359a8c08762151b5f49bb0f093eb6e0
-  firebase_messaging: 3b99522baf7480dfb4b7683d2b34e842d577c362
+  firebase_core: 2d4534e7b489907dcede540c835b48981d890943
+  firebase_messaging: 75bc93a4df25faccad67f6662ae872ac9ae69b64
   FirebaseCore: 8344daef5e2661eb004b177488d6f9f0f24251b7
   FirebaseCoreInternal: ef4505d2afb1d0ebbc33162cb3795382904b5679
   FirebaseInstallations: 9980995bdd06ec8081dfb6ab364162bdd64245c3
   FirebaseMessaging: 2b9f56aa4ed286e1f0ce2ee1d413aabb8f9f5cb9
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_native_splash: f71420956eb811e6d310720fee915f1d42852e7a
-  flutter_nfc_kit: 3985c93f749b9cb4747479205c2f10bd2f877a11
+  flutter_native_splash: 6cad9122ea0fad137d23137dd14b937f3e90b145
+  flutter_nfc_kit: e1b71583eafd2c9650bc86844a7f2d185fb414f6
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
-  image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
+  image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
-  nfc_manager: d7da7cb781f7744b94df5fe9dbca904ac4a0939e
+  nfc_manager: 9c40fe22528ab871ca11e52ea8b95790e9d92ca2
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
 PODFILE CHECKSUM: bb7b6e505e6819e2984aa444180d4ba10fdaedad
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2

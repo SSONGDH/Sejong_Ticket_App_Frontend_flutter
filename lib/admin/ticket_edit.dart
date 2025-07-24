@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
-import 'package:passtime/widgets/app_bar.dart';
-import 'package:passtime/admin/admin_ticket_screen.dart';
+import 'package:PASSTIME/widgets/app_bar.dart';
+import 'package:PASSTIME/admin/admin_ticket_screen.dart';
 
 class TicketEditScreen extends StatefulWidget {
   final String ticketId;

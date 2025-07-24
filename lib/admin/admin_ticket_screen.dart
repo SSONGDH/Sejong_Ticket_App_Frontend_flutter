@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:passtime/widgets/app_bar.dart';
-import 'package:passtime/admin/ticket_edit.dart';
-import 'package:passtime/admin/ticket_produce.dart';
-import 'package:passtime/admin/request_refund_list.dart';
-import 'package:passtime/admin/send_payment_list.dart';
-import 'package:passtime/cookiejar_singleton.dart';
+import 'package:PASSTIME/widgets/app_bar.dart';
+import 'package:PASSTIME/admin/ticket_edit.dart';
+import 'package:PASSTIME/admin/ticket_produce.dart';
+import 'package:PASSTIME/admin/request_refund_list.dart';
+import 'package:PASSTIME/admin/send_payment_list.dart';
+import 'package:PASSTIME/cookiejar_singleton.dart';
 
 class AdminTicketScreen extends StatefulWidget {
   const AdminTicketScreen({super.key});
@@ -290,11 +290,16 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
                 children: [
                   ListTile(
                     title: const Text('행사 제작'),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const TicketProduceScreen()),
-                    ),
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const TicketProduceScreen()),
+                      );
+                      if (result == 'produced') {
+                        fetchTickets(); // 행사 제작 후 새로고침
+                      }
+                    },
                   ),
                   ListTile(
                     title: const Text('환불 신청 목록'),

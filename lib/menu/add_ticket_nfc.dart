@@ -3,8 +3,8 @@ import 'package:nfc_manager/nfc_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../cookiejar_singleton.dart';
-import 'package:passtime/screens/ticket_screen.dart';
-import 'package:passtime/widgets/app_bar.dart';
+import 'package:PASSTIME/screens/ticket_screen.dart';
+import 'package:PASSTIME/widgets/app_bar.dart';
 
 class AddTicketNfcScreen extends StatefulWidget {
   const AddTicketNfcScreen({super.key});

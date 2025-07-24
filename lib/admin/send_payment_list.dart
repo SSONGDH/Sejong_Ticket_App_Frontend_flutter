@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'send_payment_detail_screen.dart';
-import 'package:passtime/widgets/app_bar.dart';
+import 'package:PASSTIME/widgets/app_bar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

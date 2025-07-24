@@ -2,15 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
-import 'package:passtime/widgets/app_bar.dart';
-import 'package:passtime/widgets/ticket_card.dart';
+import 'package:PASSTIME/widgets/app_bar.dart';
+import 'package:PASSTIME/widgets/ticket_card.dart';
 import '../cookiejar_singleton.dart';
-import 'package:passtime/menu/add_ticket_code.dart';
-import 'package:passtime/menu/add_ticket_nfc.dart';
-import 'package:passtime/admin/admin_ticket_screen.dart';
-import 'package:passtime/menu/request_refund.dart';
-import 'package:passtime/menu/send_payment.dart';
-import 'package:passtime/menu/settings.dart';
+import 'package:PASSTIME/menu/add_ticket_code.dart';
+import 'package:PASSTIME/menu/add_ticket_nfc.dart';
+import 'package:PASSTIME/admin/admin_ticket_screen.dart';
+import 'package:PASSTIME/menu/request_refund.dart';
+import 'package:PASSTIME/menu/send_payment.dart';
+import 'package:PASSTIME/menu/settings.dart';
 
 class TicketScreen extends StatefulWidget {
   const TicketScreen({super.key});
@@ -102,6 +102,8 @@ class _TicketScreenState extends State<TicketScreen> {
       case '환불중':
         return const Color(0xFFDE4244);
       case '환불됨':
+        return const Color(0xFF282727);
+      case '만료됨':
         return const Color(0xFF282727);
       default:
         return const Color(0xFF9E9E9E);

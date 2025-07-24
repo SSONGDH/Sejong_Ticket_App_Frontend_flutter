@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:passtime/widgets/app_bar.dart';
-import 'package:passtime/widgets/click_button.dart';
-import 'package:passtime/screens/ticket_screen.dart';
+import 'package:PASSTIME/widgets/app_bar.dart';
+import 'package:PASSTIME/widgets/click_button.dart';
+import 'package:PASSTIME/screens/ticket_screen.dart';
 import '../cookiejar_singleton.dart';
 
 class RequestRefundScreen extends StatefulWidget {

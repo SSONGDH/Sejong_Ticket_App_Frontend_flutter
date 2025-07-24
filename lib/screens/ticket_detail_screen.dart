@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
-import 'package:passtime/widgets/app_bar.dart';
+import 'package:PASSTIME/widgets/app_bar.dart';
 import 'package:marquee/marquee.dart';
-import 'package:passtime/menu/request_refund.dart';
+import 'package:PASSTIME/menu/request_refund.dart';
 
 class TicketDetailScreen extends StatefulWidget {
   final String ticketId;

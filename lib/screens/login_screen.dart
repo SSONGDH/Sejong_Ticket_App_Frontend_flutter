@@ -4,7 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:passtime/widgets/click_button.dart';
+import 'package:PASSTIME/widgets/click_button.dart';
 import 'ticket_screen.dart';
 import '../cookiejar_singleton.dart'; // CookieJarSingleton import 추가
 

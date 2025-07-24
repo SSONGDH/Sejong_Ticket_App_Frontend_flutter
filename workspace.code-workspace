@@ -3,6 +3,9 @@
 		{
 			"name": "passtime",
 			"path": "."
+		},
+		{
+			"path": "../wearther"
 		}
 	],
 	"settings": {}

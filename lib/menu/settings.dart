@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:passtime/widgets/app_bar.dart';
-import 'package:passtime/screens/login_screen.dart';
-import 'package:passtime/widgets/click_button.dart';
+import 'package:PASSTIME/widgets/app_bar.dart';
+import 'package:PASSTIME/screens/login_screen.dart';
+import 'package:PASSTIME/widgets/click_button.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
