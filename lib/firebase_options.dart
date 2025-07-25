@@ -85,5 +85,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'passtime-95bad.firebasestorage.app',
     measurementId: 'G-HS11DS78MR',
   );
-
 }

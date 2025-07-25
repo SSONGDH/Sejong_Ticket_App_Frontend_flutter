@@ -6,7 +6,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:PASSTIME/widgets/click_button.dart';
 import 'ticket_screen.dart';
-import '../cookiejar_singleton.dart'; // CookieJarSingleton import 추가
+import '../cookiejar_singleton.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true); // 로딩 시작
 
     final String baseUrl = dotenv.env['API_BASE_URL'] ?? '';
-    final String url = '$baseUrl/login';
+    final String url = '$baseUrl/auth/login';
 
     try {
       print('🚀 로그인 요청 URI: $url');
