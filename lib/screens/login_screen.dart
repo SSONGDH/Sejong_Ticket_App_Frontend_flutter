@@ -162,9 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 110),
                 Image.asset(
-                  'assets/images/sejong_logo.png',
-                  width: 175,
-                  height: 175,
+                  'assets/images/sejong.png',
+                  width: 180,
+                  height: 160,
                 ),
                 const SizedBox(height: 110),
                 _buildInputField(

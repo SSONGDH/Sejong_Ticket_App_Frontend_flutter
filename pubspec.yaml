@@ -52,7 +52,7 @@ dependencies:
 
 flutter_native_splash:
   color: "#ffffff"  # 배경색
-  image: "assets/images/sejong_logo.png"  # 스플래시 화면에 표시할 이미지
+  image: "assets/images/sejong.png"  # 스플래시 화면에 표시할 이미지
   android: true  # 안드로이드용 설정
   ios: true  # iOS용 설정
 
@@ -80,7 +80,7 @@ flutter:
 
   assets:
     - .env
-    - assets/images/sejong_logo.png
+    - assets/images/sejong.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
