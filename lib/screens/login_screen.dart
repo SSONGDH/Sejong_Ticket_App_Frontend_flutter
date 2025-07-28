@@ -7,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'ticket_screen.dart';
 import '../cookiejar_singleton.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,8 +33,30 @@ class _LoginScreenState extends State<LoginScreen> {
     _dio.interceptors.add(
       CookieManager(CookieJarSingleton().cookieJar),
     );
+    _loadLoginData();
     _idController.addListener(_updateButtonState);
     _passwordController.addListener(_updateButtonState);
+  }
+
+  Future<void> _loadLoginData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isRememberId = prefs.getBool('isRememberId') ?? false;
+      if (isRememberId) {
+        _idController.text = prefs.getString('userId') ?? '';
+      }
+    });
+  }
+
+  Future<void> _saveLoginData() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('isRememberId', isRememberId);
+
+    if (isRememberId) {
+      prefs.setString('userId', _idController.text.trim());
+    } else {
+      prefs.remove('userId');
+    }
   }
 
   void _updateButtonState() {
@@ -118,6 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
             print('FCM 토큰 요청/전송 중 오류 발생: $e');
           }
 
+          await _saveLoginData();
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const TicketScreen()),
@@ -284,6 +308,7 @@ class _LoginScreenState extends State<LoginScreen> {
             onTap: () {
               setState(() {
                 isRememberId = !isRememberId;
+                _saveLoginData();
               });
             },
             child: Row(
@@ -296,6 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onChanged: (bool? newValue) {
                       setState(() {
                         isRememberId = newValue!;
+                        _saveLoginData();
                       });
                     },
                     activeColor: const Color(0xFFC10230),
@@ -318,10 +344,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           InkWell(
-            // InkWell 추가
             onTap: () {
               setState(() {
                 isAutoLogin = !isAutoLogin;
+                // _saveLoginData(); // <<< 자동 로그인 기능을 추가하지 않으므로 이 줄은 삭제 또는 주석 처리
               });
             },
             child: Row(

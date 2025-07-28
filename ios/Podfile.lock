@@ -73,6 +73,9 @@ PODS:
   - nfc_manager (0.0.1):
     - Flutter
   - PromisesObjC (2.4.0)
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
@@ -82,6 +85,7 @@ DEPENDENCIES:
   - flutter_nfc_kit (from `.symlinks/plugins/flutter_nfc_kit/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - nfc_manager (from `.symlinks/plugins/nfc_manager/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -110,6 +114,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   nfc_manager:
     :path: ".symlinks/plugins/nfc_manager/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
 
 SPEC CHECKSUMS:
   Firebase: 1fe1c0a7d9aaea32efe01fbea5f0ebd8d70e53a2
@@ -128,6 +134,7 @@ SPEC CHECKSUMS:
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   nfc_manager: 9c40fe22528ab871ca11e52ea8b95790e9d92ca2
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
 
 PODFILE CHECKSUM: bb7b6e505e6819e2984aa444180d4ba10fdaedad
 
