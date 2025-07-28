@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'package:logger/logger.dart';
@@ -62,25 +63,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    final Color lightBlackColor = Colors.black.withOpacity(0.6);
+    final Color veryLightBlackColor = Colors.black.withOpacity(0.2);
+
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginScreen(),
+      theme: ThemeData(
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: lightBlackColor,
+          selectionColor: veryLightBlackColor,
+          selectionHandleColor: lightBlackColor,
+        ),
+        cupertinoOverrideTheme: CupertinoThemeData(
+          primaryColor: lightBlackColor,
+        ),
+      ),
+      home: const LoginScreen(),
     );
   }
 }
-
-
-
-// 지정된 학번이 아니면 관리자가 아닙니다 라는 문구가 뜰 수 있도록 O
-
-// 행사 수정하고나서 화면이동 O
-
-// 입장권 상세화면에서 취소/환불 요청하면 페이지 이동 OX
-
-// 모든 화면 이동시 새로고침 해야함
-
-// 시계 ui 바꿔야함 씨발임
-
-// 납부내역 상세화면 사진 크기 조정
-
-// 행사 제작 후 디버깅 중지
