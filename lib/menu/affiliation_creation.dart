@@ -255,7 +255,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildFormGroup(
-                        label: '생성 여부',
+                        label: '생성 요청',
                         child: _buildToggleButtons(
                           value: _canCreate,
                           onChanged: (newValue) {
@@ -267,7 +267,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildFormGroup(
-                        label: '권한 여부',
+                        label: '권한 요청',
                         child: _buildToggleButtons(
                           value: _hasPermission,
                           onChanged: (newValue) {
