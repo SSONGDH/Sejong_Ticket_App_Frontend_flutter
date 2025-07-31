@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:PASSTIME/widgets/custom_app_bar.dart';
 import 'package:PASSTIME/widgets/menu_button.dart';
+import 'package:PASSTIME/menu/affiliation_creation.dart';
 import '../cookiejar_singleton.dart';
 
 class MyPageScreen extends StatefulWidget {
@@ -88,9 +89,15 @@ class _MyPageScreenState extends State<MyPageScreen> {
         final String studentId = result['studentId'] ?? '';
         final String name = result['name'] ?? '';
 
+        final List<String> totalAffiliations =
+            (result['totalAffiliation'] as List<dynamic>)
+                .map((item) => item['name'] as String)
+                .toList();
+
         print('받아온 소속: $affiliations');
         print('받아온 학번: $studentId');
         print('받아온 이름: $name');
+        print('전체 소속 목록: $totalAffiliations');
 
         setState(() {
           _currentAffiliations = affiliations;
@@ -98,8 +105,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
           _fixedStudentId = studentId;
           _userName = name;
 
-          // 남은 소속 (추가할 수 있는 소속 목록) → 서버에서 주는게 아니라면, 기존 사용 안 함.
-          _availableAffiliations = [];
+          _availableAffiliations = totalAffiliations
+              .where((aff) => !_currentAffiliations.contains(aff))
+              .toList();
 
           _updateSaveButtonState();
         });
@@ -250,7 +258,16 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         ),
                         ElevatedButton.icon(
                           onPressed: () {
-                            print('소속 생성 기능 개발 예정');
+                            // ⭐ 이름과 학번만 전달하도록 수정 ⭐
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AffiliationCreationScreen(
+                                  hostName: _userName,
+                                  studentId: _fixedStudentId,
+                                ),
+                              ),
+                            );
                           },
                           label: const Text(
                             '소속 생성',
@@ -364,7 +381,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
                         try {
-                          // 쿠키 헤더 준비
                           final cookies = await CookieJarSingleton()
                               .cookieJar
                               .loadForRequest(uri);
@@ -392,24 +408,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
                               '저장 API 호출 완료 - Status Code: ${response.statusCode}');
                           print('Response Body: ${response.data}');
 
-                          if (response.statusCode == 200 &&
-                              response.data['code'] == 'SUCCESS-0000') {
-                            setState(() {
-                              _initialAffiliations =
-                                  List.from(_currentAffiliations);
-                              _isSaveButtonEnabled = false;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('소속 정보가 성공적으로 저장되었습니다.')),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text(
-                                      '저장 실패: ${response.data['message'] ?? '알 수 없는 오류'}')),
-                            );
-                          }
+                          setState(() {
+                            _initialAffiliations =
+                                List.from(_currentAffiliations);
+                            _isSaveButtonEnabled = false;
+                          });
                         } catch (e) {
                           print('저장 API 호출 실패: $e');
                           ScaffoldMessenger.of(context).showSnackBar(
