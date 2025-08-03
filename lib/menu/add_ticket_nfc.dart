@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../cookiejar_singleton.dart';
 import 'package:PASSTIME/screens/ticket_screen.dart';
-import 'package:PASSTIME/widgets/app_bar.dart';
 
 class AddTicketNfcScreen extends StatefulWidget {
   const AddTicketNfcScreen({super.key});
@@ -32,6 +31,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
 
   Future<void> _startNfcSession() async {
     await _logNfcAvailability();
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     print("[NFC] 기존 세션 중지 시도 (iOS 안정화용)");
@@ -42,7 +42,6 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
       print("[NFC] stopSession 예외 무시: $e");
     }
 
-    // 딜레이를 1500ms로 늘림 (iOS 세션 종료 대기 시간 확보)
     await Future.delayed(const Duration(milliseconds: 1500));
 
     print("[NFC] 세션 시작 시도");
@@ -50,13 +49,12 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
       await NfcManager.instance.startSession(
         alertMessage: "카드를 태그해주세요",
         onDiscovered: (NfcTag tag) async {
-          print("[NFC] onDiscovered 호출됨"); // 이 로그가 뜨는지 확인
+          print("[NFC] onDiscovered 호출됨");
           await _logNfcAvailability();
           print("[NFC] 태그 발견됨: ${tag.data}");
 
           final ndef = Ndef.from(tag);
           if (ndef == null) {
-            // NDEF 메시지는 없지만, UID 읽기 시도
             final tagId = tag.data['id'];
             if (tagId != null) {
               final hexId = tagId
@@ -74,10 +72,6 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
                 );
                 setState(() => _isLoading = false);
               }
-
-              // 여기서 raw 태그 ID를 서버에 보내거나, 원하는 처리를 할 수 있습니다.
-              // await _sendTicketIdToServer(hexId);
-
               return;
             } else {
               print("[NFC] NDEF 메시지도 없고 UID도 읽을 수 없음");
@@ -168,42 +162,77 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
       print("[API] 응답 수신: ${response.statusCode}, 데이터: ${response.data}");
 
       if (response.statusCode == 200 && response.data['isSuccess']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('입장권이 성공적으로 추가되었습니다!')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const TicketScreen()),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('입장권이 성공적으로 추가되었습니다!')),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const TicketScreen()),
+          );
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.data['message'] ?? '티켓 등록 실패')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.data['message'] ?? '티켓 등록 실패')),
+          );
+        }
       }
     } catch (e) {
       print("[API] 요청 실패: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('서버 오류. 다시 시도해 주세요.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('서버 오류. 다시 시도해 주세요.')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(
-        title: "NFC",
-        backgroundColor: Color(0xFFB93234),
-      ),
-      body: Center(
-        child: _isLoading
-            ? const CircularProgressIndicator()
-            : const Text(
-                'NFC 태그를 가까이 대주세요',
-                style: TextStyle(fontSize: 18, color: Colors.grey),
-              ),
+    return PopScope(
+      canPop: false, // 뒤로가기 기능을 비활성화합니다.
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F6F7),
+        appBar: AppBar(
+          toolbarHeight: 70,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.close_rounded,
+              color: Color(0xFF334D61),
+              size: 30,
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          centerTitle: true,
+          title: const Text(
+            'NFC',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        body: Align(
+          alignment: const Alignment(0.0, -0.1),
+          child: _isLoading
+              ? const CircularProgressIndicator()
+              : Text(
+                  'NFC 기능을 켜고 카드를 대주세요',
+                  style: TextStyle(
+                      fontSize: 18,
+                      color: const Color(0xFF334D61).withOpacity(0.5),
+                      fontWeight: FontWeight.w600),
+                ),
+        ),
       ),
     );
   }

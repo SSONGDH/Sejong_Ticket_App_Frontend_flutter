@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:PASSTIME/widgets/app_bar.dart';
-import 'package:PASSTIME/widgets/click_button.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -16,6 +15,49 @@ class AddTicketCodeScreen extends StatefulWidget {
 
 class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
   final TextEditingController _controller = TextEditingController();
+  bool _isButtonEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_updateButtonState);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_updateButtonState);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _updateButtonState() {
+    setState(() {
+      _isButtonEnabled = _controller.text.trim().isNotEmpty;
+    });
+  }
+
+  void _showAlertDialog(String title, String message,
+      {VoidCallback? onConfirm}) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () {
+              Navigator.pop(context);
+              if (onConfirm != null) onConfirm();
+            },
+            child: const Text(
+              '확인',
+              style: TextStyle(color: Color(0xFFC10230)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _addTicketCode(String eventCode) async {
     final apiUrl = '${dotenv.env['API_BASE_URL']}/ticket/add';
@@ -44,99 +86,142 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
       if (response.statusCode == 200) {
         final responseBody = response.data;
         if (responseBody['isSuccess']) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('입장권이 생성되었습니다!')),
-          );
-
-          // 1초 후 TicketScreen으로 이동
-          Future.delayed(const Duration(seconds: 1), () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const TicketScreen()),
-            );
-          });
+          if (mounted) {
+            _showAlertDialog('완료', '입장권이 생성되었습니다!', onConfirm: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const TicketScreen()),
+              );
+            });
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('코드 입력이 잘못되었습니다.')),
-          );
+          if (mounted) {
+            _showAlertDialog('오류', '코드 입력이 잘못되었습니다.');
+          }
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('서버와 연결할 수 없습니다. 다시 시도해 주세요.')),
-        );
+        if (mounted) {
+          _showAlertDialog('오류', '서버와 연결할 수 없습니다.');
+        }
       }
     } catch (e) {
       print('Error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('서버와 연결할 수 없습니다. 다시 시도해 주세요.')),
-      );
+      if (mounted) {
+        _showAlertDialog('오류', '서버와 연결할 수 없습니다.');
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar:
-          const CustomAppBar(title: "CODE", backgroundColor: Color(0xFFB93234)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "코드 입력",
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+    return PopScope(
+      canPop: false,
+      child: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          backgroundColor: const Color(0xFFF5F6F7),
+          appBar: AppBar(
+            toolbarHeight: 70,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Color(0xFF334D61),
+                size: 30,
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                  hintText: "코드를 입력하세요",
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: const BorderSide(color: Colors.grey),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: const BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: const BorderSide(color: Colors.grey),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            centerTitle: true,
+            title: const Text(
+              'CODE',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "코드",
+                            style: TextStyle(
+                              color: Colors.black.withOpacity(0.6),
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          TextField(
+                            controller: _controller,
+                            decoration: InputDecoration(
+                              hintText: "코드 입력",
+                              hintStyle: TextStyle(
+                                color: Colors.black.withOpacity(0.3),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              border: InputBorder.none,
+                            ),
+                            textInputAction: TextInputAction.done,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                textInputAction: TextInputAction.done,
               ),
-              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                child: SafeArea(
+                  child: ElevatedButton(
+                    onPressed: _isButtonEnabled
+                        ? () {
+                            final eventCode = _controller.text.trim();
+                            _addTicketCode(eventCode);
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC10230),
+                      disabledBackgroundColor:
+                          const Color(0xFFC10230).withOpacity(0.3),
+                      minimumSize: const Size(double.infinity, 55),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white.withOpacity(0.7),
+                    ),
+                    child: const Text(
+                      '완료',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
             ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(30),
-        child: CustomButton(
-          onPressed: () {
-            final eventCode = _controller.text.trim();
-            if (eventCode.isNotEmpty) {
-              _addTicketCode(eventCode);
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('코드를 입력해 주세요.')),
-              );
-            }
-          },
-          color: const Color(0xFFB93234),
-          borderRadius: 5,
-          height: 55,
-          child: const Text(
-            "확인",
-            style: TextStyle(color: Colors.white, fontSize: 18),
           ),
         ),
       ),

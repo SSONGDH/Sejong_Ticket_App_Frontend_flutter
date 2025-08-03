@@ -151,10 +151,10 @@ class _MenuButtonState extends State<MenuButton> {
                                     context,
                                     // ⭐ 이미지 경로 지정 ⭐
                                     imagePath:
-                                        'assets/images/menu_ticket.png', // 예시 이미지 경로
+                                        'assets/images/menu_add_ticket.png', // 예시 이미지 경로
                                     text: 'CODE',
                                     onTap: () {
-                                      Navigator.pushReplacement(
+                                      Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                             builder: (_) =>
@@ -166,10 +166,10 @@ class _MenuButtonState extends State<MenuButton> {
                                     context,
                                     // ⭐ 이미지 경로 지정 ⭐
                                     imagePath:
-                                        'assets/images/menu_ticket.png', // 예시 이미지 경로
+                                        'assets/images/menu_add_ticket.png', // 예시 이미지 경로
                                     text: 'NFC',
                                     onTap: () {
-                                      Navigator.pushReplacement(
+                                      Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) =>
@@ -273,7 +273,7 @@ class _MenuButtonState extends State<MenuButton> {
 
                             if (response.statusCode == 200 &&
                                 response.data['isSuccess'] == true) {
-                              Navigator.pushReplacement(
+                              Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) => const AdminTicketScreen()),
