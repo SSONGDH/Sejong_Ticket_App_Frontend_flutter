@@ -28,11 +28,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   Future<void> fetchTicketDetail() async {
     final apiUrl = '${dotenv.env['API_BASE_URL']}/ticket/detail';
     setState(() {
-      isLoading = true; // 로딩 상태로 설정
+      isLoading = true;
     });
 
     try {
-      print("Fetching ticket details..."); // 로딩 시작 로그
       final response = await _dio.get(
         apiUrl,
         queryParameters: {'ticketId': widget.ticketId},
@@ -44,26 +43,21 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       if (response.statusCode == 200 && response.data['isSuccess'] == true) {
         setState(() {
           ticketData = response.data['result'];
-          isLoading = false; // 데이터를 성공적으로 받아오면 로딩 상태 해제
-          print("Ticket details fetched successfully.");
-          print("Ticket data: $ticketData");
+          isLoading = false;
         });
       } else {
         throw Exception('Failed to load ticket details');
       }
     } catch (e) {
-      print("Error fetching ticket details: $e");
       setState(() {
         hasError = true;
-        isLoading = false; // 오류 발생 시 로딩 상태 해제
+        isLoading = false;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    print("Building the screen..."); // 화면 렌더링 로그
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6F7),
       appBar: AppBar(
@@ -97,20 +91,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        const SizedBox(height: 20),
-                        // 티켓 모양의 카드
                         Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          decoration: BoxDecoration(
+                          margin: const EdgeInsets.all(40),
+                          decoration: const BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                            ),
                           ),
                           child: Stack(
                             children: [
@@ -118,131 +106,135 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                 children: [
                                   // 상단 정보 영역
                                   Padding(
-                                    padding: const EdgeInsets.all(20.0),
+                                    padding: const EdgeInsets.all(28),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
+                                        Text(
                                           "입장권",
                                           style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.black54),
+                                              fontSize: 12,
+                                              color:
+                                                  Colors.black.withOpacity(0.2),
+                                              fontWeight: FontWeight.w600),
                                         ),
                                         const SizedBox(height: 5),
                                         Text(
                                           ticketData?["eventTitle"] ??
                                               "행사 제목 없음",
                                           style: const TextStyle(
-                                            fontSize: 28,
+                                            fontSize: 22,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.black,
                                           ),
                                         ),
-                                        const SizedBox(height: 20),
+                                        const Divider(
+                                            height: 30,
+                                            thickness: 1,
+                                            color: Color(0xFFEEEDE3)),
+                                        // 날짜/시간
                                         Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text("날짜",
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "날짜",
                                                     style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.black
+                                                            .withOpacity(0.2),
+                                                        fontWeight:
+                                                            FontWeight.w600),
+                                                  ),
+                                                  const SizedBox(height: 5),
+                                                  Text(
+                                                    ticketData?["eventDay"] ??
+                                                        "",
+                                                    style: const TextStyle(
                                                         fontSize: 14,
-                                                        color: Colors.black54)),
-                                                Text(
-                                                  ticketData?["eventDay"] ?? "",
-                                                  style: const TextStyle(
-                                                      fontSize: 18,
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                                ),
-                                              ],
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text("시간",
+                                            const SizedBox(width: 10),
+                                            const SizedBox(
+                                              height: 30,
+                                              child: VerticalDivider(
+                                                color: Color(0xFFEEEDE3),
+                                                thickness: 1,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "시간",
                                                     style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.black
+                                                            .withOpacity(0.2),
+                                                        fontWeight:
+                                                            FontWeight.w600),
+                                                  ),
+                                                  const SizedBox(height: 5),
+                                                  Text(
+                                                    ticketData?[
+                                                            "eventStartTime"] ??
+                                                        "",
+                                                    style: const TextStyle(
                                                         fontSize: 14,
-                                                        color: Colors.black54)),
-                                                Text(
-                                                  ticketData?[
-                                                          "eventStartTime"] ??
-                                                      "",
-                                                  style: const TextStyle(
-                                                      fontSize: 18,
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                                ),
-                                              ],
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 20),
-                                        const Text("관리자 멘트",
-                                            style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.black54)),
+                                        const Divider(
+                                            height: 30,
+                                            thickness: 1,
+                                            color: Color(0xFFEEEDE3)),
                                         Text(
-                                          ticketData?["eventComment"] ??
-                                              "관리자 멘트 없음",
-                                          style: const TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.black87),
+                                            ticketData?["eventComment"] ??
+                                                "관리자 멘트 없음",
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            )),
+                                        const Divider(
+                                            height: 30,
+                                            thickness: 1,
+                                            color: Color(0xFFEEEDE3)),
+                                        // 장소 설명
+                                        Text(
+                                          "장소 설명",
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color:
+                                                  Colors.black.withOpacity(0.2),
+                                              fontWeight: FontWeight.w600),
                                         ),
-                                        const SizedBox(height: 20),
-                                        const Text("장소 설명",
-                                            style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.black54)),
+                                        const SizedBox(height: 5),
                                         Text(
                                           ticketData?["eventPlaceComment"] ??
                                               "장소 설명 없음",
                                           style: const TextStyle(
-                                              fontSize: 16,
+                                              fontSize: 13,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.black87),
+                                              color: Colors.black),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                  // 점선 구분선
-                                  SizedBox(
-                                    height: 30,
-                                    child: CustomPaint(
-                                      painter: DottedLinePainter(),
-                                      child: Container(),
-                                    ),
-                                  ),
-                                  // 하단 지도, 취소/환불 버튼, Marquee 영역
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20.0),
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          height: 200,
-                                          width: double.infinity,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[200],
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                          ),
-                                          child: const Center(
-                                            child: Text(
-                                              "지도 표시 영역",
-                                              style: TextStyle(
-                                                color: Colors.black54,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 20),
+                                        const SizedBox(height: 60),
+                                        // 취소/환불 버튼
                                         TextButton(
                                           onPressed: () => Navigator.push(
                                             context,
@@ -251,56 +243,91 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                                     const RequestRefundScreen()),
                                           ),
                                           style: TextButton.styleFrom(
-                                            backgroundColor: Colors.grey[100],
+                                            backgroundColor:
+                                                const Color(0xFF334D61)
+                                                    .withOpacity(0.05),
                                             padding: const EdgeInsets.symmetric(
-                                                vertical: 15),
+                                                vertical: 10),
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  BorderRadius.circular(4),
                                             ),
+                                            minimumSize:
+                                                const Size(double.infinity, 0),
                                           ),
                                           child: const Center(
                                             child: Text(
-                                              "취소/환불 요청",
+                                              "취소/환불요청",
                                               style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16),
+                                                  color: Color(0xFF334D61),
+                                                  fontSize: 14),
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 20),
+                                      ],
+                                    ),
+                                  ),
+                                  // 점선 구분선
+                                  SizedBox(
+                                    height: 0,
+                                    child: CustomPaint(
+                                      painter: DottedLinePainter(),
+                                      child: Container(),
+                                    ),
+                                  ),
+                                  // 지도 + Marquee 영역
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        left: 0.0, right: 0.0, bottom: 0.0),
+                                    child: Column(
+                                      children: [
+                                        ClipRRect(
+                                          child: Container(
+                                            height: 200,
+                                            width: double.infinity,
+                                            color: Colors.grey[300],
+                                            child: const Center(
+                                              child: Text(
+                                                "지도 표시 영역",
+                                                style: TextStyle(
+                                                  color: Colors.black54,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                         Container(
                                           width: double.infinity,
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFE53935),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                          height: 20,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFC10230),
+                                            borderRadius: BorderRadius.only(
+                                              bottomLeft: Radius.circular(20),
+                                              bottomRight: Radius.circular(20),
+                                            ),
                                           ),
                                           child: Marquee(
-                                            text:
-                                                "⚠️ 캡쳐하신 입장권은 사용할 수 없습니다 ⚠️   ",
+                                            text: "캡쳐하신 입장권은 사용할 수 없습니다.",
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 16,
+                                              fontSize: 12,
                                             ),
                                             scrollAxis: Axis.horizontal,
                                             blankSpace: 50.0,
                                             velocity: 50.0,
                                           ),
                                         ),
-                                        const SizedBox(height: 20),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                              // 좌우의 반원
+                              // 좌우의 반원 (점선 위치에 맞춰 조정)
                               Positioned(
                                 left: -15,
-                                top: 290, // 점선 위치에 맞춰 조정
+                                top: 398, // 점선 위치에 맞춰 조정
                                 child: Container(
                                   width: 30,
                                   height: 30,
@@ -312,7 +339,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                               ),
                               Positioned(
                                 right: -15,
-                                top: 290, // 점선 위치에 맞춰 조정
+                                top: 398, // 점선 위치에 맞춰 조정
                                 child: Container(
                                   width: 30,
                                   height: 30,
