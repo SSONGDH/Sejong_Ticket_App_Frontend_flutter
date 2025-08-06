@@ -121,7 +121,7 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
           FocusScope.of(context).unfocus();
         },
         child: Scaffold(
-          resizeToAvoidBottomInset: false,
+          resizeToAvoidBottomInset: true,
           backgroundColor: const Color(0xFFF5F6F7),
           appBar: AppBar(
             toolbarHeight: 70,
@@ -151,7 +151,7 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(14),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(

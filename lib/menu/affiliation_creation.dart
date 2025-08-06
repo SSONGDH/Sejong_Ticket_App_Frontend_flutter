@@ -184,9 +184,8 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
       onTap: () {
         FocusScope.of(context).unfocus();
       },
-      // ⭐ Scaffold의 body가 키보드에 의해 리사이즈되는 것을 방지 ⭐
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         appBar: AppBar(
           toolbarHeight: 70,
           backgroundColor: Colors.white,

@@ -198,7 +198,7 @@ class _MenuButtonState extends State<MenuButton> {
                             'assets/images/menu_send_payment.png', // 예시 이미지 경로
                         text: '납부 내역 보내기',
                         onTap: () {
-                          Navigator.pushReplacement(
+                          Navigator.push(
                             context,
                             MaterialPageRoute(
                                 builder: (_) => const SendPaymentScreen()),
@@ -213,7 +213,7 @@ class _MenuButtonState extends State<MenuButton> {
                             'assets/images/menu_request_refund.png', // 예시 이미지 경로
                         text: '환불 신청',
                         onTap: () {
-                          Navigator.pushReplacement(
+                          Navigator.push(
                             context,
                             MaterialPageRoute(
                                 builder: (_) => const RequestRefundScreen()),

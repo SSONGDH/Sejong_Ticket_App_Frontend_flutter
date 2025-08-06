@@ -1,12 +1,9 @@
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:PASSTIME/widgets/app_bar.dart';
-import 'package:PASSTIME/widgets/click_button.dart';
 import 'package:PASSTIME/screens/ticket_screen.dart';
 import '../cookiejar_singleton.dart';
 
@@ -22,8 +19,9 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
   List<Map<String, dynamic>> tickets = [];
   String? selectedTicketId;
   final TextEditingController phoneController = TextEditingController();
-  final FocusNode phoneFocusNode = FocusNode();
-  final FocusNode eventFocusNode = FocusNode();
+  final TextEditingController departmentController = TextEditingController();
+  final TextEditingController studentIdController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
   File? _image;
   final picker = ImagePicker();
 
@@ -68,66 +66,125 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        backgroundColor: Colors.white,
-        appBar: const CustomAppBar(
-          title: "납부 내역 보내기",
-          backgroundColor: Color(0xFFB93234),
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(15),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLabel("행사"),
-                    _buildTicketDropdown(),
-                    _buildLabel("전화번호"),
-                    _buildPhoneField(),
-                    _buildLabel("납부 내역 사진"),
-                    _buildImagePickerField(),
-                  ],
-                ),
+    return PopScope(
+      canPop: false,
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          resizeToAvoidBottomInset: true,
+          backgroundColor: const Color(0xFFF5F6F7),
+          appBar: AppBar(
+            toolbarHeight: 70,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Color(0xFF334D61),
+                size: 30,
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            centerTitle: true,
+            title: const Text(
+              '납부 내역 보내기',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(30),
-              child: CustomButton(
-                onPressed: () {
-                  if (_isFormValid()) {
-                    _showConfirmationDialog();
-                  } else {
-                    _showFormIncompleteDialog();
-                  }
-                },
-                color: const Color(0xFFB93234),
-                borderRadius: 5,
-                height: 55,
-                child: const Text(
-                  "확인",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInputField(
+                          controller: departmentController,
+                          label: "학과",
+                          hintText: "학과 입력",
+                        ),
+                        const SizedBox(height: 14),
+                        _buildInputField(
+                          controller: studentIdController,
+                          label: "학번",
+                          hintText: "학번 입력",
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 14),
+                        _buildInputField(
+                          controller: nameController,
+                          label: "이름",
+                          hintText: "이름 입력",
+                        ),
+                        const SizedBox(height: 14),
+                        _buildInputField(
+                          controller: phoneController,
+                          label: "전화번호",
+                          hintText: "전화번호 입력",
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 14),
+                        _buildEventDropdown(),
+                        const SizedBox(height: 14),
+                        _buildImagePickerField(),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                child: SafeArea(
+                  child: ElevatedButton(
+                    onPressed: _isFormValid() ? _showConfirmationDialog : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC10230),
+                      disabledBackgroundColor:
+                          const Color(0xFFC10230).withOpacity(0.3),
+                      minimumSize: const Size(double.infinity, 55),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white.withOpacity(0.7),
+                    ),
+                    child: const Text(
+                      '완료',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   bool _isFormValid() {
-    return phoneController.text.isNotEmpty &&
+    return departmentController.text.isNotEmpty &&
+        studentIdController.text.isNotEmpty &&
+        nameController.text.isNotEmpty &&
+        phoneController.text.isNotEmpty &&
         selectedEvent.isNotEmpty &&
         _image != null;
   }
 
   void _showFormIncompleteDialog() {
     String missingFields = '';
+    if (departmentController.text.isEmpty) missingFields += '학과, ';
+    if (studentIdController.text.isEmpty) missingFields += '학번, ';
+    if (nameController.text.isEmpty) missingFields += '이름, ';
     if (phoneController.text.isEmpty) missingFields += '전화번호, ';
     if (selectedEvent.isEmpty) missingFields += '행사, ';
     if (_image == null) missingFields += '납부 내역 사진, ';
@@ -181,6 +238,9 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
           _image!.path,
           filename: _image!.path.split('/').last,
         ),
+        'department': departmentController.text,
+        'studentId': studentIdController.text,
+        'name': nameController.text,
       });
 
       final response = await _dio.post(
@@ -243,113 +303,189 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
     );
   }
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 2),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    TextEditingController? controller,
-    String? initialValue,
-    String? hintText,
-    TextInputType? keyboardType,
-    bool enabled = true,
-    List<TextInputFormatter>? inputFormatters,
-    FocusNode? focusNode,
-    VoidCallback? onEditingComplete,
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required String hintText,
+    TextInputType keyboardType = TextInputType.text,
   }) {
-    return TextField(
-      controller: controller ??
-          (initialValue != null
-              ? TextEditingController(text: initialValue)
-              : null),
-      keyboardType: keyboardType,
-      enabled: enabled,
-      inputFormatters: inputFormatters,
-      focusNode: focusNode,
-      textInputAction: TextInputAction.done,
-      onEditingComplete: onEditingComplete,
-      style: const TextStyle(color: Colors.black),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(color: Colors.grey),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(5),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPhoneField() {
-    return _buildTextField(
-      controller: phoneController,
-      focusNode: phoneFocusNode,
-      keyboardType: TextInputType.number,
-      hintText: "전화번호 입력",
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-    );
-  }
-
-  Widget _buildTicketDropdown() {
     return Container(
-      height: 55,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey),
-        borderRadius: BorderRadius.circular(5),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selectedTicketId,
-          hint: const Text('행사 선택'),
-          isExpanded: true,
-          items: tickets.map((ticket) {
-            return DropdownMenuItem<String>(
-              value: ticket['_id'],
-              child: Text(ticket['eventTitle']),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              selectedTicketId = value;
-              selectedEvent = tickets
-                  .firstWhere((ticket) => ticket['_id'] == value)['eventTitle'];
-            });
-          },
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(
+                color: Colors.black.withOpacity(0.3),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: InputBorder.none,
+            ),
+            textInputAction: TextInputAction.done,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "행사",
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Theme(
+            data: Theme.of(context).copyWith(canvasColor: Colors.white),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedTicketId,
+                hint: Text(
+                  '행사 선택',
+                  style: TextStyle(
+                    color: Colors.black.withOpacity(0.3),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                isExpanded: true,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                ),
+                items: tickets.map((ticket) {
+                  return DropdownMenuItem<String>(
+                    value: ticket['_id'],
+                    child: Text(ticket['eventTitle']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedTicketId = value;
+                    selectedEvent = tickets.firstWhere(
+                        (ticket) => ticket['_id'] == value)['eventTitle'];
+                  });
+                },
+              ),
+            ),
+          )
+        ],
       ),
     );
   }
 
   Widget _buildImagePickerField() {
-    return GestureDetector(
-      onTap: _pickImage,
-      child: _image == null
-          ? Container(
-              height: 55,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                border: Border.all(color: Colors.grey),
-              ),
-              child: const Center(child: Text("사진을 선택하세요")),
-            )
-          : Image.file(_image!),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "납부 내역 사진",
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _pickImage,
+            child: _image == null
+                ? Container(
+                    height: 55,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF334D61).withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.camera_alt_outlined,
+                              color: Color(0xFF334D61)),
+                          SizedBox(width: 8),
+                          Text("사진 첨부",
+                              style: TextStyle(
+                                  color: Color(0xFF334D61),
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  )
+                : Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.file(
+                          _image!,
+                          fit: BoxFit.cover,
+                          width: 150, // 원하는 너비로 설정
+                          height: 150, // 원하는 높이로 설정
+                        ),
+                      ),
+                      Positioned(
+                        right: 5,
+                        top: 5,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _image = null;
+                            });
+                          },
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close_rounded,
+                                color: Color(0xFF7E929F), size: 22),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 

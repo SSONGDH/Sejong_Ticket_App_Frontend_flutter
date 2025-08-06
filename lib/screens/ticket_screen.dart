@@ -16,11 +16,14 @@ class TicketScreen extends StatefulWidget {
 
 class _TicketScreenState extends State<TicketScreen> {
   final Dio _dio = Dio();
+  // 1. 변수를 선언과 동시에 초기화하여 LateInitializationError 방지
+  late Future<List<Map<String, dynamic>>> _ticketsFuture = fetchTickets();
 
   @override
   void initState() {
     super.initState();
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+    // initState에서 _ticketsFuture를 초기화하는 코드는 이제 필요하지 않습니다.
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
@@ -109,53 +112,61 @@ class _TicketScreenState extends State<TicketScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6F7),
-      // ⭐ CustomAppBar에 title 속성 추가 ⭐
       appBar: const CustomAppBar(title: '입장권'),
       body: Column(
         children: [
           Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: fetchTickets(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError ||
-                    !(snapshot.hasData && snapshot.data!.isNotEmpty)) {
-                  return Align(
-                    alignment: const Alignment(
-                        0.0, -0.15), // X축 중앙, Y축 중앙에서 약간 위 (예시 값)
-                    child: Text(
-                      '현재 발급된 입장권이 없습니다',
-                      style: TextStyle(
-                          fontSize: 16,
-                          color: const Color(0xFF334D61).withOpacity(0.5),
-                          fontWeight: FontWeight.bold),
-                    ),
-                  );
-                } else {
-                  final tickets = snapshot.data!;
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10.0, vertical: 0),
-                    itemCount: tickets.length,
-                    itemBuilder: (context, index) {
-                      final ticket = tickets[index];
-                      return Padding(
-                        padding: EdgeInsets.only(top: index == 0 ? 10.0 : 5.0),
-                        child: TicketCard(
-                          ticketId: ticket['_id'],
-                          title: ticket['eventTitle'],
-                          dateTime:
-                              '${ticket['eventDay']} · ${ticket['eventStartTime']}',
-                          location: ticket['eventPlace'],
-                          status: '${ticket['status']}',
-                          statusColor: _getStatusColor(ticket['status']),
-                        ),
-                      );
-                    },
-                  );
-                }
+            child: RefreshIndicator(
+              color: Colors.black,
+              backgroundColor: Colors.white,
+              onRefresh: () async {
+                setState(() {
+                  _ticketsFuture = fetchTickets();
+                });
               },
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _ticketsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError ||
+                      !(snapshot.hasData && snapshot.data!.isNotEmpty)) {
+                    return Align(
+                      alignment: const Alignment(0.0, -0.15),
+                      child: Text(
+                        '현재 발급된 입장권이 없습니다',
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: const Color(0xFF334D61).withOpacity(0.5),
+                            fontWeight: FontWeight.bold),
+                      ),
+                    );
+                  } else {
+                    final tickets = snapshot.data!;
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10.0, vertical: 0),
+                      itemCount: tickets.length,
+                      itemBuilder: (context, index) {
+                        final ticket = tickets[index];
+                        return Padding(
+                          padding:
+                              EdgeInsets.only(top: index == 0 ? 10.0 : 5.0),
+                          child: TicketCard(
+                            ticketId: ticket['_id'],
+                            title: ticket['eventTitle'],
+                            dateTime:
+                                '${ticket['eventDay']} · ${ticket['eventStartTime']}',
+                            location: ticket['eventPlace'],
+                            status: '${ticket['status']}',
+                            statusColor: _getStatusColor(ticket['status']),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                },
+              ),
             ),
           ),
         ],
