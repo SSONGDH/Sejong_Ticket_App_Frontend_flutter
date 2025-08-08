@@ -101,7 +101,7 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -178,32 +178,6 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
         phoneController.text.isNotEmpty &&
         selectedEvent.isNotEmpty &&
         _image != null;
-  }
-
-  void _showFormIncompleteDialog() {
-    String missingFields = '';
-    if (departmentController.text.isEmpty) missingFields += '학과, ';
-    if (studentIdController.text.isEmpty) missingFields += '학번, ';
-    if (nameController.text.isEmpty) missingFields += '이름, ';
-    if (phoneController.text.isEmpty) missingFields += '전화번호, ';
-    if (selectedEvent.isEmpty) missingFields += '행사, ';
-    if (_image == null) missingFields += '납부 내역 사진, ';
-    if (missingFields.isNotEmpty) {
-      missingFields = missingFields.substring(0, missingFields.length - 2);
-      showCupertinoDialog(
-        context: context,
-        builder: (_) => CupertinoAlertDialog(
-          title: const Text('양식이 전부 입력되지 않았습니다'),
-          content: Text('다음 필드를 입력해주세요: $missingFields'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('확인'),
-              onPressed: () => Navigator.of(context).pop(),
-            )
-          ],
-        ),
-      );
-    }
   }
 
   void _showConfirmationDialog() {

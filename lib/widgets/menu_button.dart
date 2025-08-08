@@ -72,16 +72,16 @@ class _MenuButtonState extends State<MenuButton> {
             // ⭐ Icon 대신 Image.asset 사용 ⭐
             Image.asset(
               imagePath,
-              width: 24, // 아이콘과 유사한 크기로 설정
-              height: 24, // 아이콘과 유사한 크기로 설정
-              color: Colors.grey[700], // 아이콘 색상처럼 이미지에 색상 오버레이 가능 (필요 없으면 제거)
+              width: 24,
+              height: 24,
+              color: const Color(0xFF7E929F),
             ),
             const SizedBox(width: 16),
             Text(
               text,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
-                color: Colors.grey[800],
+                color: Colors.black,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -251,11 +251,7 @@ class _MenuButtonState extends State<MenuButton> {
                         },
                       ),
                       // '주최자 모드' 메뉴
-                      _buildMenuItem(
-                        context,
-                        // ⭐ 이미지 경로 지정 ⭐
-                        imagePath: 'assets/images/menu_admin.png', // 예시 이미지 경로
-                        text: '주최자 모드',
+                      InkWell(
                         onTap: () async {
                           try {
                             final apiUrl =
@@ -273,7 +269,7 @@ class _MenuButtonState extends State<MenuButton> {
 
                             if (response.statusCode == 200 &&
                                 response.data['isSuccess'] == true) {
-                              Navigator.push(
+                              Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) => const AdminTicketScreen()),
@@ -296,11 +292,37 @@ class _MenuButtonState extends State<MenuButton> {
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text('주최자 모드 접속 중 오류가 발생했습니다.')),
+                                  content: Text('관리자 모드 접속 중 오류가 발생했습니다.')),
                             );
                           }
                         },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20.0, vertical: 12.0),
+                          child: Row(
+                            children: [
+                              Image.asset(
+                                'assets/images/menu_admin.png',
+                                width: 24,
+                                height: 24,
+                                color: const Color(0xFF7E929F),
+                              ),
+                              const SizedBox(width: 16),
+                              const Text(
+                                '주최자 모드',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
+                      const SizedBox(
+                        height: 15,
+                      )
                     ],
                   ),
                 ),

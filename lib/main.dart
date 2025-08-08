@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'package:logger/logger.dart';
+import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 
 final logger = Logger();
 
@@ -21,10 +22,16 @@ Future<void> _onBackgroundMessage(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // ✅ .env 로드
   await dotenv.load(fileName: ".env");
+
+  // ✅ 카카오맵 JavaScript 키 초기화
+  AuthRepository.initialize(appKey: dotenv.env['KAKAO_MAP_JS_KEY']!);
 
   // ✅ iOS: 알림 권한 요청
   NotificationSettings settings =
@@ -69,23 +76,19 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // 앱의 주요 색상을 검은색/회색 계열로 설정
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.black, // 테마의 기본 색상으로 검은색 사용
-          primary: Colors.black, // 앱의 주요 색상
-          secondary: Colors.grey[800], // 보조 색상 (다크 그레이)
+          seedColor: Colors.black,
+          primary: Colors.black,
+          secondary: Colors.grey[800],
         ),
-        // 텍스트 필드 관련 UI 색상 설정
         textSelectionTheme: TextSelectionThemeData(
           cursorColor: lightBlackColor,
           selectionColor: veryLightBlackColor,
           selectionHandleColor: lightBlackColor,
         ),
-        // Cupertino 위젯의 기본 색상 설정
         cupertinoOverrideTheme: CupertinoThemeData(
           primaryColor: lightBlackColor,
         ),
-        // Material 3 디자인 시스템 활성화
         useMaterial3: true,
       ),
       home: const LoginScreen(),

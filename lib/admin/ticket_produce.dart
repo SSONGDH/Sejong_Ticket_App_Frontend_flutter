@@ -1,13 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:PASSTIME/widgets/app_bar.dart';
-import 'package:PASSTIME/widgets/click_button.dart';
 import 'package:PASSTIME/admin/admin_ticket_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
+import '../place_search_screen.dart';
 
 class TicketProduceScreen extends StatefulWidget {
   const TicketProduceScreen({super.key});
@@ -20,19 +19,37 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   String? selectedDate;
   String? selectedStartTime;
   String? selectedEndTime;
-  File? _image;
+  String? selectedAffiliation;
 
   final picker = ImagePicker();
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _placeController = TextEditingController();
   final TextEditingController _placeCommentController = TextEditingController();
   final TextEditingController _eventCommentController = TextEditingController();
   final TextEditingController _eventCodeController = TextEditingController();
+
+  Map<String, dynamic>? _selectedPlace;
 
   @override
   void initState() {
     super.initState();
     _loadEnvVariables();
+    _titleController.addListener(_updateButtonState);
+    _placeCommentController.addListener(_updateButtonState);
+    _eventCommentController.addListener(_updateButtonState);
+    _eventCodeController.addListener(_updateButtonState);
+  }
+
+  @override
+  void dispose() {
+    _titleController.removeListener(_updateButtonState);
+    _placeCommentController.removeListener(_updateButtonState);
+    _eventCommentController.removeListener(_updateButtonState);
+    _eventCodeController.removeListener(_updateButtonState);
+    _titleController.dispose();
+    _placeCommentController.dispose();
+    _eventCommentController.dispose();
+    _eventCodeController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadEnvVariables() async {
@@ -40,87 +57,132 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     print('API URL: ${dotenv.env['API_BASE_URL']}');
   }
 
+  bool _isFormValid() {
+    return selectedAffiliation != null &&
+        _titleController.text.isNotEmpty &&
+        selectedDate != null &&
+        selectedStartTime != null &&
+        selectedEndTime != null &&
+        _selectedPlace != null &&
+        _placeCommentController.text.isNotEmpty &&
+        _eventCommentController.text.isNotEmpty &&
+        _eventCodeController.text.isNotEmpty;
+  }
+
+  void _updateButtonState() {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
-        title: "행사 제작",
-        backgroundColor: Color(0xFF282727),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildLabel("제목"),
-            _buildTextField(_titleController, "제목을 입력하세요"),
-            const SizedBox(height: 12),
-            _buildLabel("날짜"),
-            _buildDatePickerField(),
-            const SizedBox(height: 12),
-            _buildLabel("시작 시간"),
-            _buildStartTimePickerField(),
-            const SizedBox(height: 12),
-            _buildLabel("종료 시간"),
-            _buildEndTimePickerField(),
-            const SizedBox(height: 12),
-            _buildLabel("장소"),
-            _buildTextField(_placeController, "장소를 입력하세요"),
-            const SizedBox(height: 12),
-            _buildLabel("장소 설명"),
-            _buildTextField(_placeCommentController, "장소 설명을 입력하세요"),
-            const SizedBox(height: 12),
-            _buildLabel("관리자 멘트"),
-            _buildTextField(_eventCommentController, "관리자 멘트를 입력하세요"),
-            const SizedBox(height: 12),
-            _buildLabel("행사 코드"),
-            _buildTextField(_eventCodeController, "행사 코드를 입력하세요"),
-            const SizedBox(height: 12),
-            _buildLabel("장소 사진"),
-            _buildImagePicker(),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(30),
-        child: CustomButton(
-          onPressed: _showConfirmationDialog,
-          color: const Color(0xFF282727),
-          borderRadius: 5,
-          height: 55,
-          child: const Text(
-            "확인",
-            style: TextStyle(color: Colors.white, fontSize: 18),
+    return PopScope(
+      canPop: false,
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            toolbarHeight: 70,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Colors.black,
+                size: 30,
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            centerTitle: true,
+            title: const Text(
+              '행사 제작',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          body: Column(
+            children: [
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: Color(0xFFEEEDE3),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildAffiliationDropdown(),
+                      const SizedBox(height: 14),
+                      _buildInputField(
+                          controller: _titleController,
+                          label: "제목",
+                          hintText: "제목 입력"),
+                      const SizedBox(height: 14),
+                      _buildDatePickerField(),
+                      const SizedBox(height: 14),
+                      _buildStartTimePickerField(),
+                      const SizedBox(height: 14),
+                      _buildEndTimePickerField(),
+                      const SizedBox(height: 14),
+                      _buildPlaceSearchField(),
+                      const SizedBox(height: 14),
+                      _buildInputField(
+                          controller: _placeCommentController,
+                          label: "장소 설명",
+                          hintText: "장소 설명 입력"),
+                      const SizedBox(height: 14),
+                      _buildInputField(
+                          controller: _eventCommentController,
+                          label: "관리자 멘트",
+                          hintText: "관리자 멘트 입력"),
+                      const SizedBox(height: 14),
+                      _buildInputField(
+                          controller: _eventCodeController,
+                          label: "행사 코드",
+                          hintText: "행사 코드 입력"),
+                      const SizedBox(height: 14),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                child: SafeArea(
+                  child: ElevatedButton(
+                    onPressed: _isFormValid() ? _showConfirmationDialog : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isFormValid()
+                          ? const Color(0xFF334D61)
+                          : const Color(0xFF334D61).withOpacity(0.3),
+                      disabledBackgroundColor:
+                          const Color(0xFF334D61).withOpacity(0.3),
+                      minimumSize: const Size(double.infinity, 55),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white.withOpacity(0.7),
+                    ),
+                    child: const Text(
+                      "완료",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildImagePicker() {
-    return GestureDetector(
-      onTap: _pickImage,
-      child: _image == null
-          ? Container(
-              height: 55,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                border: Border.all(color: Colors.grey),
-              ),
-              child: const Center(child: Text("사진을 선택하세요")),
-            )
-          : Image.file(_image!),
-    );
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-    }
   }
 
   void _showConfirmationDialog() {
@@ -136,8 +198,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           CupertinoDialogAction(
             child: const Text("확인"),
             onPressed: () {
-              Navigator.pop(context); // 먼저 Alert 닫기
-              _createTicket(); // 티켓 생성 API 호출
+              Navigator.pop(context);
+              _createTicket();
             },
           ),
         ],
@@ -145,25 +207,132 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     );
   }
 
-  Future<void> _createTicket() async {
-    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/createTicket');
+  Widget _buildAffiliationDropdown() {
+    final bool hasValue = selectedAffiliation != null;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF334D61).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "소속",
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Theme(
+            data: Theme.of(context).copyWith(canvasColor: Colors.white),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedAffiliation,
+                hint: Text(
+                  '소속 선택',
+                  style: TextStyle(
+                    color: Colors.black.withOpacity(0.3),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                isExpanded: true,
+                items: ['A 소속', 'B 소속', 'C 소속'].map((affiliation) {
+                  return DropdownMenuItem<String>(
+                    value: affiliation,
+                    child: Text(
+                      affiliation,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedAffiliation = value;
+                    _updateButtonState();
+                  });
+                },
+                style: TextStyle(
+                  color:
+                      hasValue ? Colors.black : Colors.black.withOpacity(0.3),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (_image == null) {
-      await _pickImage();
-      if (_image == null) return;
+  Widget _buildPlaceSearchField() {
+    final bool hasValue = _selectedPlace != null;
+    return GestureDetector(
+      onTap: () async {
+        final selected = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PlaceSearchScreen()),
+        );
+
+        if (selected != null) {
+          setState(() {
+            _selectedPlace = selected;
+            _updateButtonState();
+            if (_selectedPlace != null) {
+              print('장소 선택 완료!');
+              print('위도(y): ${_selectedPlace!['y']}');
+              print('경도(x): ${_selectedPlace!['x']}');
+            }
+          });
+        }
+      },
+      child: _buildDisplayField(
+        label: "장소",
+        displayText: _selectedPlace?['place_name'] ?? "장소 선택",
+        icon: Icons.search_outlined,
+        hasValue: hasValue,
+      ),
+    );
+  }
+
+  Future<void> _createTicket() async {
+    if (_selectedPlace == null) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text("장소를 선택해주세요"),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text("확인"),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+      return;
     }
 
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/createTicket');
     final request = http.MultipartRequest('POST', url)
       ..fields['eventTitle'] = _titleController.text
       ..fields['eventDay'] = selectedDate ?? ''
       ..fields['eventStartTime'] = selectedStartTime ?? ''
       ..fields['eventEndTime'] = selectedEndTime ?? ''
-      ..fields['eventPlace'] = _placeController.text
+      ..fields['eventPlace'] = _selectedPlace!['place_name']
+      ..fields['eventLatitude'] = _selectedPlace!['y']
+      ..fields['eventLongitude'] = _selectedPlace!['x']
       ..fields['eventPlaceComment'] = _placeCommentController.text
       ..fields['eventComment'] = _eventCommentController.text
       ..fields['eventCode'] = _eventCodeController.text
-      ..files.add(
-          await http.MultipartFile.fromPath('eventPlacePicture', _image!.path));
+      ..fields['affiliation'] = selectedAffiliation ?? '';
 
     try {
       final response = await request.send();
@@ -178,7 +347,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
 
         if (!mounted) return;
 
-        // 1초 후 TicketScreen으로 이동
         Future.delayed(const Duration(seconds: 1), () {
           Navigator.pushReplacement(
             context,
@@ -194,101 +362,199 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     }
   }
 
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 5),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required String hintText,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF334D61).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(4),
       ),
-    );
-  }
-
-  Widget _buildTextField(TextEditingController controller, String hintText) {
-    return SizedBox(
-      height: 55,
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: const TextStyle(color: Colors.grey),
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(5),
-            borderSide: const BorderSide(color: Colors.grey),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
+          const SizedBox(height: 2),
+          TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            onChanged: (value) => _updateButtonState(),
+            style: TextStyle(
+              color: controller.text.isNotEmpty
+                  ? Colors.black
+                  : Colors.black.withOpacity(0.3),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(
+                color: Colors.black.withOpacity(0.3),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: InputBorder.none,
+            ),
+            textInputAction: TextInputAction.done,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDatePickerField() {
+    final bool hasValue = selectedDate != null;
     return GestureDetector(
-      onTap: () async {
-        final pickedDate = await showDatePicker(
-          context: context,
-          initialDate: DateTime.now(),
-          firstDate: DateTime(1900),
-          lastDate: DateTime(2100),
+      onTap: () {
+        DatePicker.showDatePicker(
+          context,
+          showTitleActions: true,
+          minTime: DateTime(1900, 1, 1),
+          maxTime: DateTime(2100, 1, 1),
+          onConfirm: (date) {
+            setState(() {
+              selectedDate =
+                  "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}(${_getKoreanWeekday(date.weekday)})";
+              _updateButtonState();
+            });
+          },
+          currentTime: DateTime.now(),
+          locale: LocaleType.ko,
         );
-        if (pickedDate != null) {
-          setState(() {
-            selectedDate = "${pickedDate.toLocal()}".split(' ')[0];
-          });
-        }
       },
-      child: _buildDisplayField(selectedDate ?? "날짜 선택"),
+      child: _buildDisplayField(
+        label: "날짜",
+        displayText: selectedDate ?? "날짜 선택",
+        icon: Icons.calendar_today_outlined,
+        hasValue: hasValue,
+      ),
     );
   }
 
   Widget _buildStartTimePickerField() {
+    final bool hasValue = selectedStartTime != null;
     return GestureDetector(
-      onTap: () async {
-        final pickedTime = await showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.now(),
+      onTap: () {
+        DatePicker.showTimePicker(
+          context,
+          showTitleActions: true,
+          showSecondsColumn: false,
+          onConfirm: (date) {
+            setState(() {
+              final amPm = date.hour < 12 ? '오전' : '오후';
+              final hour = date.hour > 12 ? date.hour - 12 : date.hour;
+              final formattedHour = hour == 0 ? 12 : hour;
+              selectedStartTime =
+                  "$amPm $formattedHour시 ${date.minute.toString().padLeft(2, '0')}분";
+              _updateButtonState();
+            });
+          },
+          currentTime: DateTime.now(),
+          locale: LocaleType.ko,
         );
-        if (pickedTime != null) {
-          setState(() {
-            selectedStartTime = pickedTime.format(context);
-          });
-        }
       },
-      child: _buildDisplayField(selectedStartTime ?? "시작 시간 선택"),
+      child: _buildDisplayField(
+        label: "시작 시간",
+        displayText: selectedStartTime ?? "시작 시간 선택",
+        icon: Icons.access_time_outlined,
+        hasValue: hasValue,
+      ),
     );
   }
 
   Widget _buildEndTimePickerField() {
+    final bool hasValue = selectedEndTime != null;
     return GestureDetector(
-      onTap: () async {
-        final pickedTime = await showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.now(),
+      onTap: () {
+        DatePicker.showTimePicker(
+          context,
+          showTitleActions: true,
+          showSecondsColumn: false,
+          onConfirm: (date) {
+            setState(() {
+              final amPm = date.hour < 12 ? '오전' : '오후';
+              final hour = date.hour > 12 ? date.hour - 12 : date.hour;
+              final formattedHour = hour == 0 ? 12 : hour;
+              selectedEndTime =
+                  "$amPm $formattedHour시 ${date.minute.toString().padLeft(2, '0')}분";
+              _updateButtonState();
+            });
+          },
+          currentTime: DateTime.now(),
+          locale: LocaleType.ko,
         );
-        if (pickedTime != null) {
-          setState(() {
-            selectedEndTime = pickedTime.format(context);
-          });
-        }
       },
-      child: _buildDisplayField(selectedEndTime ?? "종료 시간 선택"),
+      child: _buildDisplayField(
+        label: "종료 시간",
+        displayText: selectedEndTime ?? "종료 시간 선택",
+        icon: Icons.access_time_outlined,
+        hasValue: hasValue,
+      ),
     );
   }
 
-  Widget _buildDisplayField(String text) {
+  Widget _buildDisplayField({
+    required String label,
+    required String displayText,
+    IconData? icon,
+    required bool hasValue,
+  }) {
     return Container(
-      height: 55,
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: Colors.grey),
+        color: const Color(0xFF334D61).withOpacity(0.05), // ⭐ 이 부분을 수정했습니다.
+        borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  displayText,
+                  style: TextStyle(
+                    color:
+                        hasValue ? Colors.black : Colors.black.withOpacity(0.3),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(icon ?? Icons.calendar_today_outlined,
+                  color: Colors.grey, size: 20),
+            ],
+          ),
+        ],
       ),
     );
+  }
+
+  String _getKoreanWeekday(int weekday) {
+    const weekdays = ["월", "화", "수", "목", "금", "토", "일"];
+    return weekdays[weekday - 1];
   }
 }

@@ -69,7 +69,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             color: Color(0xFF334D61),
-            size: 22,
+            size: 25,
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
