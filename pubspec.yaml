@@ -84,15 +84,7 @@ flutter:
 
   assets:
     - .env
-    - assets/images/sejong.png
-    - assets/images/sejong_logo.png
-    - assets/images/menu_ticket.png
-    - assets/images/menu_add_ticket.png
-    - assets/images/menu_send_payment.png
-    - assets/images/menu_request_refund.png
-    - assets/images/menu_my_page.png
-    - assets/images/menu_setting.png
-    - assets/images/menu_admin.png
+    - assets/images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -20,6 +20,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   String? selectedStartTime;
   String? selectedEndTime;
   String? selectedAffiliation;
+  List<String> affiliations = []; // 소속 리스트를 저장할 변수
 
   final picker = ImagePicker();
   final TextEditingController _titleController = TextEditingController();
@@ -32,11 +33,16 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   @override
   void initState() {
     super.initState();
-    _loadEnvVariables();
+    _initializeData(); // 새 함수를 만들어 순서 보장
     _titleController.addListener(_updateButtonState);
     _placeCommentController.addListener(_updateButtonState);
     _eventCommentController.addListener(_updateButtonState);
     _eventCodeController.addListener(_updateButtonState);
+  }
+
+  Future<void> _initializeData() async {
+    await _loadEnvVariables(); // 환경 변수 로딩이 끝날 때까지 기다립니다.
+    await _fetchAffiliations(); // 그 후에 소속 리스트를 불러옵니다.
   }
 
   @override
@@ -55,6 +61,29 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   Future<void> _loadEnvVariables() async {
     await dotenv.load();
     print('API URL: ${dotenv.env['API_BASE_URL']}');
+  }
+
+  // 서버에서 소속 리스트를 가져오는 함수
+  Future<void> _fetchAffiliations() async {
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/affiliation/List');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final decodedResponse = json.decode(utf8.decode(response.bodyBytes));
+        if (decodedResponse['isSuccess'] == true) {
+          final List<dynamic> affiliationList = decodedResponse['result'];
+          setState(() {
+            affiliations = affiliationList
+                .map<String>((item) => item['name'] as String)
+                .toList();
+          });
+        }
+      } else {
+        print('소속 리스트를 불러오는 데 실패했습니다: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('네트워크 오류: $e');
+    }
   }
 
   bool _isFormValid() {
@@ -192,11 +221,12 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         title: const Text("행사를 제작하시겠습니까?"),
         actions: [
           CupertinoDialogAction(
-            child: const Text("취소", style: TextStyle(color: Colors.red)),
+            child: const Text("취소"), // 취소 버튼은 기본 색상 유지
             onPressed: () => Navigator.pop(context),
           ),
           CupertinoDialogAction(
-            child: const Text("확인"),
+            child: const Text("확인",
+                style: TextStyle(color: Color(0xFFC10230))), // 확인 버튼 색상 변경
             onPressed: () {
               Navigator.pop(context);
               _createTicket();
@@ -241,7 +271,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                   ),
                 ),
                 isExpanded: true,
-                items: ['A 소속', 'B 소속', 'C 소속'].map((affiliation) {
+                items: affiliations.map((affiliation) {
                   return DropdownMenuItem<String>(
                     value: affiliation,
                     child: Text(
@@ -304,11 +334,11 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   }
 
   Future<void> _createTicket() async {
-    if (_selectedPlace == null) {
+    if (!_isFormValid()) {
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
-          title: const Text("장소를 선택해주세요"),
+          title: const Text("모든 필드를 채워주세요"),
           actions: [
             CupertinoDialogAction(
               child: const Text("확인"),
@@ -321,27 +351,40 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     }
 
     final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/createTicket');
-    final request = http.MultipartRequest('POST', url)
-      ..fields['eventTitle'] = _titleController.text
-      ..fields['eventDay'] = selectedDate ?? ''
-      ..fields['eventStartTime'] = selectedStartTime ?? ''
-      ..fields['eventEndTime'] = selectedEndTime ?? ''
-      ..fields['eventPlace'] = _selectedPlace!['place_name']
-      ..fields['eventLatitude'] = _selectedPlace!['y']
-      ..fields['eventLongitude'] = _selectedPlace!['x']
-      ..fields['eventPlaceComment'] = _placeCommentController.text
-      ..fields['eventComment'] = _eventCommentController.text
-      ..fields['eventCode'] = _eventCodeController.text
-      ..fields['affiliation'] = selectedAffiliation ?? '';
+
+    final body = {
+      "eventTitle": _titleController.text,
+      "eventDay": selectedDate!.substring(0, 10), // 'YYYY.MM.DD' 형식에서 날짜만 추출
+      "eventStartTime": selectedStartTime!,
+      "eventEndTime": selectedEndTime!,
+      "eventPlace": _selectedPlace!['place_name'],
+      "eventPlaceComment": _placeCommentController.text,
+      "eventComment": _eventCommentController.text,
+      "affiliation": selectedAffiliation,
+      "eventCode": _eventCodeController.text,
+      "kakaoPlace": {
+        "place_name": _selectedPlace!['place_name'],
+        "address_name": _selectedPlace!['address_name'],
+        "x": _selectedPlace!['x'],
+        "y": _selectedPlace!['y'],
+      }
+    };
 
     try {
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(body),
+      );
+
+      final responseBody = utf8.decode(response.bodyBytes);
 
       print('Response status: ${response.statusCode}');
       print('Response body: $responseBody');
 
-      if (response.statusCode == 200) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         final decodedResponse = json.decode(responseBody);
         print('Success response: $decodedResponse');
 
@@ -356,9 +399,35 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
       } else {
         print(
             'Error: Server responded with status code ${response.statusCode}');
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text("행사 제작 실패"),
+            content: Text('오류가 발생했습니다: ${response.statusCode}'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text("확인"),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
       }
     } catch (e) {
       print('Error during ticket creation: $e');
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text("네트워크 오류"),
+          content: Text('행사 제작 중 오류가 발생했습니다: $e'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text("확인"),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -515,7 +584,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF334D61).withOpacity(0.05), // ⭐ 이 부분을 수정했습니다.
+        color: const Color(0xFF334D61).withOpacity(0.05),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Column(

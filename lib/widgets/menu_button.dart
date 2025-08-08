@@ -117,7 +117,7 @@ class _MenuButtonState extends State<MenuButton> {
                       _buildMenuItem(
                         context,
                         // ⭐ 이미지 경로 지정 ⭐
-                        imagePath: 'assets/images/menu_ticket.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/ticket.png', // 예시 이미지 경로
                         text: '입장권',
                         onTap: () {
                           Navigator.pushAndRemoveUntil(
@@ -132,8 +132,7 @@ class _MenuButtonState extends State<MenuButton> {
                       _buildMenuItem(
                         context,
                         // ⭐ 이미지 경로 지정 ⭐
-                        imagePath:
-                            'assets/images/menu_add_ticket.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/ticket-plus.png', // 예시 이미지 경로
                         text: '입장권 추가',
                         onTap: () {
                           showModalBottomSheet(
@@ -151,7 +150,7 @@ class _MenuButtonState extends State<MenuButton> {
                                     context,
                                     // ⭐ 이미지 경로 지정 ⭐
                                     imagePath:
-                                        'assets/images/menu_add_ticket.png', // 예시 이미지 경로
+                                        'assets/images/ticket-plus.png', // 예시 이미지 경로
                                     text: 'CODE',
                                     onTap: () {
                                       Navigator.push(
@@ -166,7 +165,7 @@ class _MenuButtonState extends State<MenuButton> {
                                     context,
                                     // ⭐ 이미지 경로 지정 ⭐
                                     imagePath:
-                                        'assets/images/menu_add_ticket.png', // 예시 이미지 경로
+                                        'assets/images/ticket-plus.png', // 예시 이미지 경로
                                     text: 'NFC',
                                     onTap: () {
                                       Navigator.push(
@@ -195,7 +194,7 @@ class _MenuButtonState extends State<MenuButton> {
                         context,
                         // ⭐ 이미지 경로 지정 ⭐
                         imagePath:
-                            'assets/images/menu_send_payment.png', // 예시 이미지 경로
+                            'assets/images/coins-stacked.png', // 예시 이미지 경로
                         text: '납부 내역 보내기',
                         onTap: () {
                           Navigator.push(
@@ -209,8 +208,7 @@ class _MenuButtonState extends State<MenuButton> {
                       _buildMenuItem(
                         context,
                         // ⭐ 이미지 경로 지정 ⭐
-                        imagePath:
-                            'assets/images/menu_request_refund.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/coins-out.png', // 예시 이미지 경로
                         text: '환불 신청',
                         onTap: () {
                           Navigator.push(
@@ -224,8 +222,7 @@ class _MenuButtonState extends State<MenuButton> {
                       _buildMenuItem(
                         context,
                         // ⭐ 이미지 경로 지정 ⭐
-                        imagePath:
-                            'assets/images/menu_my_page.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/user.png', // 예시 이미지 경로
                         text: '마이페이지',
                         onTap: () {
                           Navigator.pushReplacement(
@@ -239,8 +236,7 @@ class _MenuButtonState extends State<MenuButton> {
                       _buildMenuItem(
                         context,
                         // ⭐ 이미지 경로 지정 ⭐
-                        imagePath:
-                            'assets/images/menu_setting.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/settings.png', // 예시 이미지 경로
                         text: '설정',
                         onTap: () {
                           Navigator.pushReplacement(
@@ -269,10 +265,11 @@ class _MenuButtonState extends State<MenuButton> {
 
                             if (response.statusCode == 200 &&
                                 response.data['isSuccess'] == true) {
-                              Navigator.pushReplacement(
+                              Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
                                     builder: (_) => const AdminTicketScreen()),
+                                (Route<dynamic> route) => false,
                               );
                             } else {
                               showDialog(
@@ -302,7 +299,7 @@ class _MenuButtonState extends State<MenuButton> {
                           child: Row(
                             children: [
                               Image.asset(
-                                'assets/images/menu_admin.png',
+                                'assets/images/user-check.png',
                                 width: 24,
                                 height: 24,
                                 color: const Color(0xFF7E929F),

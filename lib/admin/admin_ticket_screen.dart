@@ -4,9 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:PASSTIME/widgets/custom_app_bar.dart';
 import 'package:PASSTIME/admin/ticket_edit.dart';
-import 'package:PASSTIME/admin/ticket_produce.dart';
-import 'package:PASSTIME/admin/request_refund_list.dart';
-import 'package:PASSTIME/admin/send_payment_list.dart';
+import 'package:PASSTIME/widgets/admin_menu_button.dart';
 import 'package:PASSTIME/cookiejar_singleton.dart';
 
 class AdminTicketScreen extends StatefulWidget {
@@ -293,64 +291,7 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            builder: (context) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    title: const Text('행사 제작'),
-                    onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const TicketProduceScreen()),
-                      );
-                      if (result == 'produced') {
-                        fetchTickets();
-                      }
-                    },
-                  ),
-                  ListTile(
-                    title: const Text('환불 신청 목록'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const RequestRefundListScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    title: const Text('납부 내역 목록'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SendPaymentListScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              );
-            },
-          );
-        },
-        backgroundColor: const Color(0xFF282727),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: const AdminMenuButton(),
     );
   }
 }
