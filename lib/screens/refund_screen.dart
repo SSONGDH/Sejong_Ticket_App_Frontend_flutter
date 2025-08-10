@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:PASSTIME/widgets/app_bar.dart';
 
 class RefundScreen extends StatefulWidget {
   final String ticketId;
@@ -43,10 +42,30 @@ class _RefundScreenState extends State<RefundScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
-        title: "환불 상세 내역",
-        backgroundColor: Color(0xFF282727),
+      backgroundColor: const Color(0xFFF5F6F7), // 배경색 변경
+      appBar: AppBar(
+        // AppBar 스타일 변경
+        toolbarHeight: 70,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF334D61),
+            size: 25,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        centerTitle: true,
+        title: const Text(
+          '환불 상세 내역', // 제목은 원래 제목 유지
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: refundDetail,

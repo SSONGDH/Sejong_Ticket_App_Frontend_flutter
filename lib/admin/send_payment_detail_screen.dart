@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:PASSTIME/widgets/app_bar.dart';
 
 class SendPaymentDetailScreen extends StatefulWidget {
   final String paymentId;
@@ -123,74 +122,107 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
-        title: "납부내역 상세화면",
-        backgroundColor: Color(0xFF282727),
+      appBar: AppBar(
+        // AppBar 스타일 변경
+        toolbarHeight: 70,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.close_rounded,
+            color: Colors.black,
+            size: 30,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        centerTitle: true,
+        title: const Text(
+          '납부 내역 상세',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: paymentDetail,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text("오류 발생: ${snapshot.error}"));
-          } else if (!snapshot.hasData) {
-            return const Center(child: Text("데이터 없음"));
-          }
+      body: Column(
+        // Column으로 감싸서 Divider 추가
+        children: [
+          const Divider(
+            // Divider 추가
+            height: 1,
+            thickness: 1,
+            color: Color(0xFFEEEDE3),
+          ),
+          Expanded(
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: paymentDetail,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text("오류 발생: ${snapshot.error}"));
+                } else if (!snapshot.hasData) {
+                  return const Center(child: Text("데이터 없음"));
+                }
 
-          final data = snapshot.data!;
+                final data = snapshot.data!;
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                _buildPaymentImage(data["paymentPicture"]),
-                const SizedBox(height: 30),
-                _buildInfoTile("이름", data["name"]),
-                _buildInfoTile("학번", data["studentId"]),
-                _buildInfoTile("전화번호", data["phone"]),
-                _buildInfoTile("행사", data["eventTitle"]),
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed:
-                        (data["paymentPermissionStatus"] == true || isApproving)
-                            ? null
-                            : () => approvePayment(widget.paymentId),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF282727),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: isApproving
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            data["paymentPermissionStatus"] == true
-                                ? "승인 완료"
-                                : "승인",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.white,
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildPaymentImage(data["paymentPicture"]),
+                      const SizedBox(height: 30),
+                      _buildInfoTile("이름", data["name"]),
+                      _buildInfoTile("학번", data["studentId"]),
+                      _buildInfoTile("전화번호", data["phone"]),
+                      _buildInfoTile("행사", data["eventTitle"]),
+                      const Spacer(),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: (data["paymentPermissionStatus"] == true ||
+                                  isApproving)
+                              ? null
+                              : () => approvePayment(widget.paymentId),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF282727),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
+                          child: isApproving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  data["paymentPermissionStatus"] == true
+                                      ? "승인 완료"
+                                      : "승인",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

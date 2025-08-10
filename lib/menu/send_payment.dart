@@ -192,7 +192,7 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           CupertinoDialogAction(
-            child: const Text('확인'),
+            child: const Text('확인', style: TextStyle(color: Color(0xFFC10230))),
             onPressed: () {
               Navigator.of(context).pop();
               _submitPayment();
@@ -247,7 +247,7 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
         content: const Text('납부 내역이 제출되었습니다.'),
         actions: [
           CupertinoDialogAction(
-            child: const Text('확인'),
+            child: const Text('확인', style: TextStyle(color: Color(0xFFC10230))),
             onPressed: () {
               Navigator.of(context).pop();
               Navigator.pushReplacement(
@@ -269,7 +269,7 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
         content: Text(message),
         actions: [
           CupertinoDialogAction(
-            child: const Text('확인'),
+            child: const Text('확인', style: TextStyle(color: Color(0xFFC10230))),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],

@@ -101,7 +101,7 @@ class TicketCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 8),
               Text.rich(
                 TextSpan(
                   children: [

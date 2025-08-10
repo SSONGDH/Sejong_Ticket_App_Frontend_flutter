@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart'; // Import for CupertinoAlertDialog
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:PASSTIME/screens/ticket_screen.dart';
@@ -70,8 +71,7 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
         selectedDate == null ||
         selectedTime == null ||
         phoneNumberController.text.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('모든 필드를 입력해주세요.')));
+      _showCupertinoDialog('알림', '모든 필드를 입력해주세요.');
       return;
     }
 
@@ -94,23 +94,36 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
 
       final result = response.data;
       if (result['isSuccess']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('환불 요청이 완료되었습니다.')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const TicketScreen()),
-        );
+        _showCupertinoDialog('성공', '환불 요청이 완료되었습니다.', onConfirm: () {
+          Navigator.of(context).pop(); // 팝업 닫기
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const TicketScreen()),
+          );
+        });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? '오류가 발생했습니다.')),
-        );
+        _showCupertinoDialog('오류', result['message'] ?? '오류가 발생했습니다.');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('요청 중 오류 발생: $e')),
-      );
+      _showCupertinoDialog('오류', '요청 중 오류 발생: $e');
     }
+  }
+
+  void _showCupertinoDialog(String title, String content,
+      {VoidCallback? onConfirm}) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: onConfirm ?? () => Navigator.of(context).pop(),
+            child: const Text('확인', style: TextStyle(color: Color(0xFFC10230))),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -383,6 +396,13 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     String? suffixText,
     IconData? icon,
   }) {
+    // 텍스트 색상을 결정하는 로직
+    final isHintText =
+        displayText == "방문 가능 날짜 선택" || displayText == "방문 가능 시간 선택";
+    final textColor = isHintText
+        ? Colors.black.withOpacity(0.3)
+        : Colors.black; // 선택된 값이면 검은색, 힌트면 흐린색
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -408,7 +428,7 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
                 child: Text(
                   displayText,
                   style: TextStyle(
-                    color: Colors.black.withOpacity(0.3),
+                    color: textColor, // 동적으로 색상 변경
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),

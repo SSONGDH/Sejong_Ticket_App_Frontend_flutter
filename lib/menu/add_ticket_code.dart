@@ -101,13 +101,13 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
         }
       } else {
         if (mounted) {
-          _showAlertDialog('오류', '서버와 연결할 수 없습니다.');
+          _showAlertDialog('오류', '코드 입력이 잘못되었습니다.');
         }
       }
     } catch (e) {
       print('Error: $e');
       if (mounted) {
-        _showAlertDialog('오류', '서버와 연결할 수 없습니다.');
+        _showAlertDialog('오류', '코드 입력이 잘못되었습니다.');
       }
     }
   }

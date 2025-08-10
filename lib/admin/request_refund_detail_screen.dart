@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:PASSTIME/widgets/app_bar.dart';
 
 class RequestRefundDetailScreen extends StatefulWidget {
   final String refundId;
@@ -102,58 +101,92 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
-        title: "환불 신청 상세화면",
-        backgroundColor: Color(0xFF282727),
+      appBar: AppBar(
+        // AppBar 스타일 변경
+        toolbarHeight: 70,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.close_rounded,
+            color: Colors.black,
+            size: 30,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        centerTitle: true,
+        title: const Text(
+          '환불 신청 상세',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: refundDetail,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text("오류 발생: ${snapshot.error}"));
-          } else if (!snapshot.hasData) {
-            return const Center(child: Text("데이터 없음"));
-          }
+      body: Column(
+        // Column으로 감싸서 Divider 추가
+        children: [
+          const Divider(
+            // Divider 추가
+            height: 1,
+            thickness: 1,
+            color: Color(0xFFEEEDE3),
+          ),
+          Expanded(
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: refundDetail,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text("오류 발생: ${snapshot.error}"));
+                } else if (!snapshot.hasData) {
+                  return const Center(child: Text("데이터 없음"));
+                }
 
-          final data = snapshot.data!;
-          final isApproved = data["refundPermissionStatus"] == true;
+                final data = snapshot.data!;
+                final isApproved = data["refundPermissionStatus"] == 'TRUE';
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDetailRow("이름", data["name"]),
-                _buildDetailRow("학번", data["studentId"]),
-                _buildDetailRow("전화번호", data["phone"]),
-                _buildDetailRow("행사", data["eventTitle"]),
-                _buildDetailRow("환불 사유", data["refundReason"]),
-                _buildDetailRow("방문 가능 날짜", data["visitDate"]),
-                _buildDetailRow("방문 가능 시간", data["visitTime"]),
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => _updateRefundStatus(!isApproved),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF282727),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailRow("이름", data["name"]),
+                      _buildDetailRow("학번", data["studentId"]),
+                      _buildDetailRow("전화번호", data["phone"]),
+                      _buildDetailRow("행사", data["eventTitle"]),
+                      _buildDetailRow("환불 사유", data["refundReason"]),
+                      _buildDetailRow("방문 가능 날짜", data["visitDate"]),
+                      _buildDetailRow("방문 가능 시간", data["visitTime"]),
+                      const Spacer(),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => _updateRefundStatus(!isApproved),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF282727),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            isApproved ? "미승인" : "승인",
+                            style: const TextStyle(
+                                fontSize: 18, color: Colors.white),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      isApproved ? "미승인" : "승인",
-                      style: const TextStyle(fontSize: 18, color: Colors.white),
-                    ),
+                    ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:PASSTIME/widgets/admin_menu_button.dart';
 import 'package:PASSTIME/widgets/custom_app_bar.dart';
+import 'package:PASSTIME/admin/request_admin_detail_screen.dart';
 
 class RequestAdminListScreen extends StatefulWidget {
   const RequestAdminListScreen({super.key});
@@ -14,16 +15,32 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
   // 여기서는 간단한 더미 데이터를 사용합니다.
   final List<Map<String, dynamic>> _adminRequests = [
     {
-      'name': '김민준',
-      'id': 'minjun.kim',
-      'status': '승인 대기 중',
-      'statusColor': const Color(0xFFC1C1C1),
+      'studentId': '24011184',
+      'department': '아롬',
+      'name': '윤재민',
+      'status': '미승인',
+      'isApproved': false,
     },
     {
-      'name': '박서연',
-      'id': 'seoyeon.park',
-      'status': '승인 대기 중',
-      'statusColor': const Color(0xFFC1C1C1),
+      'studentId': '24012357',
+      'department': '아롬',
+      'name': '김정현',
+      'status': '미승인',
+      'isApproved': false,
+    },
+    {
+      'studentId': '학번',
+      'department': '소속',
+      'name': '이름',
+      'status': '승인됨',
+      'isApproved': true,
+    },
+    {
+      'studentId': '학번',
+      'department': '소속',
+      'name': '이름',
+      'status': '승인됨',
+      'isApproved': true,
     },
   ];
 
@@ -50,59 +67,101 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
                     ),
                   )
                 : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
                     itemCount: _adminRequests.length,
                     itemBuilder: (context, index) {
                       final request = _adminRequests[index];
-                      return Container(
-                        margin: const EdgeInsets.only(
-                            bottom: 12, left: 16, right: 16, top: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  request['name']!,
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
+                      final isApproved = request['isApproved'] as bool;
+                      final status = request['status'] as String;
+                      final statusColor = isApproved
+                          ? const Color(0xFF334D61)
+                          : const Color(0xFFC10230);
+
+                      return GestureDetector(
+                        onTap: () {
+                          // Container를 탭하면 RequestAdminDetailScreen으로 이동합니다.
+                          // Navigator.push를 사용하여 새 화면을 스택에 추가합니다.
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const RequestAdminDetailScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF334D61).withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: Text(
+                                        request['studentId']!,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.black.withOpacity(0.5),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text(
+                                        request['department']!,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.black.withOpacity(0.5),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text(
+                                        request['name']!,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                width: 57,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    status,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  "아이디: ${request['id']}",
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                // 승인 로직 구현
-                                // 예: showDialog를 통해 승인/거절 선택
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: request['statusColor'],
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
                               ),
-                              child: Text(
-                                request['status']!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },

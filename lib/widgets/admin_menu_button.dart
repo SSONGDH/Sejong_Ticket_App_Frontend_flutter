@@ -108,7 +108,7 @@ class _AdminMenuButtonState extends State<AdminMenuButton> {
                             'assets/images/coins-stacked.png', // 예시 이미지 경로
                         text: '납부 내역 목록',
                         onTap: () {
-                          Navigator.push(
+                          Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
                                 builder: (_) => const SendPaymentListScreen()),
@@ -121,7 +121,7 @@ class _AdminMenuButtonState extends State<AdminMenuButton> {
                         imagePath: 'assets/images/coins-out.png', // 예시 이미지 경로
                         text: '환불 신청 목록',
                         onTap: () {
-                          Navigator.push(
+                          Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
                                 builder: (_) =>
@@ -135,7 +135,7 @@ class _AdminMenuButtonState extends State<AdminMenuButton> {
                         imagePath: 'assets/images/user-check.png', // 예시 이미지 경로
                         text: '주최자 신청 목록',
                         onTap: () {
-                          Navigator.push(
+                          Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
                                 builder: (_) => const RequestAdminListScreen()),

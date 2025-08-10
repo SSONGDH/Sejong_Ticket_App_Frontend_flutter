@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -6,6 +7,7 @@ import 'package:PASSTIME/widgets/custom_app_bar.dart';
 import 'package:PASSTIME/admin/ticket_edit.dart';
 import 'package:PASSTIME/widgets/admin_menu_button.dart';
 import 'package:PASSTIME/cookiejar_singleton.dart';
+import 'package:PASSTIME/widgets/admin_ticket_card.dart';
 
 class AdminTicketScreen extends StatefulWidget {
   const AdminTicketScreen({super.key});
@@ -34,11 +36,10 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
           ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
           : '';
 
-      // HTTP 요청
       final response = await http.get(
         url,
         headers: {
-          'Cookie': cookieHeader, // 쿠키 헤더 추가
+          'Cookie': cookieHeader,
         },
       );
 
@@ -56,33 +57,94 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
                 'dateTime':
                     '${item['eventDay']} / ${item['eventStartTime'].toString().substring(0, 5)}',
                 'location': item['eventPlace'],
-                'status': '수정',
-                'status2': '삭제',
-                'statusColor': const Color(0xFF282727),
-                'statusColor2': const Color(0xFFDE4244),
               };
             }).toList();
-            isLoading = false; // 데이터 로딩 완료 후 상태 갱신
+            isLoading = false;
           });
         } else {
-          showErrorSnackbar('데이터를 불러오는데 실패했습니다.');
+          showCupertinoErrorDialog('데이터를 불러오는데 실패했습니다.');
         }
       } else {
-        showErrorSnackbar('서버 응답 오류: ${response.statusCode}');
+        showCupertinoErrorDialog('서버 응답 오류: ${response.statusCode}');
       }
     } catch (e) {
-      showErrorSnackbar('에러 발생: $e');
+      showCupertinoErrorDialog('에러 발생: $e');
     }
   }
 
-  // 에러 메시지를 보여주는 함수
-  void showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-    setState(() {
-      isLoading = false; // 에러 발생 시 로딩 종료
-    });
+  void showCupertinoErrorDialog(String message) {
+    if (mounted) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text("알림"),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  isLoading = false;
+                });
+              },
+              child: const Text("확인"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void showCupertinoSuccessDialog(String message) {
+    if (mounted) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text("성공"),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child:
+                  const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteTicket(String ticketId) async {
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/delete');
+    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+
+    try {
+      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+      final cookieHeader = cookies.isNotEmpty
+          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
+          : '';
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieHeader,
+        },
+        body: json.encode({'ticketId': ticketId}),
+      );
+
+      final data = json.decode(response.body);
+      if (data['isSuccess'] == true) {
+        showCupertinoSuccessDialog(data['message'] ?? '삭제되었습니다.');
+        fetchTickets();
+      } else {
+        showCupertinoErrorDialog(data['message'] ?? '삭제 실패');
+      }
+    } catch (e) {
+      showCupertinoErrorDialog('에러 발생: $e');
+    }
   }
 
   @override
@@ -103,186 +165,70 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : tickets.isEmpty
-                    ? const Center(
+                    ? Align(
+                        alignment: const Alignment(0.0, -0.15),
                         child: Text(
-                          '현재 발급된 입장권이 없습니다',
-                          style:
-                              TextStyle(fontSize: 22, color: Color(0xFFC1C1C1)),
+                          '현재 진행중인 행사가 없습니다', // 텍스트 변경
+                          style: TextStyle(
+                              fontSize: 16,
+                              color: const Color(0xFF334D61).withOpacity(0.5),
+                              fontWeight: FontWeight.bold),
                         ),
                       )
                     : Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                            horizontal: 10.0, vertical: 0),
                         child: ListView.builder(
                           itemCount: tickets.length,
                           itemBuilder: (context, index) {
                             final ticket = tickets[index];
-                            return GestureDetector(
-                              onTap: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => TicketEditScreen(
-                                      ticketId: ticket['ticketId'],
+                            return Padding(
+                              padding:
+                                  EdgeInsets.only(top: index == 0 ? 10.0 : 5.0),
+                              child: AdminTicketCard(
+                                ticketId: ticket['ticketId']!,
+                                title: ticket['title']!,
+                                dateTime: ticket['dateTime']!,
+                                location: ticket['location']!,
+                                onEdit: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => TicketEditScreen(
+                                        ticketId: ticket['ticketId'],
+                                      ),
                                     ),
-                                  ),
-                                );
-                                if (result == 'modified') {
-                                  fetchTickets();
-                                }
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            ticket['title']!,
-                                            style: const TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                  );
+                                  if (result == 'modified') {
+                                    fetchTickets();
+                                  }
+                                },
+                                onDelete: () async {
+                                  final confirm =
+                                      await showCupertinoDialog<bool>(
+                                    context: context,
+                                    builder: (context) => CupertinoAlertDialog(
+                                      title: const Text("정말 삭제하시겠습니까?"),
+                                      actions: [
+                                        CupertinoDialogAction(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false),
+                                          child: const Text("취소"),
                                         ),
-                                        const SizedBox(width: 12),
-                                        SizedBox(
-                                          width: 65,
-                                          height: 29,
-                                          child: ElevatedButton(
-                                            onPressed: () {},
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  ticket['statusColor'],
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                            ),
-                                            child: Text(
-                                              ticket['status']!,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        SizedBox(
-                                          width: 65,
-                                          height: 29,
-                                          child: ElevatedButton(
-                                            onPressed: () async {
-                                              final confirm =
-                                                  await showDialog<bool>(
-                                                context: context,
-                                                builder: (context) =>
-                                                    AlertDialog(
-                                                  title: const Text(
-                                                      "정말 삭제하시겠습니까?"),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.of(context)
-                                                              .pop(false),
-                                                      child: const Text("취소"),
-                                                    ),
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.of(context)
-                                                              .pop(true),
-                                                      child: const Text("삭제"),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-
-                                              if (confirm != true) return;
-
-                                              final url = Uri.parse(
-                                                  '${dotenv.env['API_BASE_URL']}/ticket/delete');
-
-                                              try {
-                                                final response = await http.put(
-                                                  url,
-                                                  headers: {
-                                                    'Content-Type':
-                                                        'application/json',
-                                                  },
-                                                  body: json.encode({
-                                                    'ticketId':
-                                                        ticket['ticketId']
-                                                  }),
-                                                );
-
-                                                final data =
-                                                    json.decode(response.body);
-                                                if (data['isSuccess'] == true) {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                        content: Text(
-                                                            data['message'] ??
-                                                                '삭제되었습니다.')),
-                                                  );
-                                                  fetchTickets();
-                                                } else {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                        content: Text(
-                                                            data['message'] ??
-                                                                '삭제 실패')),
-                                                  );
-                                                }
-                                              } catch (e) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                      content:
-                                                          Text('에러 발생: $e')),
-                                                );
-                                              }
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  ticket['statusColor2'],
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                            ),
-                                            child: Text(
-                                              ticket['status2']!,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
+                                        CupertinoDialogAction(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(true),
+                                          child: const Text("삭제",
+                                              style: TextStyle(
+                                                  color: Color(0xFFC10230))),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text("시간  ${ticket['dateTime']}",
-                                        style: const TextStyle(fontSize: 14)),
-                                    Text("장소  ${ticket['location']}",
-                                        style: const TextStyle(fontSize: 14)),
-                                  ],
-                                ),
+                                  );
+                                  if (confirm == true) {
+                                    _deleteTicket(ticket['ticketId']);
+                                  }
+                                },
                               ),
                             );
                           },

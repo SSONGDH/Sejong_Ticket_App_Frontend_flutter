@@ -1,10 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'send_payment_detail_screen.dart';
-import 'package:PASSTIME/widgets/app_bar.dart';
+import 'package:PASSTIME/widgets/custom_app_bar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:PASSTIME/widgets/admin_menu_button.dart';
 
 class SendPaymentListScreen extends StatefulWidget {
   const SendPaymentListScreen({super.key});
@@ -138,16 +139,29 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
-          title: "납부 내역 목록", backgroundColor: Color(0xFF282727)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                children:
-                    _studentData.keys.map((id) => _buildListItem(id)).toList(),
-              ),
+      appBar: const CustomAppBar(title: "납부 내역 목록"),
+      floatingActionButton: const AdminMenuButton(), // floatingActionButton 추가
+      body: Column(
+        children: [
+          const Divider(
+            // Divider 추가
+            height: 1,
+            thickness: 1,
+            color: Color(0xFFEEEDE3),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView(
+                      children: _studentData.keys
+                          .map((id) => _buildListItem(id))
+                          .toList(),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -185,7 +199,7 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
             ),
             CupertinoSwitch(
               value: _switchValues[id] ?? false,
-              activeColor: const Color(0xFFB93234),
+              activeTrackColor: const Color(0xFFB93234),
               onChanged: (bool value) {
                 _toggleApproval(
                   paymentId: paymentId,
