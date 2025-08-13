@@ -17,16 +17,14 @@ class AdminTicketScreen extends StatefulWidget {
 }
 
 class _AdminTicketScreenState extends State<AdminTicketScreen> {
-  List<Map<String, dynamic>> tickets = [];
-  bool isLoading = true;
+  late Future<List<Map<String, dynamic>>> _ticketsFuture = fetchTickets();
 
   @override
   void initState() {
     super.initState();
-    fetchTickets();
   }
 
-  Future<void> fetchTickets() async {
+  Future<List<Map<String, dynamic>>> fetchTickets() async {
     final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/List');
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
@@ -48,27 +46,26 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
 
         if (data['isSuccess'] == true) {
           final List<dynamic> result = data['result'];
-
-          setState(() {
-            tickets = result.map((item) {
-              return {
-                'ticketId': item['_id'],
-                'title': item['eventTitle'],
-                'dateTime':
-                    '${item['eventDay']} / ${item['eventStartTime'].toString().substring(0, 5)}',
-                'location': item['eventPlace'],
-              };
-            }).toList();
-            isLoading = false;
-          });
+          return result.map((item) {
+            return {
+              'ticketId': item['_id'],
+              'title': item['eventTitle'],
+              'dateTime':
+                  '${item['eventDay']} / ${item['eventStartTime'].toString().substring(0, 5)}',
+              'location': item['eventPlace'],
+            };
+          }).toList();
         } else {
           showCupertinoErrorDialog('데이터를 불러오는데 실패했습니다.');
+          return [];
         }
       } else {
         showCupertinoErrorDialog('서버 응답 오류: ${response.statusCode}');
+        return [];
       }
     } catch (e) {
       showCupertinoErrorDialog('에러 발생: $e');
+      return [];
     }
   }
 
@@ -83,9 +80,6 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
             CupertinoDialogAction(
               onPressed: () {
                 Navigator.of(context).pop();
-                setState(() {
-                  isLoading = false;
-                });
               },
               child: const Text("확인"),
             ),
@@ -138,7 +132,9 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
       final data = json.decode(response.body);
       if (data['isSuccess'] == true) {
         showCupertinoSuccessDialog(data['message'] ?? '삭제되었습니다.');
-        fetchTickets();
+        setState(() {
+          _ticketsFuture = fetchTickets();
+        });
       } else {
         showCupertinoErrorDialog(data['message'] ?? '삭제 실패');
       }
@@ -162,78 +158,101 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
             color: Color(0xFFEEEDE3),
           ),
           Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : tickets.isEmpty
-                    ? Align(
-                        alignment: const Alignment(0.0, -0.15),
-                        child: Text(
-                          '현재 진행중인 행사가 없습니다', // 텍스트 변경
-                          style: TextStyle(
-                              fontSize: 16,
-                              color: const Color(0xFF334D61).withOpacity(0.5),
-                              fontWeight: FontWeight.bold),
-                        ),
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10.0, vertical: 0),
-                        child: ListView.builder(
-                          itemCount: tickets.length,
-                          itemBuilder: (context, index) {
-                            final ticket = tickets[index];
-                            return Padding(
-                              padding:
-                                  EdgeInsets.only(top: index == 0 ? 10.0 : 5.0),
-                              child: AdminTicketCard(
-                                ticketId: ticket['ticketId']!,
-                                title: ticket['title']!,
-                                dateTime: ticket['dateTime']!,
-                                location: ticket['location']!,
-                                onEdit: () async {
-                                  final result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => TicketEditScreen(
-                                        ticketId: ticket['ticketId'],
-                                      ),
-                                    ),
-                                  );
-                                  if (result == 'modified') {
-                                    fetchTickets();
-                                  }
-                                },
-                                onDelete: () async {
-                                  final confirm =
-                                      await showCupertinoDialog<bool>(
-                                    context: context,
-                                    builder: (context) => CupertinoAlertDialog(
-                                      title: const Text("정말 삭제하시겠습니까?"),
-                                      actions: [
-                                        CupertinoDialogAction(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(false),
-                                          child: const Text("취소"),
-                                        ),
-                                        CupertinoDialogAction(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(true),
-                                          child: const Text("삭제",
-                                              style: TextStyle(
-                                                  color: Color(0xFFC10230))),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (confirm == true) {
-                                    _deleteTicket(ticket['ticketId']);
-                                  }
-                                },
-                              ),
-                            );
-                          },
-                        ),
+            child: RefreshIndicator(
+              // RefreshIndicator UI를 TicketScreen과 동일하게 변경
+              color: Colors.black,
+              backgroundColor: Colors.white,
+              onRefresh: () async {
+                setState(() {
+                  _ticketsFuture = fetchTickets();
+                });
+              },
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _ticketsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data!.isEmpty) {
+                    // 텍스트 스타일과 위치를 TicketScreen과 동일하게 변경
+                    return Align(
+                      alignment: const Alignment(0.0, -0.15),
+                      child: Text(
+                        '현재 진행중인 행사가 없습니다',
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: const Color(0xFF334D61).withOpacity(0.5),
+                            fontWeight: FontWeight.bold),
                       ),
+                    );
+                  } else {
+                    final tickets = snapshot.data!;
+                    return Padding(
+                      // ListView 패딩을 TicketScreen과 동일하게 변경
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10.0, vertical: 0),
+                      child: ListView.builder(
+                        itemCount: tickets.length,
+                        itemBuilder: (context, index) {
+                          final ticket = tickets[index];
+                          return Padding(
+                            padding:
+                                EdgeInsets.only(top: index == 0 ? 10.0 : 5.0),
+                            child: AdminTicketCard(
+                              ticketId: ticket['ticketId']!,
+                              title: ticket['title']!,
+                              dateTime: ticket['dateTime']!,
+                              location: ticket['location']!,
+                              onEdit: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => TicketEditScreen(
+                                      ticketId: ticket['ticketId'],
+                                    ),
+                                  ),
+                                );
+                                if (result == 'modified') {
+                                  setState(() {
+                                    _ticketsFuture = fetchTickets();
+                                  });
+                                }
+                              },
+                              onDelete: () async {
+                                final confirm = await showCupertinoDialog<bool>(
+                                  context: context,
+                                  builder: (context) => CupertinoAlertDialog(
+                                    title: const Text("정말 삭제하시겠습니까?"),
+                                    actions: [
+                                      CupertinoDialogAction(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(false),
+                                        child: const Text("취소"),
+                                      ),
+                                      CupertinoDialogAction(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(true),
+                                        child: const Text("삭제",
+                                            style: TextStyle(
+                                                color: Color(0xFFC10230))),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  _deleteTicket(ticket['ticketId']);
+                                }
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
           ),
         ],
       ),

@@ -84,13 +84,19 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
       if (response.data['code'] == 'SUCCESS-0000') {
         final result = response.data['result'];
+
+        // ✅ 현재 소속: affiliations 배열에서 name만 추출
         final List<String> affiliations =
-            List<String>.from(result['affiliation'] ?? []);
-        final String studentId = result['studentId'] ?? '';
+            (result['affiliations'] as List<dynamic>? ?? [])
+                .map((item) => item['name'] as String)
+                .toList();
+
+        final String studentId = result['studentId']?.toString() ?? '';
         final String name = result['name'] ?? '';
 
+        // ✅ 전체 소속: totalAffiliation 배열에서 name만 추출
         final List<String> totalAffiliations =
-            (result['totalAffiliation'] as List<dynamic>)
+            (result['totalAffiliation'] as List<dynamic>? ?? [])
                 .map((item) => item['name'] as String)
                 .toList();
 
@@ -105,6 +111,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
           _fixedStudentId = studentId;
           _userName = name;
 
+          // 현재 소속에 없는 것만 추가 가능한 소속 목록에 넣기
           _availableAffiliations = totalAffiliations
               .where((aff) => !_currentAffiliations.contains(aff))
               .toList();
@@ -394,7 +401,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
                           final response = await _dio.put(
                             apiUrl,
                             data: {
-                              "affiliationList": _currentAffiliations,
+                              "affiliationList": _currentAffiliations
+                                  .map((name) => {"name": name})
+                                  .toList(),
                             },
                             options: Options(
                               headers: {

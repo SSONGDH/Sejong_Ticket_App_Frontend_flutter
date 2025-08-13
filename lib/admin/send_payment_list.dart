@@ -26,7 +26,7 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
   }
 
   Future<void> _fetchPaymentData() async {
-    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/payment/paymentlist');
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/payment/list');
 
     try {
       final response = await http.get(url);

@@ -25,10 +25,12 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen> {
   }
 
   Future<void> _fetchRefundRequests() async {
-    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/refund/refundList');
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/refund/list');
 
     try {
       final response = await http.get(url);
+      print(response.body);
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 

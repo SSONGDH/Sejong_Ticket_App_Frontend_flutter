@@ -63,7 +63,11 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
     final apiUrl = '${dotenv.env['API_BASE_URL']}/ticket/add';
     final dio = Dio();
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
-    final ssotoken = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+    final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+
+    final cookieHeader = cookies.isNotEmpty
+        ? cookies.map((c) => '${c.name}=${c.value}').join('; ')
+        : '';
 
     final requestBody = json.encode({'eventCode': eventCode});
     print('Request Body: $requestBody');
@@ -75,7 +79,7 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': ssotoken,
+            'Cookie': cookieHeader,
           },
         ),
       );
@@ -96,16 +100,22 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
           }
         } else {
           if (mounted) {
+            // General error message for 200 but isSuccess is false
             _showAlertDialog('오류', '코드 입력이 잘못되었습니다.');
           }
         }
-      } else {
-        if (mounted) {
+      }
+    } on DioException catch (e) {
+      print('Dio Error: ${e.response?.statusCode}');
+      if (mounted) {
+        if (e.response?.statusCode == 403) {
+          _showAlertDialog('오류', '해당 소속이 아닙니다.');
+        } else {
           _showAlertDialog('오류', '코드 입력이 잘못되었습니다.');
         }
       }
     } catch (e) {
-      print('Error: $e');
+      print('General Error: $e');
       if (mounted) {
         _showAlertDialog('오류', '코드 입력이 잘못되었습니다.');
       }

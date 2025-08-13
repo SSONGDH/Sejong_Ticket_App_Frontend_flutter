@@ -3,7 +3,6 @@ import 'package:PASSTIME/admin/admin_ticket_screen.dart';
 import 'package:PASSTIME/admin/ticket_produce.dart';
 import 'package:PASSTIME/admin/send_payment_list.dart';
 import 'package:PASSTIME/admin/request_refund_list.dart';
-import 'package:PASSTIME/admin/request_admin_list.dart';
 import 'package:PASSTIME/screens/ticket_screen.dart';
 
 class AdminMenuButton extends StatefulWidget {
@@ -126,19 +125,6 @@ class _AdminMenuButtonState extends State<AdminMenuButton> {
                             MaterialPageRoute(
                                 builder: (_) =>
                                     const RequestRefundListScreen()),
-                          );
-                        },
-                      ),
-                      // '주최자 신청 목록' 메뉴
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/user-check.png', // 예시 이미지 경로
-                        text: '주최자 신청 목록',
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const RequestAdminListScreen()),
                           );
                         },
                       ),
