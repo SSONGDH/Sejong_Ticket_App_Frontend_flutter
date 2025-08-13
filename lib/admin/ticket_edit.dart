@@ -30,7 +30,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
   final _codeController = TextEditingController();
 
   Map<String, dynamic>? _selectedPlace;
-  File? _pickedImage; // 이 변수는 현재 사용되지 않지만, 이미지 업로드가 필요할 경우를 대비하여 유지
+  File? _pickedImage;
   bool _isLoading = true;
   Map<String, dynamic>? _initialTicketData;
 
@@ -40,7 +40,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     _fetchTicketDetail();
     _fetchAffiliations();
 
-    // 리스너 추가
     _titleController.addListener(_updateButtonState);
     _placeCommentController.addListener(_updateButtonState);
     _commentController.addListener(_updateButtonState);
@@ -92,9 +91,8 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
       final result = data['result'];
 
       setState(() {
-        _initialTicketData = Map.from(result); // 초기 데이터 저장
+        _initialTicketData = Map.from(result);
         _titleController.text = result['eventTitle'] ?? '';
-        // 날짜/시간 형식을 화면에 표시되는 형식으로 변환
         selectedDate = result['eventDay'] != null
             ? _formatDateForDisplay(result['eventDay'])
             : null;
@@ -140,20 +138,13 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     }
   }
 
-  // 서버 형식(HH:mm:ss)을 화면 표시 형식(오전/오후 HH시 mm분)으로 변환
+  // 서버 형식(HH:mm:ss)을 24시간 형식(HH:mm)으로 변환
   String _formatTimeForDisplay(String time) {
     try {
       final parts = time.split(':');
-      int hour = int.parse(parts[0]);
-      final minute = int.parse(parts[1]);
-
-      final amPm = hour < 12 ? '오전' : '오후';
-      if (hour > 12) {
-        hour -= 12;
-      } else if (hour == 0) {
-        hour = 12; // 0시는 오후 12시로 표시
-      }
-      return "$amPm $hour시 ${minute.toString().padLeft(2, '0')}분";
+      final hour = parts[0];
+      final minute = parts[1];
+      return "$hour:$minute";
     } catch (e) {
       return time;
     }
@@ -162,47 +153,22 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
   Future<void> _submit() async {
     final uri = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/modifyTicket');
 
-    // 날짜와 시간을 서버 요구 형식에 맞게 변환
+    // 날짜를 서버 형식(YYYY-MM-DD)에 맞게 변환
     String? eventDay;
     if (selectedDate != null) {
       final dateParts = selectedDate!.split('(').first.split('.');
       eventDay = '${dateParts[0]}-${dateParts[1]}-${dateParts[2]}';
     }
 
+    // 시간을 서버 형식(HH:mm:00)에 맞게 변환
     String? eventStartTime;
     if (selectedStartTime != null) {
-      final parts = selectedStartTime!.split(' ');
-      final amPm = parts[0];
-      final timeParts = parts[1].split('시');
-      int hour = int.parse(timeParts[0]);
-      final minute = timeParts[1].replaceAll('분', '');
-
-      if (amPm == '오후' && hour != 12) {
-        hour += 12;
-      } else if (amPm == '오전' && hour == 12) {
-        hour = 0;
-      }
-
-      eventStartTime =
-          '${hour.toString().padLeft(2, '0')}:${minute.padLeft(2, '0')}:00';
+      eventStartTime = '$selectedStartTime:00';
     }
 
     String? eventEndTime;
     if (selectedEndTime != null) {
-      final parts = selectedEndTime!.split(' ');
-      final amPm = parts[0];
-      final timeParts = parts[1].split('시');
-      int hour = int.parse(timeParts[0]);
-      final minute = timeParts[1].replaceAll('분', '');
-
-      if (amPm == '오후' && hour != 12) {
-        hour += 12;
-      } else if (amPm == '오전' && hour == 12) {
-        hour = 0;
-      }
-
-      eventEndTime =
-          '${hour.toString().padLeft(2, '0')}:${minute.padLeft(2, '0')}:00';
+      eventEndTime = '$selectedEndTime:00';
     }
 
     final body = {
@@ -238,7 +204,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
         debugPrint("Success response: $responseBody");
         if (!mounted) return;
 
-        // ✅ 수정된 부분: 스낵바 대신 팝업 표시
         showCupertinoDialog(
           context: context,
           builder: (context) => CupertinoAlertDialog(
@@ -249,7 +214,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                 child: const Text("확인",
                     style: TextStyle(color: Color(0xFFC10230))),
                 onPressed: () {
-                  Navigator.pop(context); // 팝업 닫기
+                  Navigator.pop(context);
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -317,12 +282,10 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
       'kakaoPlace': _selectedPlace,
     };
 
-    // 이미지 변경 여부 확인
     if (_pickedImage != null) {
       return true;
     }
 
-    // 다른 필드 변경 여부 확인
     if (currentData['eventTitle'] != _initialTicketData!['eventTitle'])
       return true;
     if (currentData['eventDay'] !=
@@ -643,11 +606,8 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
           showSecondsColumn: false,
           onConfirm: (date) {
             setState(() {
-              final amPm = date.hour < 12 ? '오전' : '오후';
-              final hour = date.hour > 12 ? date.hour - 12 : date.hour;
-              final formattedHour = hour == 0 ? 12 : hour;
               selectedStartTime =
-                  "$amPm $formattedHour시 ${date.minute.toString().padLeft(2, '0')}분";
+                  "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
               _updateButtonState();
             });
           },
@@ -675,11 +635,8 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
           showSecondsColumn: false,
           onConfirm: (date) {
             setState(() {
-              final amPm = date.hour < 12 ? '오전' : '오후';
-              final hour = date.hour > 12 ? date.hour - 12 : date.hour;
-              final formattedHour = hour == 0 ? 12 : hour;
               selectedEndTime =
-                  "$amPm $formattedHour시 ${date.minute.toString().padLeft(2, '0')}분";
+                  "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
               _updateButtonState();
             });
           },

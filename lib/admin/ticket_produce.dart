@@ -20,7 +20,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   String? selectedStartTime;
   String? selectedEndTime;
   String? selectedAffiliation;
-  List<String> affiliations = []; // 소속 리스트를 저장할 변수
+  List<String> affiliations = [];
 
   final picker = ImagePicker();
   final TextEditingController _titleController = TextEditingController();
@@ -33,7 +33,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeData(); // 새 함수를 만들어 순서 보장
+    _initializeData();
     _titleController.addListener(_updateButtonState);
     _placeCommentController.addListener(_updateButtonState);
     _eventCommentController.addListener(_updateButtonState);
@@ -41,8 +41,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   }
 
   Future<void> _initializeData() async {
-    await _loadEnvVariables(); // 환경 변수 로딩이 끝날 때까지 기다립니다.
-    await _fetchAffiliations(); // 그 후에 소속 리스트를 불러옵니다.
+    await _loadEnvVariables();
+    await _fetchAffiliations();
   }
 
   @override
@@ -63,7 +63,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     print('API URL: ${dotenv.env['API_BASE_URL']}');
   }
 
-  // 서버에서 소속 리스트를 가져오는 함수
   Future<void> _fetchAffiliations() async {
     final url = Uri.parse('${dotenv.env['API_BASE_URL']}/affiliation/List');
     try {
@@ -221,12 +220,11 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         title: const Text("행사를 제작하시겠습니까?"),
         actions: [
           CupertinoDialogAction(
-            child: const Text("취소"), // 취소 버튼은 기본 색상 유지
+            child: const Text("취소"),
             onPressed: () => Navigator.pop(context),
           ),
           CupertinoDialogAction(
-            child: const Text("확인",
-                style: TextStyle(color: Color(0xFFC10230))), // 확인 버튼 색상 변경
+            child: const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
             onPressed: () {
               Navigator.pop(context);
               _createTicket();
@@ -354,8 +352,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
 
     final body = {
       "eventTitle": _titleController.text,
-      "eventDay":
-          selectedDate!.substring(0, 10).replaceAll('.', '-'), // ✅ 이 부분 수정
+      "eventDay": selectedDate!.substring(0, 10).replaceAll('.', '-'),
       "eventStartTime": selectedStartTime!,
       "eventEndTime": selectedEndTime!,
       "eventPlace": _selectedPlace!['place_name'],
@@ -371,7 +368,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
       }
     };
 
-    // 추가된 부분: 디버그 콘솔에 보낼 데이터 출력
     print('Sending data to server:');
     print(json.encode(body));
 
@@ -528,11 +524,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           showSecondsColumn: false,
           onConfirm: (date) {
             setState(() {
-              final amPm = date.hour < 12 ? '오전' : '오후';
-              final hour = date.hour > 12 ? date.hour - 12 : date.hour;
-              final formattedHour = hour == 0 ? 12 : hour;
               selectedStartTime =
-                  "$amPm $formattedHour시 ${date.minute.toString().padLeft(2, '0')}분";
+                  "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
               _updateButtonState();
             });
           },
@@ -559,11 +552,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           showSecondsColumn: false,
           onConfirm: (date) {
             setState(() {
-              final amPm = date.hour < 12 ? '오전' : '오후';
-              final hour = date.hour > 12 ? date.hour - 12 : date.hour;
-              final formattedHour = hour == 0 ? 12 : hour;
               selectedEndTime =
-                  "$amPm $formattedHour시 ${date.minute.toString().padLeft(2, '0')}분";
+                  "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
               _updateButtonState();
             });
           },

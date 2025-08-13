@@ -49,7 +49,6 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
   List<Map<String, dynamic>> tickets = [];
 
   final TextEditingController refundReasonController = TextEditingController();
-  // phoneNumberController를 MaskedInputController로 변경
   final MaskedInputController phoneNumberController = MaskedInputController();
 
   final Dio _dio = Dio();
@@ -59,6 +58,13 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     super.initState();
     _setupDio();
     _fetchTickets();
+  }
+
+  @override
+  void dispose() {
+    refundReasonController.dispose();
+    phoneNumberController.dispose();
+    super.dispose();
   }
 
   void _setupDio() {
@@ -398,10 +404,8 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
           showSecondsColumn: false,
           onConfirm: (date) {
             setState(() {
-              final amPm = date.hour < 12 ? '오전' : '오후';
-              final hour = date.hour > 12 ? date.hour - 12 : date.hour;
-              final formattedHour = hour == 0 ? 12 : hour;
-              selectedTime = "$amPm $formattedHour시";
+              selectedTime =
+                  "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
             });
           },
           currentTime: DateTime.now(),
