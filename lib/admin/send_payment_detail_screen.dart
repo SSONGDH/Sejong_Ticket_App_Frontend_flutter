@@ -24,7 +24,7 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
   }
 
   Future<Map<String, dynamic>> fetchPaymentDetail() async {
-    final String apiUrl = "${dotenv.env['API_BASE_URL']}/payment/paymentDetail";
+    final String apiUrl = "${dotenv.env['API_BASE_URL']}/payment/detail";
     final uri = Uri.parse("$apiUrl?paymentId=${widget.paymentId}");
 
     print("[FETCH] GET $uri"); // 🔍 요청 URI 출력
@@ -51,8 +51,7 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
       isApproving = true;
     });
 
-    final String apiUrl =
-        "${dotenv.env['API_BASE_URL']}/payment/paymentPermission";
+    final String apiUrl = "${dotenv.env['API_BASE_URL']}/payment/permission";
     final uri = Uri.parse("$apiUrl?paymentId=$paymentId");
 
     print("[APPROVE] PUT $uri"); // 🔍 승인 요청 URI 출력

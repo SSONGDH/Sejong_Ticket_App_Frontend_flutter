@@ -22,7 +22,7 @@ class _RefundScreenState extends State<RefundScreen> {
   }
 
   Future<Map<String, dynamic>> fetchRefundDetail() async {
-    final String apiUrl = "${dotenv.env['API_BASE_URL']}/ticketRefundDetail";
+    final String apiUrl = "${dotenv.env['API_BASE_URL']}/ticket/refundDetail";
     final response = await http.get(
       Uri.parse("$apiUrl?ticketId=${widget.ticketId}"),
     );

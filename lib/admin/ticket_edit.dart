@@ -30,7 +30,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
   final _codeController = TextEditingController();
 
   Map<String, dynamic>? _selectedPlace;
-  File? _pickedImage;
+  File? _pickedImage; // 이 변수는 현재 사용되지 않지만, 이미지 업로드가 필요할 경우를 대비하여 유지
   bool _isLoading = true;
   Map<String, dynamic>? _initialTicketData;
 
@@ -94,9 +94,16 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
       setState(() {
         _initialTicketData = Map.from(result); // 초기 데이터 저장
         _titleController.text = result['eventTitle'] ?? '';
-        selectedDate = result['eventDay'] ?? '';
-        selectedStartTime = result['eventStartTime'] ?? '';
-        selectedEndTime = result['eventEndTime'] ?? '';
+        // 날짜/시간 형식을 화면에 표시되는 형식으로 변환
+        selectedDate = result['eventDay'] != null
+            ? _formatDateForDisplay(result['eventDay'])
+            : null;
+        selectedStartTime = result['eventStartTime'] != null
+            ? _formatTimeForDisplay(result['eventStartTime'])
+            : null;
+        selectedEndTime = result['eventEndTime'] != null
+            ? _formatTimeForDisplay(result['eventEndTime'])
+            : null;
         _selectedPlace = result['kakaoPlace'] != null
             ? {
                 'place_name': result['kakaoPlace']['place_name'] ?? '',
@@ -119,47 +126,143 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     }
   }
 
+  // 서버 형식(YYYY-MM-DD)을 화면 표시 형식(YYYY.MM.DD(요일))으로 변환
+  String _formatDateForDisplay(String date) {
+    try {
+      final dateTime = DateTime.parse(date);
+      final year = dateTime.year;
+      final month = dateTime.month.toString().padLeft(2, '0');
+      final day = dateTime.day.toString().padLeft(2, '0');
+      final weekday = _getKoreanWeekday(dateTime.weekday);
+      return "$year.$month.$day($weekday)";
+    } catch (e) {
+      return date;
+    }
+  }
+
+  // 서버 형식(HH:mm:ss)을 화면 표시 형식(오전/오후 HH시 mm분)으로 변환
+  String _formatTimeForDisplay(String time) {
+    try {
+      final parts = time.split(':');
+      int hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      final amPm = hour < 12 ? '오전' : '오후';
+      if (hour > 12) {
+        hour -= 12;
+      } else if (hour == 0) {
+        hour = 12; // 0시는 오후 12시로 표시
+      }
+      return "$amPm $hour시 ${minute.toString().padLeft(2, '0')}분";
+    } catch (e) {
+      return time;
+    }
+  }
+
   Future<void> _submit() async {
     final uri = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/modifyTicket');
-    final request = http.MultipartRequest('PUT', uri);
 
-    request.fields['eventTitle'] = _titleController.text;
-    request.fields['eventDay'] = selectedDate ?? '';
-    request.fields['eventStartTime'] = selectedStartTime ?? '';
-    request.fields['eventEndTime'] = selectedEndTime ?? '';
-    request.fields['eventPlace'] = _selectedPlace?['place_name'] ?? '';
-    request.fields['eventPlaceComment'] = _placeCommentController.text;
-    request.fields['eventComment'] = _commentController.text;
-    request.fields['affiliation'] = selectedAffiliation ?? '';
-    request.fields['eventCode'] = _codeController.text;
-    request.fields['_id'] = widget.ticketId;
-    request.fields['kakaoPlace'] = json.encode(_selectedPlace);
-
-    if (_pickedImage != null) {
-      request.files.add(await http.MultipartFile.fromPath(
-        'eventPlacePicture',
-        _pickedImage!.path,
-      ));
+    // 날짜와 시간을 서버 요구 형식에 맞게 변환
+    String? eventDay;
+    if (selectedDate != null) {
+      final dateParts = selectedDate!.split('(').first.split('.');
+      eventDay = '${dateParts[0]}-${dateParts[1]}-${dateParts[2]}';
     }
 
-    try {
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+    String? eventStartTime;
+    if (selectedStartTime != null) {
+      final parts = selectedStartTime!.split(' ');
+      final amPm = parts[0];
+      final timeParts = parts[1].split('시');
+      int hour = int.parse(timeParts[0]);
+      final minute = timeParts[1].replaceAll('분', '');
 
-      if (response.statusCode == 200) {
+      if (amPm == '오후' && hour != 12) {
+        hour += 12;
+      } else if (amPm == '오전' && hour == 12) {
+        hour = 0;
+      }
+
+      eventStartTime =
+          '${hour.toString().padLeft(2, '0')}:${minute.padLeft(2, '0')}:00';
+    }
+
+    String? eventEndTime;
+    if (selectedEndTime != null) {
+      final parts = selectedEndTime!.split(' ');
+      final amPm = parts[0];
+      final timeParts = parts[1].split('시');
+      int hour = int.parse(timeParts[0]);
+      final minute = timeParts[1].replaceAll('분', '');
+
+      if (amPm == '오후' && hour != 12) {
+        hour += 12;
+      } else if (amPm == '오전' && hour == 12) {
+        hour = 0;
+      }
+
+      eventEndTime =
+          '${hour.toString().padLeft(2, '0')}:${minute.padLeft(2, '0')}:00';
+    }
+
+    final body = {
+      "eventTitle": _titleController.text,
+      "eventDay": eventDay,
+      "eventStartTime": eventStartTime,
+      "eventEndTime": eventEndTime,
+      "eventPlace": _selectedPlace?['place_name'],
+      "eventPlaceComment": _placeCommentController.text,
+      "eventComment": _commentController.text,
+      "affiliation": selectedAffiliation,
+      "eventCode": _codeController.text,
+      "_id": widget.ticketId,
+      "kakaoPlace": _selectedPlace,
+    };
+
+    debugPrint('--- 서버 전송 데이터 ---');
+    debugPrint(json.encode(body));
+    debugPrint('--- 전송 데이터 끝 ---');
+
+    try {
+      final response = await http.put(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(body),
+      );
+
+      final responseBody = utf8.decode(response.bodyBytes);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint("Success response: $responseBody");
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("수정 완료!")),
+
+        // ✅ 수정된 부분: 스낵바 대신 팝업 표시
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text("행사 수정 완료"),
+            content: const Text("행사 정보가 성공적으로 수정되었습니다."),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text("확인",
+                    style: TextStyle(color: Color(0xFFC10230))),
+                onPressed: () {
+                  Navigator.pop(context); // 팝업 닫기
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const AdminTicketScreen()),
+                  );
+                },
+              ),
+            ],
+          ),
         );
-        Future.delayed(const Duration(seconds: 1), () {
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminTicketScreen()),
-          );
-        });
       } else {
-        debugPrint("Response body: ${response.body}");
+        debugPrint("Error response: ${response.statusCode}");
+        debugPrint("Error body: $responseBody");
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: ${response.statusCode}")),
@@ -222,11 +325,13 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     // 다른 필드 변경 여부 확인
     if (currentData['eventTitle'] != _initialTicketData!['eventTitle'])
       return true;
-    if (currentData['eventDay'] != _initialTicketData!['eventDay']) return true;
-    if (currentData['eventStartTime'] != _initialTicketData!['eventStartTime'])
+    if (currentData['eventDay'] !=
+        _formatDateForDisplay(_initialTicketData!['eventDay'])) return true;
+    if (currentData['eventStartTime'] !=
+        _formatTimeForDisplay(_initialTicketData!['eventStartTime']))
       return true;
-    if (currentData['eventEndTime'] != _initialTicketData!['eventEndTime'])
-      return true;
+    if (currentData['eventEndTime'] !=
+        _formatTimeForDisplay(_initialTicketData!['eventEndTime'])) return true;
     if (currentData['eventPlace'] != _initialTicketData!['eventPlace'])
       return true;
     if (currentData['eventPlaceComment'] !=

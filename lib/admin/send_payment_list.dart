@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:PASSTIME/widgets/admin_menu_button.dart';
+import 'package:PASSTIME/cookiejar_singleton.dart';
 
 class SendPaymentListScreen extends StatefulWidget {
   const SendPaymentListScreen({super.key});
@@ -16,7 +17,7 @@ class SendPaymentListScreen extends StatefulWidget {
 
 class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
   Map<String, bool> _switchValues = {};
-  Map<String, Map<String, String>> _studentData = {};
+  Map<String, Map<String, String>> _paymentData = {};
   bool isLoading = true;
 
   @override
@@ -27,26 +28,40 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
 
   Future<void> _fetchPaymentData() async {
     final url = Uri.parse('${dotenv.env['API_BASE_URL']}/payment/list');
+    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
     try {
-      final response = await http.get(url);
+      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+      final cookieHeader = cookies.isNotEmpty
+          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
+          : '';
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Cookie': cookieHeader,
+        },
+      );
+      print(response.body);
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['isSuccess'] == true) {
           setState(() {
-            _studentData = {};
+            _paymentData = {};
             _switchValues = {};
 
             for (var payment in data['result']) {
               final studentId = payment['studentId'];
               final name = payment['name'];
               final paymentId = payment['paymentId'];
-              _studentData[studentId] = {
+
+              _paymentData[paymentId] = {
                 'name': name,
-                'paymentId': paymentId,
+                'studentId': studentId,
               };
-              _switchValues[studentId] =
-                  payment['paymentPermissionStatus'] ?? false;
+              _switchValues[paymentId] =
+                  payment['paymentPermissionStatus'] == 'TRUE';
             }
             isLoading = false;
           });
@@ -69,22 +84,32 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
 
   Future<void> _toggleApproval({
     required String paymentId,
-    required String studentId,
     required bool newValue,
   }) async {
     final String baseUrl = dotenv.env['API_BASE_URL']!;
-    final String apiUrl = newValue
-        ? "$baseUrl/payment/paymentPermission"
-        : "$baseUrl/payment/paymentDeny";
+    final String apiUrl =
+        newValue ? "$baseUrl/payment/permission" : "$baseUrl/payment/deny";
     final uri = Uri.parse("$apiUrl?paymentId=$paymentId");
+    final baseUri = Uri.parse(baseUrl);
 
     try {
-      final response = await http.put(uri);
+      final cookies =
+          await CookieJarSingleton().cookieJar.loadForRequest(baseUri);
+      final cookieHeader = cookies.isNotEmpty
+          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
+          : '';
+
+      final response = await http.put(
+        uri,
+        headers: {
+          'Cookie': cookieHeader,
+        },
+      );
       final data = json.decode(response.body);
 
       if (response.statusCode == 200 && data["isSuccess"] == true) {
         setState(() {
-          _switchValues[studentId] = newValue;
+          _switchValues[paymentId] = newValue;
         });
 
         if (context.mounted) {
@@ -104,18 +129,18 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
           );
         }
       } else {
-        _revertSwitch(studentId);
+        _revertSwitch(paymentId);
         _showErrorDialog(data["message"] ?? "처리에 실패했습니다.");
       }
     } catch (e) {
-      _revertSwitch(studentId);
+      _revertSwitch(paymentId);
       _showErrorDialog("상태 변경 중 오류 발생: $e");
     }
   }
 
-  void _revertSwitch(String studentId) {
+  void _revertSwitch(String paymentId) {
     setState(() {
-      _switchValues[studentId] = !_switchValues[studentId]!;
+      _switchValues[paymentId] = !_switchValues[paymentId]!;
     });
   }
 
@@ -140,11 +165,10 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const CustomAppBar(title: "납부 내역 목록"),
-      floatingActionButton: const AdminMenuButton(), // floatingActionButton 추가
+      floatingActionButton: const AdminMenuButton(),
       body: Column(
         children: [
           const Divider(
-            // Divider 추가
             height: 1,
             thickness: 1,
             color: Color(0xFFEEEDE3),
@@ -154,11 +178,25 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
               padding: const EdgeInsets.all(16.0),
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : ListView(
-                      children: _studentData.keys
-                          .map((id) => _buildListItem(id))
-                          .toList(),
-                    ),
+                  : _paymentData.isEmpty
+                      ? Center(
+                          child: Align(
+                            alignment: const Alignment(0.0, -0.15),
+                            child: Text(
+                              '납부 내역 목록이 없습니다',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color:
+                                      const Color(0xFF334D61).withOpacity(0.5),
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        )
+                      : ListView(
+                          children: _paymentData.keys
+                              .map((paymentId) => _buildListItem(paymentId))
+                              .toList(),
+                        ),
             ),
           ),
         ],
@@ -166,9 +204,9 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
     );
   }
 
-  Widget _buildListItem(String id) {
-    final name = _studentData[id]?['name'] ?? "이름 없음";
-    final paymentId = _studentData[id]?['paymentId'] ?? "";
+  Widget _buildListItem(String paymentId) {
+    final name = _paymentData[paymentId]?['name'] ?? "이름 없음";
+    final studentId = _paymentData[paymentId]?['studentId'] ?? "ID 없음";
 
     return GestureDetector(
       onTap: () {
@@ -190,7 +228,7 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              id,
+              studentId,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             Text(
@@ -198,12 +236,11 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             CupertinoSwitch(
-              value: _switchValues[id] ?? false,
+              value: _switchValues[paymentId] ?? false,
               activeTrackColor: const Color(0xFFB93234),
               onChanged: (bool value) {
                 _toggleApproval(
                   paymentId: paymentId,
-                  studentId: id,
                   newValue: value,
                 );
               },

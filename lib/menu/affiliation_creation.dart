@@ -7,6 +7,31 @@ import 'package:PASSTIME/menu/my_page_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
+// 전화번호 포맷팅을 위한 MaskedInputController 클래스
+class MaskedInputController extends TextEditingController {
+  @override
+  set value(TextEditingValue newValue) {
+    String newText = newValue.text;
+    String cleanText = newText.replaceAll(RegExp(r'[^0-9]'), '');
+    String formattedText = _formatPhoneNumber(cleanText);
+
+    super.value = newValue.copyWith(
+      text: formattedText,
+      selection: TextSelection.collapsed(offset: formattedText.length),
+    );
+  }
+
+  String _formatPhoneNumber(String text) {
+    if (text.length <= 3) {
+      return text;
+    } else if (text.length <= 7) {
+      return '${text.substring(0, 3)}-${text.substring(3)}';
+    } else {
+      return '${text.substring(0, 3)}-${text.substring(3, 7)}-${text.substring(7, text.length)}';
+    }
+  }
+}
+
 class AffiliationCreationScreen extends StatefulWidget {
   final String hostName;
   final String studentId;
@@ -27,7 +52,8 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
       TextEditingController();
   late final TextEditingController _hostNameController;
   late final TextEditingController _studentIdController;
-  final TextEditingController _phoneNumberController = TextEditingController();
+  // phoneNumberController를 MaskedInputController로 변경
+  final MaskedInputController _phoneNumberController = MaskedInputController();
 
   final Dio _dio = Dio();
 
@@ -247,9 +273,10 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                           controller: _phoneNumberController,
                           hintText: '전화번호 입력',
                           keyboardType: TextInputType.phone,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly
-                          ],
+                          // MaskedInputController가 포맷팅을 처리하므로, 기존의 inputFormatters는 제거합니다.
+                          // inputFormatters: [
+                          //   FilteringTextInputFormatter.digitsOnly
+                          // ],
                         ),
                       ),
                       const SizedBox(height: 16),

@@ -23,7 +23,7 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
   }
 
   Future<Map<String, dynamic>> fetchRefundDetail() async {
-    final String apiUrl = "${dotenv.env['API_BASE_URL']}/refund/refundDetail";
+    final String apiUrl = "${dotenv.env['API_BASE_URL']}/refund/detail";
     final response = await http.get(
       Uri.parse("$apiUrl?refundId=${widget.refundId}"),
     );
@@ -42,8 +42,8 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
 
   Future<void> _updateRefundStatus(bool approve) async {
     final String apiUrl = approve
-        ? "${dotenv.env['API_BASE_URL']}/refund/refundPermission"
-        : "${dotenv.env['API_BASE_URL']}/refund/refundDeny";
+        ? "${dotenv.env['API_BASE_URL']}/refund/permission"
+        : "${dotenv.env['API_BASE_URL']}/refund/deny";
     final uri = Uri.parse("$apiUrl?refundId=${widget.refundId}");
 
     try {

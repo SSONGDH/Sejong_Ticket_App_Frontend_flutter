@@ -354,7 +354,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
 
     final body = {
       "eventTitle": _titleController.text,
-      "eventDay": selectedDate!.substring(0, 10), // 'YYYY.MM.DD' 형식에서 날짜만 추출
+      "eventDay":
+          selectedDate!.substring(0, 10).replaceAll('.', '-'), // ✅ 이 부분 수정
       "eventStartTime": selectedStartTime!,
       "eventEndTime": selectedEndTime!,
       "eventPlace": _selectedPlace!['place_name'],
@@ -369,6 +370,10 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         "y": _selectedPlace!['y'],
       }
     };
+
+    // 추가된 부분: 디버그 콘솔에 보낼 데이터 출력
+    print('Sending data to server:');
+    print(json.encode(body));
 
     try {
       final response = await http.post(

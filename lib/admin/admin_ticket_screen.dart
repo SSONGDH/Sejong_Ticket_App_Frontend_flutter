@@ -25,7 +25,7 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
   }
 
   Future<List<Map<String, dynamic>>> fetchTickets() async {
-    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/List');
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/manageList');
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
     try {
@@ -51,7 +51,7 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
               'ticketId': item['_id'],
               'title': item['eventTitle'],
               'dateTime':
-                  '${item['eventDay']} / ${item['eventStartTime'].toString().substring(0, 5)}',
+                  '${item['eventDay']} · ${item['eventStartTime'].toString().substring(0, 5)}',
               'location': item['eventPlace'],
             };
           }).toList();

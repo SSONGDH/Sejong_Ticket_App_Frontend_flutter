@@ -1,12 +1,37 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart'; // Import for CupertinoAlertDialog
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:PASSTIME/screens/ticket_screen.dart';
 import '../cookiejar_singleton.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
+
+// 전화번호 포맷팅을 위한 MaskedInputController 클래스
+class MaskedInputController extends TextEditingController {
+  @override
+  set value(TextEditingValue newValue) {
+    String newText = newValue.text;
+    String cleanText = newText.replaceAll(RegExp(r'[^0-9]'), '');
+    String formattedText = _formatPhoneNumber(cleanText);
+
+    super.value = newValue.copyWith(
+      text: formattedText,
+      selection: TextSelection.collapsed(offset: formattedText.length),
+    );
+  }
+
+  String _formatPhoneNumber(String text) {
+    if (text.length <= 3) {
+      return text;
+    } else if (text.length <= 7) {
+      return '${text.substring(0, 3)}-${text.substring(3)}';
+    } else {
+      return '${text.substring(0, 3)}-${text.substring(3, 7)}-${text.substring(7, text.length)}';
+    }
+  }
+}
 
 class RequestRefundScreen extends StatefulWidget {
   const RequestRefundScreen({super.key});
@@ -24,7 +49,8 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
   List<Map<String, dynamic>> tickets = [];
 
   final TextEditingController refundReasonController = TextEditingController();
-  final TextEditingController phoneNumberController = TextEditingController();
+  // phoneNumberController를 MaskedInputController로 변경
+  final MaskedInputController phoneNumberController = MaskedInputController();
 
   final Dio _dio = Dio();
 
