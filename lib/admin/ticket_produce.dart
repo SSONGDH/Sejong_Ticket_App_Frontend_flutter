@@ -339,7 +339,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           title: const Text("모든 필드를 채워주세요"),
           actions: [
             CupertinoDialogAction(
-              child: const Text("확인"),
+              child:
+                  const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -385,8 +386,30 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
       print('Response status: ${response.statusCode}');
       print('Response body: $responseBody');
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final decodedResponse = json.decode(responseBody);
+      // 서버 응답을 Map으로 디코딩
+      final decodedResponse = json.decode(responseBody);
+
+      // 이벤트 코드 중복 오류 확인
+      if (decodedResponse['isSuccess'] == false &&
+          decodedResponse['code'] == 'ERROR-0004') {
+        if (!mounted) return;
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text("행사 코드 중복"),
+            content: const Text("입력하신 행사 코드가 이미 존재합니다. 다른 코드를 사용해주세요."),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text("확인",
+                    style: TextStyle(color: Color(0xFFC10230))),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      }
+      // 성공적인 응답 처리 (200-299)
+      else if (response.statusCode >= 200 && response.statusCode < 300) {
         print('Success response: $decodedResponse');
 
         if (!mounted) return;
@@ -397,17 +420,21 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
             MaterialPageRoute(builder: (context) => const AdminTicketScreen()),
           );
         });
-      } else {
+      }
+      // 기타 서버 오류 처리
+      else {
         print(
             'Error: Server responded with status code ${response.statusCode}');
         showCupertinoDialog(
           context: context,
           builder: (context) => CupertinoAlertDialog(
             title: const Text("행사 제작 실패"),
-            content: Text('오류가 발생했습니다: ${response.statusCode}'),
+            content: Text(
+                '오류가 발생했습니다: ${decodedResponse['message'] ?? response.statusCode}'),
             actions: [
               CupertinoDialogAction(
-                child: const Text("확인"),
+                child: const Text("확인",
+                    style: TextStyle(color: Color(0xFFC10230))),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -423,7 +450,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           content: Text('행사 제작 중 오류가 발생했습니다: $e'),
           actions: [
             CupertinoDialogAction(
-              child: const Text("확인"),
+              child:
+                  const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
               onPressed: () => Navigator.pop(context),
             ),
           ],
