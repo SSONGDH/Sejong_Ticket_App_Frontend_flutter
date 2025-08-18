@@ -113,16 +113,17 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
         });
 
         if (context.mounted) {
-          showDialog(
+          showCupertinoDialog(
             context: context,
-            builder: (_) => AlertDialog(
+            builder: (_) => CupertinoAlertDialog(
               title: Text(newValue ? "승인 완료" : "미승인 완료"),
               content:
                   Text(newValue ? "납부 요청이 승인되었습니다." : "납부 요청이 미승인 처리되었습니다."),
               actions: [
-                TextButton(
+                CupertinoDialogAction(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("확인"),
+                  child: const Text("확인",
+                      style: TextStyle(color: Color(0xFFC10230))),
                 ),
               ],
             ),
@@ -145,15 +146,15 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
   }
 
   void _showErrorDialog(String message) {
-    showDialog(
+    showCupertinoDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => CupertinoAlertDialog(
         title: const Text("오류"),
         content: Text(message),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("확인"),
+            child: const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
           ),
         ],
       ),
@@ -218,26 +219,35 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F7F9),
-          borderRadius: BorderRadius.circular(20),
+          color: const Color(0xFF334D61).withOpacity(0.05),
+          borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              studentId,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Expanded(
+              flex: 2,
+              child: Text(
+                studentId,
+                style: TextStyle(
+                    color: Colors.black.withOpacity(0.5),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16),
+              ),
             ),
-            Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Expanded(
+              flex: 3,
+              child: Text(
+                name,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
             ),
             CupertinoSwitch(
               value: _switchValues[paymentId] ?? false,
-              activeTrackColor: const Color(0xFFB93234),
+              activeTrackColor: const Color(0xFF334D61),
               onChanged: (bool value) {
                 _toggleApproval(
                   paymentId: paymentId,

@@ -102,104 +102,107 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        // AppBar 스타일 변경
-        toolbarHeight: 70,
+    return PopScope(
+      canPop: false, // <-- 이 부분을 추가하여 뒤로 가기 동작을 비활성화합니다.
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.close_rounded,
-            color: Colors.black,
-            size: 30,
+        appBar: AppBar(
+          // AppBar 스타일 변경
+          toolbarHeight: 70,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.close_rounded,
+              color: Colors.black,
+              size: 30,
+            ),
+            onPressed: () => Navigator.of(context).pop(),
           ),
-          onPressed: () => Navigator.of(context).pop(),
+          centerTitle: true,
+          title: const Text(
+            '환불 신청 상세',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-        centerTitle: true,
-        title: const Text(
-          '환불 신청 상세',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: Color(0xFFEEEDE3),
-          ),
-          Expanded(
-            child: FutureBuilder<Map<String, dynamic>>(
+        body: Column(
+          children: [
+            const Divider(
+              height: 1,
+              thickness: 1,
+              color: Color(0xFFEEEDE3),
+            ),
+            Expanded(
+              child: FutureBuilder<Map<String, dynamic>>(
+                future: refundDetail,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("오류 발생: ${snapshot.error}"));
+                  } else if (!snapshot.hasData) {
+                    return const Center(child: Text("데이터 없음"));
+                  }
+
+                  final data = snapshot.data!;
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDetailRow("이름", data["name"]),
+                        _buildDetailRow("학번", data["studentId"]),
+                        _buildDetailRow("전화번호", data["phone"]),
+                        _buildDetailRow("행사", data["eventTitle"]),
+                        _buildDetailRow("환불 사유", data["refundReason"]),
+                        _buildDetailRow("방문 가능 날짜", data["visitDate"]),
+                        _buildDetailRow("방문 가능 시간", data["visitTime"]),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            FutureBuilder<Map<String, dynamic>>(
               future: refundDetail,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("오류 발생: ${snapshot.error}"));
-                } else if (!snapshot.hasData) {
-                  return const Center(child: Text("데이터 없음"));
+                if (snapshot.connectionState == ConnectionState.waiting ||
+                    !snapshot.hasData) {
+                  return const SizedBox.shrink(); // 데이터 로딩 중에는 버튼을 숨깁니다.
                 }
-
                 final data = snapshot.data!;
+                final isApproved = data["refundPermissionStatus"] == 'TRUE';
                 return Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDetailRow("이름", data["name"]),
-                      _buildDetailRow("학번", data["studentId"]),
-                      _buildDetailRow("전화번호", data["phone"]),
-                      _buildDetailRow("행사", data["eventTitle"]),
-                      _buildDetailRow("환불 사유", data["refundReason"]),
-                      _buildDetailRow("방문 가능 날짜", data["visitDate"]),
-                      _buildDetailRow("방문 가능 시간", data["visitTime"]),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                  child: SafeArea(
+                    child: ElevatedButton(
+                      onPressed: () => _updateRefundStatus(!isApproved),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF334D61),
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(
+                        isApproved ? "미승인" : "승인",
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ),
                 );
               },
             ),
-          ),
-          FutureBuilder<Map<String, dynamic>>(
-            future: refundDetail,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting ||
-                  !snapshot.hasData) {
-                return const SizedBox.shrink(); // 데이터 로딩 중에는 버튼을 숨깁니다.
-              }
-              final data = snapshot.data!;
-              final isApproved = data["refundPermissionStatus"] == 'TRUE';
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
-                child: SafeArea(
-                  child: ElevatedButton(
-                    onPressed: () => _updateRefundStatus(!isApproved),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF334D61),
-                      minimumSize: const Size(double.infinity, 55),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text(
-                      isApproved ? "미승인" : "승인",
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -229,9 +232,9 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
             child: Text(
               value.isNotEmpty ? value : "-",
               style: TextStyle(
-                fontSize: 16,
-                color: Colors.black.withOpacity(0.5),
-              ),
+                  fontSize: 16,
+                  color: Colors.black.withOpacity(0.5),
+                  fontWeight: FontWeight.w600),
             ),
           ),
         ],

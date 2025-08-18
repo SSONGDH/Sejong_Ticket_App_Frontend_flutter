@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 
 class SendPaymentDetailScreen extends StatefulWidget {
   final String paymentId;
@@ -68,18 +69,19 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
         if (responseBody["isSuccess"] == true &&
             responseBody["result"]["paymentPermissionStatus"] == true) {
           if (context.mounted) {
-            showDialog(
+            showCupertinoDialog(
               context: context,
-              builder: (_) => AlertDialog(
+              builder: (_) => CupertinoAlertDialog(
                 title: const Text("승인 완료"),
                 content: const Text("결제 승인이 완료되었습니다."),
                 actions: [
-                  TextButton(
+                  CupertinoDialogAction(
                     onPressed: () {
                       Navigator.of(context).pop(); // 다이얼로그 닫기
                       Navigator.of(context).pop(true); // 이전 화면으로 true 전달
                     },
-                    child: const Text("확인"),
+                    child: const Text("확인",
+                        style: TextStyle(color: Color(0xFFC10230))),
                   ),
                 ],
               ),
@@ -94,15 +96,16 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        showDialog(
+        showCupertinoDialog(
           context: context,
-          builder: (_) => AlertDialog(
+          builder: (_) => CupertinoAlertDialog(
             title: const Text("오류"),
             content: Text("승인 중 오류 발생: $e"),
             actions: [
-              TextButton(
+              CupertinoDialogAction(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text("확인"),
+                child: const Text("확인",
+                    style: TextStyle(color: Color(0xFFC10230))),
               ),
             ],
           ),
@@ -119,149 +122,175 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        // AppBar 스타일 변경
-        toolbarHeight: 70,
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.close_rounded,
-            color: Colors.black,
-            size: 30,
+        appBar: AppBar(
+          toolbarHeight: 70,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.close_rounded,
+              color: Colors.black,
+              size: 30,
+            ),
+            onPressed: () => Navigator.of(context).pop(),
           ),
-          onPressed: () => Navigator.of(context).pop(),
+          centerTitle: true,
+          title: const Text(
+            '납부 내역 상세',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-        centerTitle: true,
-        title: const Text(
-          '납부 내역 상세',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Column(
-        // Column으로 감싸서 Divider 추가
-        children: [
-          const Divider(
-            // Divider 추가
-            height: 1,
-            thickness: 1,
-            color: Color(0xFFEEEDE3),
-          ),
-          Expanded(
-            child: FutureBuilder<Map<String, dynamic>>(
+        body: Column(
+          children: [
+            const Divider(
+              height: 1,
+              thickness: 1,
+              color: Color(0xFFEEEDE3),
+            ),
+            Expanded(
+              child: FutureBuilder<Map<String, dynamic>>(
+                future: paymentDetail,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("오류 발생: ${snapshot.error}"));
+                  } else if (!snapshot.hasData) {
+                    return const Center(child: Text("데이터 없음"));
+                  }
+
+                  final data = snapshot.data!;
+
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildPaymentImage(data["paymentPicture"]),
+                        const SizedBox(height: 32),
+                        _buildInfoTile("이름", data["name"]),
+                        _buildInfoTile("학번", data["studentId"]),
+                        _buildInfoTile("전화번호", data["phone"]),
+                        _buildInfoTile("행사", data["eventTitle"]),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            FutureBuilder<Map<String, dynamic>>(
               future: paymentDetail,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("오류 발생: ${snapshot.error}"));
-                } else if (!snapshot.hasData) {
-                  return const Center(child: Text("데이터 없음"));
+                if (snapshot.connectionState == ConnectionState.waiting ||
+                    !snapshot.hasData) {
+                  return const SizedBox.shrink();
                 }
-
                 final data = snapshot.data!;
-
+                final isApproved = data["paymentPermissionStatus"] == true;
                 return Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      _buildPaymentImage(data["paymentPicture"]),
-                      const SizedBox(height: 30),
-                      _buildInfoTile("이름", data["name"]),
-                      _buildInfoTile("학번", data["studentId"]),
-                      _buildInfoTile("전화번호", data["phone"]),
-                      _buildInfoTile("행사", data["eventTitle"]),
-                      const Spacer(),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: (data["paymentPermissionStatus"] == true ||
-                                  isApproving)
-                              ? null
-                              : () => approvePayment(widget.paymentId),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF282727),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: isApproving
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  data["paymentPermissionStatus"] == true
-                                      ? "승인 완료"
-                                      : "승인",
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                  padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                  child: SafeArea(
+                    child: ElevatedButton(
+                      onPressed: (isApproved || isApproving)
+                          ? null
+                          : () => approvePayment(widget.paymentId),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF334D61),
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        foregroundColor: Colors.white,
                       ),
-                    ],
+                      child: isApproving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              isApproved ? "승인 완료" : "승인",
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                    ),
                   ),
                 );
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildPaymentImage(String? imageUrl) {
     return Container(
-      height: 200,
-      alignment: Alignment.center,
+      width: 240,
+      height: 240,
       decoration: BoxDecoration(
-        color: Colors.grey[300],
-        borderRadius: BorderRadius.circular(10),
+        color: const Color(0xFFD9D9D9),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: imageUrl != null && imageUrl.isNotEmpty
-          ? Image.network(imageUrl, fit: BoxFit.cover)
-          : const Text("납부내역 사진", style: TextStyle(fontSize: 18)),
+          ? Center(
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                width: 240,
+                height: 240,
+              ),
+            )
+          : const Center(
+              // Added Center for the text as well
+              child: Text("납부내역 사진", style: TextStyle(fontSize: 14)),
+            ),
     );
   }
 
   Widget _buildInfoTile(String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFF334D61).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-              fontWeight: FontWeight.bold,
+          Expanded(
+            flex: 1,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black,
+              ),
             ),
           ),
-          Text(
-            value.isNotEmpty ? value : "-",
-            style: const TextStyle(fontSize: 16),
+          Expanded(
+            flex: 2,
+            child: Text(
+              value.isNotEmpty ? value : "-",
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black.withOpacity(0.5),
+                  fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),

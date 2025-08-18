@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:PASSTIME/widgets/admin_menu_button.dart';
 import 'package:PASSTIME/widgets/custom_app_bar.dart';
 import 'package:PASSTIME/admin/request_admin_detail_screen.dart';
 
@@ -80,8 +79,6 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
 
                       return GestureDetector(
                         onTap: () {
-                          // Container를 탭하면 RequestAdminDetailScreen으로 이동합니다.
-                          // Navigator.push를 사용하여 새 화면을 스택에 추가합니다.
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -169,7 +166,6 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
           ),
         ],
       ),
-      floatingActionButton: const AdminMenuButton(),
     );
   }
 }
