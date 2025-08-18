@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:PASSTIME/widgets/admin_menu_button.dart';
 import 'package:PASSTIME/cookiejar_singleton.dart';
+import 'package:PASSTIME/widgets/refund_ticket_card.dart';
+import 'package:flutter/cupertino.dart';
 
 class RequestRefundListScreen extends StatefulWidget {
   const RequestRefundListScreen({super.key});
@@ -16,21 +18,19 @@ class RequestRefundListScreen extends StatefulWidget {
 }
 
 class _RequestRefundListScreenState extends State<RequestRefundListScreen> {
-  List<Map<String, dynamic>> refundRequests = [];
-  bool isLoading = true;
+  late Future<List<Map<String, dynamic>>> _refundRequestsFuture;
 
   @override
   void initState() {
     super.initState();
-    _fetchRefundRequests();
+    _refundRequestsFuture = _fetchRefundRequests();
   }
 
-  Future<void> _fetchRefundRequests() async {
+  Future<List<Map<String, dynamic>>> _fetchRefundRequests() async {
     final url = Uri.parse('${dotenv.env['API_BASE_URL']}/refund/list');
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
     try {
-      // 🍪 쿠키를 로드하고 요청 헤더에 추가
       final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
       final cookieHeader = cookies.isNotEmpty
           ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
@@ -46,43 +46,33 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-
         if (data['isSuccess'] == true) {
-          setState(() {
-            refundRequests = List<Map<String, dynamic>>.from(
-              data['result'].map((refund) {
-                return {
-                  '_id': refund['_id'],
-                  'title': refund['eventName'],
-                  'studentInfo': refund['name'],
-                  'visitTime':
-                      '${refund['visitDate']} / ${refund['visitTime']}',
-                  'status': refund['refundPermissionStatus'] == 'TRUE'
-                      ? '승인됨'
-                      : '미승인',
-                  'statusColor': refund['refundPermissionStatus'] == 'TRUE'
-                      ? const Color(0xFF6035FB)
-                      : const Color(0xFFDE4244),
-                  'refundReason': refund['refundReason'],
-                };
-              }).toList(),
-            );
-            isLoading = false;
-          });
+          final List<dynamic> result = data['result'];
+          return result.map((refund) {
+            return {
+              '_id': refund['_id'],
+              'title': refund['eventName'],
+              'studentInfo': '${refund['studentId']} • ${refund['name']}',
+              'visitTime': '${refund['visitDate']} • ${refund['visitTime']}',
+              'status':
+                  refund['refundPermissionStatus'] == 'TRUE' ? '승인됨' : '미승인',
+              'statusColor': refund['refundPermissionStatus'] == 'TRUE'
+                  ? const Color(0xFF334D61)
+                  : const Color(0xFFC10230),
+              'refundReason': refund['refundReason'],
+            };
+          }).toList();
         } else {
-          setState(() {
-            isLoading = false;
-          });
+          // 데이터 불러오기 실패 시 빈 리스트 반환
+          return [];
         }
       } else {
-        setState(() {
-          isLoading = false;
-        });
+        // 서버 응답 오류 시 빈 리스트 반환
+        return [];
       }
     } catch (error) {
-      setState(() {
-        isLoading = false;
-      });
+      // 에러 발생 시 빈 리스트 반환
+      return [];
     }
   }
 
@@ -100,95 +90,74 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen> {
             color: Color(0xFFEEEDE3),
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : refundRequests.isEmpty
-                      ? Center(
-                          child: Align(
-                            alignment: const Alignment(0.0, -0.15),
-                            child: Text(
-                              '환불 신청 목록이 없습니다',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  color:
-                                      const Color(0xFF334D61).withOpacity(0.5),
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: refundRequests.length,
-                          itemBuilder: (context, index) {
-                            final refund = refundRequests[index];
-                            return GestureDetector(
-                              onTap: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => RequestRefundDetailScreen(
-                                        refundId: refund['_id']),
-                                  ),
-                                );
-                                if (result == true) {
-                                  _fetchRefundRequests();
-                                }
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          refund['title']!,
-                                          style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: refund['statusColor'],
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          child: Text(
-                                            refund['status']!,
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    if (refund['studentInfo']!.isNotEmpty)
-                                      Text("학생 정보  ${refund['studentInfo']}",
-                                          style: const TextStyle(fontSize: 14)),
-                                    if (refund['visitTime']!.isNotEmpty)
-                                      Text("방문 시간  ${refund['visitTime']}",
-                                          style: const TextStyle(fontSize: 14)),
-                                    if (refund['refundReason']!.isNotEmpty)
-                                      Text("환불 사유  ${refund['refundReason']}",
-                                          style: const TextStyle(fontSize: 14)),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+            child: RefreshIndicator(
+              color: Colors.black,
+              backgroundColor: Colors.white,
+              onRefresh: () async {
+                setState(() {
+                  _refundRequestsFuture = _fetchRefundRequests();
+                });
+              },
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _refundRequestsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data!.isEmpty) {
+                    return Align(
+                      alignment: const Alignment(0.0, -0.15),
+                      child: Text(
+                        '환불 신청 목록이 없습니다',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: const Color(0xFF334D61).withOpacity(0.5),
+                          fontWeight: FontWeight.bold,
                         ),
+                      ),
+                    );
+                  } else {
+                    final refundRequests = snapshot.data!;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10.0, vertical: 0),
+                      child: ListView.builder(
+                        itemCount: refundRequests.length,
+                        itemBuilder: (context, index) {
+                          final refund = refundRequests[index];
+                          return Padding(
+                              padding:
+                                  EdgeInsets.only(top: index == 0 ? 10.0 : 5.0),
+                              child: RefundTicketCard(
+                                title: refund['title']!,
+                                studentInfo: refund['studentInfo']!,
+                                visitTime: refund['visitTime']!,
+                                refundReason: refund['refundReason']!,
+                                status: refund['status']!,
+                                statusColor: refund['statusColor']!,
+                                onTap: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => RequestRefundDetailScreen(
+                                          refundId: refund['_id']),
+                                    ),
+                                  );
+                                  if (result == true) {
+                                    setState(() {
+                                      _refundRequestsFuture =
+                                          _fetchRefundRequests();
+                                    });
+                                  }
+                                },
+                              ));
+                        },
+                      ),
+                    );
+                  }
+                },
+              ),
             ),
           ),
         ],

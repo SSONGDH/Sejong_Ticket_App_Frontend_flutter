@@ -51,7 +51,7 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
               'ticketId': item['_id'],
               'title': item['eventTitle'],
               'dateTime':
-                  '${item['eventDay']} · ${item['eventStartTime'].toString().substring(0, 5)}',
+                  '${item['eventDay']} • ${item['eventStartTime'].toString().substring(0, 5)}',
               'location': item['eventPlace'],
             };
           }).toList();

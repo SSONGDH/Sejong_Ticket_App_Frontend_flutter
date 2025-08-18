@@ -156,7 +156,7 @@ class _TicketScreenState extends State<TicketScreen> {
                             ticketId: ticket['_id'],
                             title: ticket['eventTitle'],
                             dateTime:
-                                '${ticket['eventDay']} · ${ticket['eventStartTime']}',
+                                '${ticket['eventDay']} • ${ticket['eventStartTime']}',
                             location: ticket['eventPlace'],
                             status: '${ticket['status']}',
                             statusColor: _getStatusColor(ticket['status']),

@@ -89,9 +89,9 @@ class _RefundScreenState extends State<RefundScreen> {
                 _buildDetailRow("학번", data["studentId"]),
                 _buildDetailRow("행사", data["eventName"]),
                 _buildDetailRow("환불 사유", data["refundReason"]),
-                _buildDetailRow(
-                    "방문 일시", "${data["visitDate"]} / ${data["visitTime"]}"),
-                _buildDetailRow("환불 상태", data["refundPermissionStatus"]),
+                _buildDetailRow("방문 가능 날짜", data["visitDate"]),
+                _buildDetailRow("방문 가능 시간", data["visitTime"]),
+                _buildDetailRow("상태", data["refundPermissionStatus"]),
               ],
             ),
           );
@@ -102,26 +102,33 @@ class _RefundScreenState extends State<RefundScreen> {
 
   Widget _buildDetailRow(String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFF334D61).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-              fontWeight: FontWeight.bold,
+          Expanded(
+            flex: 1,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black,
+              ),
             ),
           ),
-          Text(
-            value.isNotEmpty ? value : "-",
-            style: const TextStyle(fontSize: 16),
+          Expanded(
+            flex: 2,
+            child: Text(
+              value.isNotEmpty ? value : "-",
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black.withOpacity(0.5),
+              ),
+            ),
           ),
         ],
       ),

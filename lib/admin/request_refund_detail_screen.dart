@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 
 class RequestRefundDetailScreen extends StatefulWidget {
   final String refundId;
@@ -56,20 +57,21 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
         });
 
         if (context.mounted) {
-          showDialog(
+          showCupertinoDialog(
             context: context,
-            builder: (_) => AlertDialog(
+            builder: (_) => CupertinoAlertDialog(
               title: Text(approve ? "승인 완료" : "미승인 처리 완료"),
               content: Text(
                 approve ? "환불 요청이 승인되었습니다." : "환불 요청이 미승인 처리되었습니다.",
               ),
               actions: [
-                TextButton(
+                CupertinoDialogAction(
                   onPressed: () {
                     Navigator.of(context).pop(); // 알림창 닫기
                     Navigator.of(context).pop(true); // 이전 화면으로 true 전달
                   },
-                  child: const Text("확인"),
+                  child: const Text("확인",
+                      style: TextStyle(color: Color(0xFFC10230))),
                 ),
               ],
             ),
@@ -80,15 +82,16 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        showDialog(
+        showCupertinoDialog(
           context: context,
-          builder: (_) => AlertDialog(
+          builder: (_) => CupertinoAlertDialog(
             title: const Text("오류"),
             content: Text("상태 변경 중 오류 발생: $e"),
             actions: [
-              TextButton(
+              CupertinoDialogAction(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text("확인"),
+                child: const Text("확인",
+                    style: TextStyle(color: Color(0xFFC10230))),
               ),
             ],
           ),
@@ -126,10 +129,8 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
         ),
       ),
       body: Column(
-        // Column으로 감싸서 Divider 추가
         children: [
           const Divider(
-            // Divider 추가
             height: 1,
             thickness: 1,
             color: Color(0xFFEEEDE3),
@@ -147,8 +148,6 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
                 }
 
                 final data = snapshot.data!;
-                final isApproved = data["refundPermissionStatus"] == 'TRUE';
-
                 return Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -161,30 +160,44 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
                       _buildDetailRow("환불 사유", data["refundReason"]),
                       _buildDetailRow("방문 가능 날짜", data["visitDate"]),
                       _buildDetailRow("방문 가능 시간", data["visitTime"]),
-                      const Spacer(),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => _updateRefundStatus(!isApproved),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF282727),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            isApproved ? "미승인" : "승인",
-                            style: const TextStyle(
-                                fontSize: 18, color: Colors.white),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 );
               },
             ),
+          ),
+          FutureBuilder<Map<String, dynamic>>(
+            future: refundDetail,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting ||
+                  !snapshot.hasData) {
+                return const SizedBox.shrink(); // 데이터 로딩 중에는 버튼을 숨깁니다.
+              }
+              final data = snapshot.data!;
+              final isApproved = data["refundPermissionStatus"] == 'TRUE';
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                child: SafeArea(
+                  child: ElevatedButton(
+                    onPressed: () => _updateRefundStatus(!isApproved),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF334D61),
+                      minimumSize: const Size(double.infinity, 55),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(
+                      isApproved ? "미승인" : "승인",
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -193,26 +206,33 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
 
   Widget _buildDetailRow(String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFF334D61).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-              fontWeight: FontWeight.bold,
+          Expanded(
+            flex: 1,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black,
+              ),
             ),
           ),
-          Text(
-            value.isNotEmpty ? value : "-",
-            style: const TextStyle(fontSize: 16),
+          Expanded(
+            flex: 2,
+            child: Text(
+              value.isNotEmpty ? value : "-",
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black.withOpacity(0.5),
+              ),
+            ),
           ),
         ],
       ),
