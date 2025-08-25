@@ -200,18 +200,26 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
                   child: SafeArea(
-                    child: ElevatedButton(
+                    child: // SendPaymentDetailScreen.dart 파일의 하단 FutureBuilder 내부
+
+                        ElevatedButton(
                       onPressed: (isApproved || isApproving)
                           ? null
                           : () => approvePayment(widget.paymentId),
                       style: ElevatedButton.styleFrom(
+                        // 활성화 상태일 때의 색상
                         backgroundColor: const Color(0xFF334D61),
+                        // ❗ 비활성화 상태일 때의 색상을 여기에 지정합니다.
+                        disabledBackgroundColor:
+                            const Color(0xFF334D61).withOpacity(0.3),
                         minimumSize: const Size(double.infinity, 55),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         foregroundColor: Colors.white,
+                        disabledForegroundColor:
+                            Colors.white.withOpacity(0.7), // 비활성화 시 텍스트 색상
                       ),
                       child: isApproving
                           ? const SizedBox(
@@ -223,7 +231,7 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
                               ),
                             )
                           : Text(
-                              isApproved ? "승인 완료" : "승인",
+                              isApproved ? "승인됨" : "승인",
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),

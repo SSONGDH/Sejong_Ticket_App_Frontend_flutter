@@ -185,7 +185,7 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
                           const Color(0xFFC10230).withOpacity(0.3),
                       minimumSize: const Size(double.infinity, 55),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(5),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       foregroundColor: Colors.white,

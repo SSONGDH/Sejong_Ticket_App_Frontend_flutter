@@ -320,7 +320,7 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
             disabledBackgroundColor: const Color(0xFF334D61).withOpacity(0.3),
             minimumSize: const Size(double.infinity, 55),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(5),
+              borderRadius: BorderRadius.circular(4),
             ),
             padding: const EdgeInsets.symmetric(vertical: 15),
             foregroundColor: Colors.white,
@@ -336,7 +336,7 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
                   ),
                 )
               : Text(
-                  isApproved ? "승인 완료" : "승인",
+                  isApproved ? "승인됨" : "승인",
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold),
                 ),
