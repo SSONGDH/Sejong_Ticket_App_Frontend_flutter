@@ -130,7 +130,16 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : hasError || ticketData == null
-              ? const Center(child: Text("입장권 유효기간이 만료되었습니다"))
+              ? Align(
+                  alignment: const Alignment(0.0, -0.15),
+                  child: Text(
+                    '입장권 유효기간이 만료되었습니다',
+                    style: TextStyle(
+                        fontSize: 16,
+                        color: const Color(0xFF334D61).withOpacity(0.5),
+                        fontWeight: FontWeight.bold),
+                  ),
+                )
               : SingleChildScrollView(
                   child: Center(
                     child: Column(
