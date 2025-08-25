@@ -115,6 +115,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // 문의사항 팝업을 표시하는 함수
+  void _showInquiryDialog() {
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: const Text("문의사항"),
+          content: const Text(
+            "궁금한 점이 있으신가요?\n아래로 문의해주세요. 📬\n\nsky900156@naver.com\njmyoon4339@sju.ac.kr",
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () {
+                Navigator.of(context).pop(); // 팝업 닫기
+              },
+              child:
+                  const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showLogoutDialog() {
     showCupertinoDialog(
       context: context,
@@ -180,7 +204,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                _buildCustomTile(title: '문의사항', infoText: '010-8839-3384'),
+                // '문의사항' 타일을 GestureDetector로 감싸서 탭 이벤트 처리
+                GestureDetector(
+                  onTap: _showInquiryDialog,
+                  child: _buildCustomTile(title: '문의사항', infoText: '클릭'),
+                ),
                 const SizedBox(height: 16),
                 _buildCustomTile(title: '패치버전', infoText: '1.0.1'),
                 const SizedBox(height: 48),
