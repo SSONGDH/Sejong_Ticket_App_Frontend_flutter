@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:PASSTIME/admin/admin_ticket_screen.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
+import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import '../place_search_screen.dart';
 
 class TicketEditScreen extends StatefulWidget {
@@ -33,6 +34,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
   File? _pickedImage;
   bool _isLoading = true;
   Map<String, dynamic>? _initialTicketData;
+  KakaoMapController? _mapController; // 2. 지도 컨트롤러 변수 추가
 
   @override
   void initState() {
@@ -56,6 +58,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     _placeCommentController.dispose();
     _commentController.dispose();
     _codeController.dispose();
+    _mapController?.dispose(); // 컨트롤러 dispose 추가
     super.dispose();
   }
 
@@ -124,7 +127,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     }
   }
 
-  // 서버 형식(YYYY-MM-DD)을 화면 표시 형식(YYYY.MM.DD(요일))으로 변환
   String _formatDateForDisplay(String date) {
     try {
       final dateTime = DateTime.parse(date);
@@ -138,7 +140,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     }
   }
 
-  // 서버 형식(HH:mm:ss)을 24시간 형식(HH:mm)으로 변환
   String _formatTimeForDisplay(String time) {
     try {
       final parts = time.split(':');
@@ -153,14 +154,12 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
   Future<void> _submit() async {
     final uri = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/modifyTicket');
 
-    // 날짜를 서버 형식(YYYY-MM-DD)에 맞게 변환
     String? eventDay;
     if (selectedDate != null) {
       final dateParts = selectedDate!.split('(').first.split('.');
       eventDay = '${dateParts[0]}-${dateParts[1]}-${dateParts[2]}';
     }
 
-    // 시간을 서버 형식(HH:mm:00)에 맞게 변환
     String? eventStartTime;
     if (selectedStartTime != null) {
       eventStartTime = '$selectedStartTime:00';
@@ -288,13 +287,17 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
 
     if (currentData['eventTitle'] != _initialTicketData!['eventTitle'])
       return true;
-    if (currentData['eventDay'] !=
-        _formatDateForDisplay(_initialTicketData!['eventDay'])) return true;
-    if (currentData['eventStartTime'] !=
-        _formatTimeForDisplay(_initialTicketData!['eventStartTime']))
+    if (_initialTicketData!['eventDay'] != null &&
+        currentData['eventDay'] !=
+            _formatDateForDisplay(_initialTicketData!['eventDay'])) return true;
+    if (_initialTicketData!['eventStartTime'] != null &&
+        currentData['eventStartTime'] !=
+            _formatTimeForDisplay(_initialTicketData!['eventStartTime']))
       return true;
-    if (currentData['eventEndTime'] !=
-        _formatTimeForDisplay(_initialTicketData!['eventEndTime'])) return true;
+    if (_initialTicketData!['eventEndTime'] != null &&
+        currentData['eventEndTime'] !=
+            _formatTimeForDisplay(_initialTicketData!['eventEndTime']))
+      return true;
     if (currentData['eventPlace'] != _initialTicketData!['eventPlace'])
       return true;
     if (currentData['eventPlaceComment'] !=
@@ -386,6 +389,9 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                             const SizedBox(height: 14),
                             _buildEndTimePickerField(),
                             const SizedBox(height: 14),
+                            // 3. 지도 위젯 배치
+                            _buildKakaoMap(),
+                            const SizedBox(height: 14),
                             _buildPlaceSearchField(),
                             const SizedBox(height: 14),
                             _buildInputField(
@@ -442,10 +448,53 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     );
   }
 
+  // 4. 지도 위젯을 생성하는 메서드
+  Widget _buildKakaoMap() {
+    if (_selectedPlace == null ||
+        _selectedPlace!['y'] == null ||
+        _selectedPlace!['x'] == null) {
+      return SizedBox(
+        height: 200,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF334D61).withOpacity(0.05),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const Center(child: Text('지도 정보가 없습니다.')),
+        ),
+      );
+    } else {
+      try {
+        final double lat = double.parse(_selectedPlace!['y']);
+        final double lng = double.parse(_selectedPlace!['x']);
+        final LatLng position = LatLng(latitude: lat, longitude: lng);
+
+        return SizedBox(
+          height: 200,
+          child: KakaoMap(
+            onMapCreated: (controller) {
+              _mapController = controller;
+            },
+            initialPosition: position,
+            initialLevel: 17,
+          ),
+        );
+      } catch (e) {
+        return SizedBox(
+          height: 200,
+          child: Container(
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Center(child: Text('지도를 불러올 수 없습니다.'))),
+        );
+      }
+    }
+  }
+
   Widget _buildAffiliationDropdown() {
     final bool isAffiliationInList = affiliations.contains(selectedAffiliation);
-    final bool hasValue = isAffiliationInList && selectedAffiliation != null;
-
     final String? dropdownValue =
         isAffiliationInList ? selectedAffiliation : null;
 
@@ -473,9 +522,11 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
               child: DropdownButton<String>(
                 value: dropdownValue,
                 hint: Text(
-                  '소속 선택',
+                  selectedAffiliation ?? '소속 선택',
                   style: TextStyle(
-                    color: Colors.black.withOpacity(0.3),
+                    color: dropdownValue != null
+                        ? Colors.black
+                        : Colors.black.withOpacity(0.3),
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -500,8 +551,9 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                   });
                 },
                 style: TextStyle(
-                  color:
-                      hasValue ? Colors.black : Colors.black.withOpacity(0.3),
+                  color: dropdownValue != null
+                      ? Colors.black
+                      : Colors.black.withOpacity(0.3),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -653,6 +705,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     );
   }
 
+  // 5. 장소 선택 시 지도 카메라 이동 로직 추가
   Widget _buildPlaceSearchField() {
     final bool hasValue = _selectedPlace?['place_name'] != null &&
         _selectedPlace!['place_name'].isNotEmpty;
@@ -668,6 +721,18 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
             _selectedPlace = selected;
             _updateButtonState();
           });
+          if (_mapController != null) {
+            try {
+              final double lat = double.parse(selected['y']);
+              final double lng = double.parse(selected['x']);
+              final newPosition = LatLng(latitude: lat, longitude: lng);
+              _mapController!.moveCamera(
+                cameraUpdate: CameraUpdate.fromLatLng(newPosition),
+              );
+            } catch (e) {
+              debugPrint('Camera move failed: $e');
+            }
+          }
         }
       },
       child: _buildDisplayField(

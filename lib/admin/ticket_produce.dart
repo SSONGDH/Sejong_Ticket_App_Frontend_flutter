@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
+import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import '../place_search_screen.dart';
 
 class TicketProduceScreen extends StatefulWidget {
@@ -29,6 +30,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   final TextEditingController _eventCodeController = TextEditingController();
 
   Map<String, dynamic>? _selectedPlace;
+  KakaoMapController? _mapController; // 지도 컨트롤러 변수
 
   @override
   void initState() {
@@ -55,12 +57,13 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     _placeCommentController.dispose();
     _eventCommentController.dispose();
     _eventCodeController.dispose();
+    _mapController?.dispose();
     super.dispose();
   }
 
   Future<void> _loadEnvVariables() async {
     await dotenv.load();
-    print('API URL: ${dotenv.env['API_BASE_URL']}');
+    debugPrint('API URL: ${dotenv.env['API_BASE_URL']}');
   }
 
   Future<void> _fetchAffiliations() async {
@@ -78,10 +81,10 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           });
         }
       } else {
-        print('소속 리스트를 불러오는 데 실패했습니다: ${response.statusCode}');
+        debugPrint('소속 리스트를 불러오는 데 실패했습니다: ${response.statusCode}');
       }
     } catch (e) {
-      print('네트워크 오류: $e');
+      debugPrint('네트워크 오류: $e');
     }
   }
 
@@ -158,6 +161,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                       const SizedBox(height: 14),
                       _buildEndTimePickerField(),
                       const SizedBox(height: 14),
+                      _buildKakaoMap(),
+                      const SizedBox(height: 14),
                       _buildPlaceSearchField(),
                       const SizedBox(height: 14),
                       _buildInputField(
@@ -211,6 +216,62 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildKakaoMap() {
+    if (_selectedPlace == null) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: const Color(0xFF334D61).withOpacity(0.05),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Center(
+          child: Text(
+            '장소를 선택하면 여기에 지도가 표시됩니다.',
+            style: TextStyle(
+                color: Colors.black.withOpacity(0.3),
+                fontSize: 16,
+                fontWeight: FontWeight.w600),
+          ),
+        ),
+      );
+    } else {
+      try {
+        final double lat = double.parse(_selectedPlace!['y']);
+        final double lng = double.parse(_selectedPlace!['x']);
+        final LatLng position = LatLng(latitude: lat, longitude: lng);
+
+        return SizedBox(
+          height: 200,
+          child: IgnorePointer(
+            // 👈 여기서 지도 터치 막음
+            ignoring: true,
+            child: KakaoMap(
+              onMapCreated: (controller) {
+                _mapController = controller;
+              },
+              initialPosition: position,
+              initialLevel: 17,
+            ),
+          ),
+        );
+      } catch (e) {
+        return Container(
+          height: 200,
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const Center(
+            child: Text(
+              '장소의 좌표를 불러오는 데 실패했습니다.',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _showConfirmationDialog() {
@@ -311,15 +372,28 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         );
 
         if (selected != null) {
+          // 1. UI를 먼저 업데이트합니다.
           setState(() {
             _selectedPlace = selected;
             _updateButtonState();
-            if (_selectedPlace != null) {
-              print('장소 선택 완료!');
-              print('위도(y): ${_selectedPlace!['y']}');
-              print('경도(x): ${_selectedPlace!['x']}');
-            }
           });
+
+          // 2. 지도 컨트롤러가 준비되었다면 카메라를 이동시킵니다.
+          if (_mapController != null) {
+            try {
+              // 3. 새로 선택된 장소의 좌표를 파싱합니다.
+              final double lat = double.parse(selected['y']);
+              final double lng = double.parse(selected['x']);
+              final newPosition = LatLng(latitude: lat, longitude: lng);
+
+              // 4. 새로운 좌표로 카메라를 이동시킵니다. (cameraUpdate: 추가)
+              _mapController!.moveCamera(
+                cameraUpdate: CameraUpdate.fromLatLng(newPosition),
+              );
+            } catch (e) {
+              debugPrint('좌표 파싱 또는 카메라 이동 실패: $e');
+            }
+          }
         }
       },
       child: _buildDisplayField(
@@ -369,8 +443,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
       }
     };
 
-    print('Sending data to server:');
-    print(json.encode(body));
+    debugPrint('Sending data to server:');
+    debugPrint(json.encode(body));
 
     try {
       final response = await http.post(
@@ -383,13 +457,11 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
 
       final responseBody = utf8.decode(response.bodyBytes);
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: $responseBody');
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: $responseBody');
 
-      // 서버 응답을 Map으로 디코딩
       final decodedResponse = json.decode(responseBody);
 
-      // 이벤트 코드 중복 오류 확인
       if (decodedResponse['isSuccess'] == false &&
           decodedResponse['code'] == 'ERROR-0004') {
         if (!mounted) return;
@@ -407,10 +479,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
             ],
           ),
         );
-      }
-      // 성공적인 응답 처리 (200-299)
-      else if (response.statusCode >= 200 && response.statusCode < 300) {
-        print('Success response: $decodedResponse');
+      } else if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('Success response: $decodedResponse');
 
         if (!mounted) return;
 
@@ -420,11 +490,10 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
             MaterialPageRoute(builder: (context) => const AdminTicketScreen()),
           );
         });
-      }
-      // 기타 서버 오류 처리
-      else {
-        print(
+      } else {
+        debugPrint(
             'Error: Server responded with status code ${response.statusCode}');
+        if (!mounted) return;
         showCupertinoDialog(
           context: context,
           builder: (context) => CupertinoAlertDialog(
@@ -442,7 +511,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         );
       }
     } catch (e) {
-      print('Error during ticket creation: $e');
+      debugPrint('Error during ticket creation: $e');
+      if (!mounted) return;
       showCupertinoDialog(
         context: context,
         builder: (context) => CupertinoAlertDialog(
@@ -467,7 +537,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF334D61).withOpacity(0.05),
         borderRadius: BorderRadius.circular(4),
@@ -605,7 +675,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     required bool hasValue,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF334D61).withOpacity(0.05),
         borderRadius: BorderRadius.circular(4),

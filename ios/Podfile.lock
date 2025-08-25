@@ -65,8 +65,17 @@ PODS:
     - GoogleUtilities/Privacy
   - image_picker_ios (0.0.1):
     - Flutter
+  - kakao_flutter_sdk_common (1.9.7-3):
+    - Flutter
   - kakao_map_plugin (0.0.1):
     - Flutter
+  - kakao_map_sdk (1.1.4):
+    - Flutter
+    - KakaoMapsSDK (= 2.12.5)
+  - kakao_maps_flutter (0.0.1):
+    - Flutter
+    - KakaoMapsSDK (~> 2.12.5)
+  - KakaoMapsSDK (2.12.5)
   - nanopb (3.30910.0):
     - nanopb/decode (= 3.30910.0)
     - nanopb/encode (= 3.30910.0)
@@ -89,7 +98,10 @@ DEPENDENCIES:
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_nfc_kit (from `.symlinks/plugins/flutter_nfc_kit/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
+  - kakao_flutter_sdk_common (from `.symlinks/plugins/kakao_flutter_sdk_common/ios`)
   - kakao_map_plugin (from `.symlinks/plugins/kakao_map_plugin/ios`)
+  - kakao_map_sdk (from `.symlinks/plugins/kakao_map_sdk/ios`)
+  - kakao_maps_flutter (from `.symlinks/plugins/kakao_maps_flutter/ios`)
   - nfc_manager (from `.symlinks/plugins/nfc_manager/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
@@ -103,6 +115,7 @@ SPEC REPOS:
     - FirebaseMessaging
     - GoogleDataTransport
     - GoogleUtilities
+    - KakaoMapsSDK
     - nanopb
     - PromisesObjC
 
@@ -119,8 +132,14 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_nfc_kit/ios"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
+  kakao_flutter_sdk_common:
+    :path: ".symlinks/plugins/kakao_flutter_sdk_common/ios"
   kakao_map_plugin:
     :path: ".symlinks/plugins/kakao_map_plugin/ios"
+  kakao_map_sdk:
+    :path: ".symlinks/plugins/kakao_map_sdk/ios"
+  kakao_maps_flutter:
+    :path: ".symlinks/plugins/kakao_maps_flutter/ios"
   nfc_manager:
     :path: ".symlinks/plugins/nfc_manager/ios"
   shared_preferences_foundation:
@@ -142,7 +161,11 @@ SPEC CHECKSUMS:
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   image_picker_ios: 7fe1ff8e34c1790d6fff70a32484959f563a928a
+  kakao_flutter_sdk_common: 600d55b532da0bd37268a529e1add49302477710
   kakao_map_plugin: 4d54a08bb9f59383c361f6f2d5526b5359ccb728
+  kakao_map_sdk: e42369efadf150c9c0fccc630d441122ff1f1b0f
+  kakao_maps_flutter: 145c86ebbd402a13d54adb9e8ae3a620d71546f3
+  KakaoMapsSDK: c41700e1579054e310e9238c8111bd5275b19ef3
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   nfc_manager: 9c40fe22528ab871ca11e52ea8b95790e9d92ca2
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47

@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
 import 'package:marquee/marquee.dart';
 import 'package:PASSTIME/menu/request_refund.dart';
+import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 
 class TicketDetailScreen extends StatefulWidget {
   final String ticketId;
@@ -56,6 +57,49 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     }
   }
 
+  Widget _buildKakaoMap() {
+    final kakaoPlace = ticketData?['kakaoPlace'] as Map<String, dynamic>?;
+
+    if (kakaoPlace == null ||
+        kakaoPlace['y'] == null ||
+        kakaoPlace['x'] == null) {
+      return Container(
+        height: 200,
+        width: double.infinity,
+        color: Colors.grey[300],
+        child: const Center(
+          child: Text(
+            "지도 정보를 불러올 수 없습니다.",
+            style: TextStyle(color: Colors.black54, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    try {
+      final double lat = double.parse(kakaoPlace['y']);
+      final double lng = double.parse(kakaoPlace['x']);
+      final LatLng position = LatLng(latitude: lat, longitude: lng);
+
+      return KakaoMap(
+        initialPosition: position,
+        initialLevel: 17,
+      );
+    } catch (e) {
+      return Container(
+        height: 200,
+        width: double.infinity,
+        color: Colors.grey[300],
+        child: const Center(
+          child: Text(
+            "잘못된 지도 정보입니다.",
+            style: TextStyle(color: Colors.black54, fontSize: 16),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,6 +142,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                             borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(20),
                               topRight: Radius.circular(20),
+                              bottomLeft: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
                             ),
                           ),
                           child: Stack(
@@ -275,48 +321,43 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                       child: Container(),
                                     ),
                                   ),
-                                  // 지도 + Marquee 영역
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        left: 0.0, right: 0.0, bottom: 0.0),
-                                    child: Column(
+                                  // 2. 지도 + Marquee 영역 (Stack으로 변경)
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.only(
+                                      bottomLeft: Radius.circular(20),
+                                      bottomRight: Radius.circular(20),
+                                    ),
+                                    child: Stack(
                                       children: [
-                                        ClipRRect(
-                                          child: Container(
-                                            height: 200,
-                                            width: double.infinity,
-                                            color: Colors.grey[300],
-                                            child: const Center(
-                                              child: Text(
-                                                "지도 표시 영역",
-                                                style: TextStyle(
-                                                  color: Colors.black54,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                            ),
+                                        // 지도 (배경)
+                                        SizedBox(
+                                          height: 200,
+                                          width: double.infinity,
+                                          child: IgnorePointer(
+                                            ignoring: true,
+                                            child: _buildKakaoMap(),
                                           ),
                                         ),
-                                        Container(
-                                          width: double.infinity,
-                                          height: 20,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFC10230),
-                                            borderRadius: BorderRadius.only(
-                                              bottomLeft: Radius.circular(20),
-                                              bottomRight: Radius.circular(20),
+                                        // Marquee (지도 위에 겹쳐짐)
+                                        Positioned(
+                                          bottom: 0,
+                                          left: 0,
+                                          right: 0,
+                                          child: Container(
+                                            width: double.infinity,
+                                            height: 23,
+                                            color: const Color(0xFFC10230),
+                                            child: Marquee(
+                                              text: "캡쳐하신 입장권은 사용할 수 없습니다.",
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                              scrollAxis: Axis.horizontal,
+                                              blankSpace: 50.0,
+                                              velocity: 50.0,
                                             ),
-                                          ),
-                                          child: Marquee(
-                                            text: "캡쳐하신 입장권은 사용할 수 없습니다.",
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
-                                            ),
-                                            scrollAxis: Axis.horizontal,
-                                            blankSpace: 50.0,
-                                            velocity: 50.0,
                                           ),
                                         ),
                                       ],
