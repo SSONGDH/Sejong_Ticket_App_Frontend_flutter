@@ -103,11 +103,10 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // <-- 이 부분을 추가하여 뒤로 가기 동작을 비활성화합니다.
+      canPop: false, // 시스템 뒤로가기 동작 제어
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          // AppBar 스타일 변경
           toolbarHeight: 70,
           backgroundColor: Colors.white,
           elevation: 0,
@@ -118,7 +117,8 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
               color: Colors.black,
               size: 30,
             ),
-            onPressed: () => Navigator.of(context).pop(),
+            // ✅ 제안: 이전 화면에 변경사항 없음을 알리기 위해 false 전달
+            onPressed: () => Navigator.of(context).pop(false),
           ),
           centerTitle: true,
           title: const Text(
@@ -173,17 +173,21 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting ||
                     !snapshot.hasData) {
-                  return const SizedBox.shrink(); // 데이터 로딩 중에는 버튼을 숨깁니다.
+                  return const SizedBox.shrink();
                 }
                 final data = snapshot.data!;
-                final isApproved = data["refundPermissionStatus"] == 'TRUE';
+                // ✅ 수정: Boolean 타입으로 직접 비교
+                final isApproved = data["refundPermissionStatus"] == true;
+
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
                   child: SafeArea(
                     child: ElevatedButton(
                       onPressed: () => _updateRefundStatus(!isApproved),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF334D61),
+                        backgroundColor: isApproved
+                            ? const Color(0xFFC10230) // 미승인 상태일 때의 색상
+                            : const Color(0xFF334D61), // 승인 상태일 때의 색상
                         minimumSize: const Size(double.infinity, 55),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
