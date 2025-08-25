@@ -56,10 +56,6 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
   Future<AffiliationRequest>? _requestDetailFuture;
   bool _isApproving = false;
 
-  Future<String> _getAccessToken() async {
-    return 'YOUR_ACCESS_TOKEN'; // TODO: 실제 액세스 토큰으로 교체!
-  }
-
   @override
   void initState() {
     super.initState();
@@ -69,10 +65,8 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
   Future<AffiliationRequest> _fetchRequestDetails() async {
     final url = Uri.parse(
         '${dotenv.env['API_BASE_URL']}/affiliation/affiliationRequests/${widget.requestId}');
-    final accessToken = await _getAccessToken();
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $accessToken',
     };
     print('[GET] Requesting URL: $url');
     try {
@@ -123,10 +117,8 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
     });
     final url = Uri.parse(
         '${dotenv.env['API_BASE_URL']}/affiliation/approve?requestId=${widget.requestId}');
-    final accessToken = await _getAccessToken();
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $accessToken',
     };
     print('[POST] Requesting URL: $url');
 
@@ -143,7 +135,6 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
             content: const Text('성공적으로 승인되었습니다.'),
             actions: [
               CupertinoDialogAction(
-                isDefaultAction: true,
                 child: const Text('확인',
                     style: TextStyle(color: Color(0xFFC10230))),
                 onPressed: () {

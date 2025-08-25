@@ -153,7 +153,7 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
                                     ),
                                   ),
                                   Expanded(
-                                    flex: 2,
+                                    flex: 3,
                                     child: Text(
                                       request['department']!,
                                       style: TextStyle(
