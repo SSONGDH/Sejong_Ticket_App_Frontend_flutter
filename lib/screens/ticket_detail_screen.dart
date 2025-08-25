@@ -369,6 +369,20 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                             ),
                                           ),
                                         ),
+                                        // 여기에 이미지 추가
+                                        Positioned(
+                                          top: 65, // Stack 상단에서 20픽셀 아래에 위치
+                                          left: 0,
+                                          right: 0,
+                                          child: Align(
+                                            alignment: Alignment.center,
+                                            child: Image.asset(
+                                              'assets/images/marker.png', // 사용할 이미지 경로
+                                              width: 40, // 이미지 너비
+                                              height: 40, // 이미지 높이
+                                            ),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
