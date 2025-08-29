@@ -132,10 +132,10 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
         ),
         body: Column(
           children: [
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: Color(0xFFEEEDE3),
+            Divider(
+              height: 2,
+              thickness: 2,
+              color: const Color(0xFF334D61).withOpacity(0.05),
             ),
             Expanded(
               child: FutureBuilder<Map<String, dynamic>>(

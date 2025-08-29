@@ -15,19 +15,42 @@ class SendPaymentListScreen extends StatefulWidget {
   _SendPaymentListScreenState createState() => _SendPaymentListScreenState();
 }
 
-class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
+class _SendPaymentListScreenState extends State<SendPaymentListScreen>
+    with SingleTickerProviderStateMixin {
+  TabController? _tabController;
+
+  List<Map<String, dynamic>> _affiliations = [];
   Map<String, bool> _switchValues = {};
   Map<String, Map<String, String>> _paymentData = {};
-  bool isLoading = true;
+  bool _isAffiliationLoading = true;
+  bool _isPaymentLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _fetchPaymentData();
+    _fetchAffiliations();
   }
 
-  Future<void> _fetchPaymentData() async {
-    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/payment/list');
+  @override
+  void dispose() {
+    _tabController?.removeListener(_handleTabSelection);
+    _tabController?.dispose();
+    super.dispose();
+  }
+
+  void _handleTabSelection() {
+    if (_tabController != null && !_tabController!.indexIsChanging) {
+      // '전체' 탭을 포함한 _affiliations 리스트에서 현재 탭의 id를 가져옵니다.
+      // '전체' 탭의 id는 null이므로, _fetchPaymentData가 올바르게 호출됩니다.
+      final selectedAffiliationId = _affiliations[_tabController!.index]['id'];
+      _fetchPaymentData(affiliationId: selectedAffiliationId);
+    }
+  }
+
+  Future<void> _fetchAffiliations() async {
+    final url =
+        Uri.parse('${dotenv.env['API_BASE_URL']}/user/adminAffilliation/list');
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
     try {
@@ -36,48 +59,107 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
           ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
           : '';
 
-      final response = await http.get(
-        url,
-        headers: {
-          'Cookie': cookieHeader,
-        },
-      );
-      print(response.body);
+      final response = await http.get(url, headers: {'Cookie': cookieHeader});
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['isSuccess'] == true) {
+
+        if (data['success'] == true && data['affiliations'] != null) {
+          List<Map<String, dynamic>> fetchedAffiliations =
+              List<Map<String, dynamic>>.from(data['affiliations']);
+
+          // [핵심 로직 1] '전체' 탭을 위한 가상 데이터를 리스트 가장 앞에 추가합니다.
+          // id를 null로 설정하여 '전체' 탭임을 구분합니다.
+          fetchedAffiliations.insert(0, {'id': null, 'name': '전체'});
+
           setState(() {
-            _paymentData = {};
-            _switchValues = {};
+            _affiliations = fetchedAffiliations;
+            _isAffiliationLoading = false;
 
-            for (var payment in data['result']) {
-              final studentId = payment['studentId'];
-              final name = payment['name'];
-              final paymentId = payment['paymentId'];
+            if (_affiliations.isNotEmpty) {
+              _tabController =
+                  TabController(length: _affiliations.length, vsync: this);
+              _tabController!.addListener(_handleTabSelection);
 
-              _paymentData[paymentId] = {
-                'name': name,
-                'studentId': studentId,
-              };
-              _switchValues[paymentId] =
-                  payment['paymentPermissionStatus'] as bool;
+              // 화면 첫 로딩 시 '전체' 목록을 불러오도록 affiliationId를 null로 전달합니다.
+              _fetchPaymentData(affiliationId: null);
             }
-            isLoading = false;
           });
         } else {
           setState(() {
-            isLoading = false;
+            _isAffiliationLoading = false;
+            _errorMessage = data['message'] ?? "소속 목록을 불러오는데 실패했습니다.";
           });
         }
       } else {
         setState(() {
-          isLoading = false;
+          _isAffiliationLoading = false;
+          _errorMessage = "서버 오류: ${response.statusCode}";
         });
       }
-    } catch (error) {
+    } catch (e) {
       setState(() {
-        isLoading = false;
+        _isAffiliationLoading = false;
+        _errorMessage = "네트워크 오류: $e";
+      });
+    }
+  }
+
+  // [핵심 로직 2] affiliationId를 nullable(String?)로 변경하여 null 값을 받을 수 있게 합니다.
+  Future<void> _fetchPaymentData({String? affiliationId}) async {
+    setState(() {
+      _isPaymentLoading = true;
+      _paymentData = {};
+      _switchValues = {};
+    });
+
+    // [핵심 로직 3] affiliationId가 null이면 쿼리 파라미터를 붙이지 않고, 값이 있으면 붙입니다.
+    String urlString = '${dotenv.env['API_BASE_URL']}/payment/list';
+    if (affiliationId != null) {
+      urlString += '?affiliationId=$affiliationId';
+    }
+    final url = Uri.parse(urlString);
+    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+
+    try {
+      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+      final cookieHeader = cookies.isNotEmpty
+          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
+          : '';
+
+      final response = await http.get(url, headers: {'Cookie': cookieHeader});
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['isSuccess'] == true && data['result'] != null) {
+          final newPaymentData = <String, Map<String, String>>{};
+          final newSwitchValues = <String, bool>{};
+
+          for (var payment in data['result']) {
+            final studentId = payment['studentId']?.toString() ?? 'ID 없음';
+            final name = payment['name']?.toString() ?? '이름 없음';
+            final paymentId = payment['paymentId']?.toString();
+
+            if (paymentId != null) {
+              newPaymentData[paymentId] = {
+                'name': name,
+                'studentId': studentId,
+              };
+              newSwitchValues[paymentId] =
+                  payment['paymentPermissionStatus'] as bool? ?? false;
+            }
+          }
+          setState(() {
+            _paymentData = newPaymentData;
+            _switchValues = newSwitchValues;
+          });
+        }
+      }
+    } catch (error) {
+      // 에러 처리
+    } finally {
+      setState(() {
+        _isPaymentLoading = false;
       });
     }
   }
@@ -167,41 +249,64 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
       backgroundColor: Colors.white,
       appBar: const CustomAppBar(title: "납부 내역 목록"),
       floatingActionButton: const AdminMenuButton(),
-      body: Column(
-        children: [
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: Color(0xFFEEEDE3),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _paymentData.isEmpty
-                      ? Center(
-                          child: Align(
-                            alignment: const Alignment(0.0, -0.15),
-                            child: Text(
-                              '납부 내역 목록이 없습니다',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  color:
-                                      const Color(0xFF334D61).withOpacity(0.5),
-                                  fontWeight: FontWeight.bold),
-                            ),
+      body: _isAffiliationLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(child: Text(_errorMessage!))
+              : _affiliations.isEmpty
+                  ? const Center(child: Text("관리 중인 소속이 없습니다."))
+                  : Column(
+                      children: [
+                        Container(
+                          color: Colors.white,
+                          child: TabBar(
+                            isScrollable: true,
+                            controller: _tabController,
+                            tabAlignment: TabAlignment.start,
+                            tabs: _affiliations.map((affiliation) {
+                              return Tab(text: affiliation['name']);
+                            }).toList(),
+                            labelColor: const Color(0xFFC10230),
+                            unselectedLabelColor: Colors.grey,
+                            indicatorColor: const Color(0xFFC10230),
                           ),
-                        )
-                      : ListView(
-                          children: _paymentData.keys
-                              .map((paymentId) => _buildListItem(paymentId))
-                              .toList(),
                         ),
-            ),
-          ),
-        ],
-      ),
+                        Expanded(
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: _affiliations.map((_) {
+                              return _buildPaymentList();
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+    );
+  }
+
+  Widget _buildPaymentList() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: _isPaymentLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _paymentData.isEmpty
+              ? Center(
+                  child: Align(
+                    alignment: const Alignment(0.0, -0.15),
+                    child: Text(
+                      '납부 내역 목록이 없습니다',
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: const Color(0xFF334D61).withOpacity(0.5),
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                )
+              : ListView(
+                  children: _paymentData.keys
+                      .map((paymentId) => _buildListItem(paymentId))
+                      .toList(),
+                ),
     );
   }
 
@@ -228,7 +333,7 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
         child: Row(
           children: [
             Expanded(
-              flex: 2,
+              flex: 4,
               child: Text(
                 studentId,
                 style: TextStyle(
@@ -238,7 +343,7 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen> {
               ),
             ),
             Expanded(
-              flex: 3,
+              flex: 5,
               child: Text(
                 name,
                 style:

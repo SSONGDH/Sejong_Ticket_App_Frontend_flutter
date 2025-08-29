@@ -8,6 +8,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import '../place_search_screen.dart';
+// [수정 1] 쿠키 관리를 위해 CookieJarSingleton을 import 합니다.
+import 'package:PASSTIME/cookiejar_singleton.dart';
 
 class TicketProduceScreen extends StatefulWidget {
   const TicketProduceScreen({super.key});
@@ -30,7 +32,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   final TextEditingController _eventCodeController = TextEditingController();
 
   Map<String, dynamic>? _selectedPlace;
-  KakaoMapController? _mapController; // 지도 컨트롤러 변수
+  KakaoMapController? _mapController;
 
   @override
   void initState() {
@@ -66,14 +68,31 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     debugPrint('API URL: ${dotenv.env['API_BASE_URL']}');
   }
 
+  // [수정 2] _fetchAffiliations 함수 전체를 새 로직으로 교체합니다.
   Future<void> _fetchAffiliations() async {
-    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/affiliation/List');
+    // 1. URL 변경
+    final url =
+        Uri.parse('${dotenv.env['API_BASE_URL']}/user/adminAffilliation/list');
+    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+
     try {
-      final response = await http.get(url);
+      // 2. 쿠키 헤더 추가
+      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+      final cookieHeader = cookies.isNotEmpty
+          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
+          : '';
+
+      final response = await http.get(
+        url,
+        headers: {'Cookie': cookieHeader},
+      );
+
       if (response.statusCode == 200) {
         final decodedResponse = json.decode(utf8.decode(response.bodyBytes));
-        if (decodedResponse['isSuccess'] == true) {
-          final List<dynamic> affiliationList = decodedResponse['result'];
+
+        // 3. JSON 파싱 로직 변경 (isSuccess -> success, result -> affiliations)
+        if (decodedResponse['success'] == true) {
+          final List<dynamic> affiliationList = decodedResponse['affiliations'];
           setState(() {
             affiliations = affiliationList
                 .map<String>((item) => item['name'] as String)
@@ -137,10 +156,10 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           ),
           body: Column(
             children: [
-              const Divider(
-                height: 1,
-                thickness: 1,
-                color: Color(0xFFEEEDE3),
+              Divider(
+                height: 2,
+                thickness: 2,
+                color: const Color(0xFF334D61).withOpacity(0.05),
               ),
               Expanded(
                 child: SingleChildScrollView(
@@ -246,7 +265,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         return SizedBox(
           height: 200,
           child: Stack(
-            // Stack을 사용하여 지도와 마커 이미지를 겹칩니다.
             children: [
               IgnorePointer(
                 ignoring: true,
@@ -258,17 +276,16 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                   initialLevel: 17,
                 ),
               ),
-              // 장소가 선택되었을 때만 마커 이미지를 표시합니다.
               Positioned(
-                top: 65, // 지도의 중앙 근처에 오도록 조정 (높이 200의 절반 - 이미지 높이의 절반)
+                top: 65,
                 left: 0,
                 right: 0,
                 child: Align(
                   alignment: Alignment.center,
                   child: Image.asset(
-                    'assets/images/marker.png', // 사용할 이미지 경로
-                    width: 40, // 이미지 너비
-                    height: 40, // 이미지 높이
+                    'assets/images/marker.png',
+                    width: 40,
+                    height: 40,
                   ),
                 ),
               ),
@@ -391,21 +408,17 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         );
 
         if (selected != null) {
-          // 1. UI를 먼저 업데이트합니다.
           setState(() {
             _selectedPlace = selected;
             _updateButtonState();
           });
 
-          // 2. 지도 컨트롤러가 준비되었다면 카메라를 이동시킵니다.
           if (_mapController != null) {
             try {
-              // 3. 새로 선택된 장소의 좌표를 파싱합니다.
               final double lat = double.parse(selected['y']);
               final double lng = double.parse(selected['x']);
               final newPosition = LatLng(latitude: lat, longitude: lng);
 
-              // 4. 새로운 좌표로 카메라를 이동시킵니다. (cameraUpdate: 추가)
               _mapController!.moveCamera(
                 cameraUpdate: CameraUpdate.fromLatLng(newPosition),
               );

@@ -227,10 +227,10 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
         ),
         body: Column(
           children: [
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: Color(0xFFEEEDE3),
+            Divider(
+              height: 2,
+              thickness: 2,
+              color: const Color(0xFF334D61).withOpacity(0.05),
             ),
             Expanded(
               child: FutureBuilder<AffiliationRequest>(
@@ -251,6 +251,7 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
                       children: [
                         Expanded(
                           child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 16),
                             child: Column(

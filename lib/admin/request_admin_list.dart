@@ -62,10 +62,10 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
       ),
       body: Column(
         children: [
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: Color(0xFFEEEDE3),
+          Divider(
+            height: 2,
+            thickness: 2,
+            color: const Color(0xFF334D61).withOpacity(0.05),
           ),
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
@@ -84,10 +84,14 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
                   );
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
+                  return Align(
+                    alignment: const Alignment(0.0, -0.15),
                     child: Text(
-                      '현재 신청 내역이 없습니다.',
-                      style: TextStyle(fontSize: 22, color: Color(0xFFC1C1C1)),
+                      '현재 신청 내역이 없습니다',
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: const Color(0xFF334D61).withOpacity(0.5),
+                          fontWeight: FontWeight.bold),
                     ),
                   );
                 }
