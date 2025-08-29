@@ -154,14 +154,14 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
                                   ),
                                   Expanded(
                                     flex: 3,
-                                    child: Text(
-                                      request['department']!,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.black.withOpacity(0.5),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                                    child: Text(request['department']!,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.black.withOpacity(0.5),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis),
                                   ),
                                   Expanded(
                                     flex: 2,

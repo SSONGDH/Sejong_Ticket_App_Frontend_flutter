@@ -471,12 +471,34 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
 
         return SizedBox(
           height: 200,
-          child: KakaoMap(
-            onMapCreated: (controller) {
-              _mapController = controller;
-            },
-            initialPosition: position,
-            initialLevel: 17,
+          child: Stack(
+            // Stack을 사용하여 지도와 마커 이미지를 겹칩니다.
+            children: [
+              IgnorePointer(
+                ignoring: true,
+                child: KakaoMap(
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                  },
+                  initialPosition: position,
+                  initialLevel: 17,
+                ),
+              ),
+              // 장소가 선택되었을 때만 마커 이미지를 표시합니다.
+              Positioned(
+                top: 65, // 지도의 중앙 근처에 오도록 조정 (높이 200의 절반 - 이미지 높이의 절반)
+                left: 0,
+                right: 0,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Image.asset(
+                    'assets/images/marker.png', // 사용할 이미지 경로
+                    width: 40, // 이미지 너비
+                    height: 40, // 이미지 높이
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       } catch (e) {

@@ -251,7 +251,7 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
       width: 240,
       height: 240,
       decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9),
+        color: const Color(0xFF334D61).withOpacity(0.05),
         borderRadius: BorderRadius.circular(4),
       ),
       child: imageUrl != null && imageUrl.isNotEmpty
@@ -263,9 +263,13 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
                 height: 240,
               ),
             )
-          : const Center(
+          : Center(
               // Added Center for the text as well
-              child: Text("납부내역 사진", style: TextStyle(fontSize: 14)),
+              child: Text("납부내역 사진",
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black.withOpacity(0.5),
+                      fontWeight: FontWeight.w600)),
             ),
     );
   }
