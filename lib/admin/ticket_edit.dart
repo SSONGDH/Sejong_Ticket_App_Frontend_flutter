@@ -372,6 +372,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                     ),
                     Expanded(
                       child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

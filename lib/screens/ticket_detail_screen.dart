@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
 import 'package:marquee/marquee.dart';
+import 'package:flutter/rendering.dart';
 import 'package:PASSTIME/menu/request_refund.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 
@@ -20,10 +21,19 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   bool isLoading = true;
   bool hasError = false;
 
+  // 1. GlobalKey와 점선의 Y 좌표를 저장할 변수 추가
+  final GlobalKey _dottedLineKey = GlobalKey();
+  double _dottedLineY = 0.0;
+
   @override
   void initState() {
     super.initState();
     fetchTicketDetail();
+
+    // 3. 화면 렌더링이 끝난 후 점선의 위치를 계산하는 함수 호출
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateCirclePosition();
+    });
   }
 
   Future<void> fetchTicketDetail() async {
@@ -46,6 +56,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           ticketData = response.data['result'];
           isLoading = false;
         });
+        // 데이터 로드 후에도 위치를 다시 계산하도록 설정
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _updateCirclePosition());
       } else {
         throw Exception('Failed to load ticket details');
       }
@@ -54,6 +67,25 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         hasError = true;
         isLoading = false;
       });
+    }
+  }
+
+  // 4. 점선의 위치를 계산하고 상태를 업데이트하는 함수
+  void _updateCirclePosition() {
+    final RenderBox? box =
+        _dottedLineKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null) {
+      // Column 내부에서의 상대적인 Y 좌표를 가져옵니다.
+      final parentData = box.parentData as FlexParentData;
+      final yPosition = parentData.offset.dy;
+
+      // 계산된 위치가 현재 위치와 다를 경우에만 UI를 갱신합니다.
+      // 반원의 높이가 30이므로, Y축 중심을 맞추기 위해 15를 빼줍니다.
+      if (yPosition > 0 && _dottedLineY != yPosition - 15) {
+        setState(() {
+          _dottedLineY = yPosition - 15;
+        });
+      }
     }
   }
 
@@ -102,6 +134,11 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // build가 호출될 때마다 위치를 다시 계산하도록 예약합니다.
+    // 이렇게 하면 화면 크기 변경 등에도 대응할 수 있습니다.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _updateCirclePosition());
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6F7),
       appBar: AppBar(
@@ -141,6 +178,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   ),
                 )
               : SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   child: Center(
                     child: Column(
                       children: [
@@ -280,15 +318,21 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                               fontWeight: FontWeight.w600),
                                         ),
                                         const SizedBox(height: 5),
-                                        Text(
-                                          ticketData?["eventPlaceComment"] ??
-                                              "장소 설명 없음",
-                                          style: const TextStyle(
+                                        Container(
+                                          height:
+                                              82, // 1. 전체 공간의 높이를 60으로 고정합니다.
+                                          alignment: Alignment
+                                              .topLeft, // 2. 자식 위젯(Text)을 컨테이너의 왼쪽 상단에 배치합니다.
+                                          child: Text(
+                                            ticketData?["eventPlaceComment"] ??
+                                                "장소 설명 없음",
+                                            style: const TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.black),
+                                              color: Colors.black,
+                                            ),
+                                          ),
                                         ),
-                                        const SizedBox(height: 60),
                                         // 취소/환불 버튼
                                         TextButton(
                                           onPressed: () => Navigator.push(
@@ -324,6 +368,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                   ),
                                   // 점선 구분선
                                   SizedBox(
+                                    key: _dottedLineKey, // 2. 점선 위젯에 key 할당
                                     height: 0,
                                     child: CustomPaint(
                                       painter: DottedLinePainter(),
@@ -389,30 +434,33 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                 ],
                               ),
                               // 좌우의 반원 (점선 위치에 맞춰 조정)
-                              Positioned(
-                                left: -15,
-                                top: 398, // 점선 위치에 맞춰 조정
-                                child: Container(
-                                  width: 30,
-                                  height: 30,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF5F6F7),
-                                    shape: BoxShape.circle,
+                              // 5. top 값을 고정값 대신 동적으로 계산된 _dottedLineY 변수로 변경
+                              if (_dottedLineY > 0)
+                                Positioned(
+                                  left: -15,
+                                  top: _dottedLineY,
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF5F6F7),
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Positioned(
-                                right: -15,
-                                top: 398, // 점선 위치에 맞춰 조정
-                                child: Container(
-                                  width: 30,
-                                  height: 30,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF5F6F7),
-                                    shape: BoxShape.circle,
+                              if (_dottedLineY > 0)
+                                Positioned(
+                                  right: -15,
+                                  top: _dottedLineY,
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF5F6F7),
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

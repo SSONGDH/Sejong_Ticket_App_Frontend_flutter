@@ -144,6 +144,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
               ),
               Expanded(
                 child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

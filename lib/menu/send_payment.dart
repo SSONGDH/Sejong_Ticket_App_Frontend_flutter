@@ -135,6 +135,7 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(

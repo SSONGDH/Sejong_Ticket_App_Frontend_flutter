@@ -194,6 +194,7 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
