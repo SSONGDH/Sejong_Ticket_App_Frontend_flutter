@@ -41,7 +41,8 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
 
   void _handleTabSelection() {
     if (_tabController != null && !_tabController!.indexIsChanging) {
-      final selectedAffiliationId = _affiliations[_tabController!.index]['id'];
+      final selectedAffiliationId =
+          _affiliations[_tabController!.index]['_id'] as String;
       _fetchRefundData(affiliationId: selectedAffiliationId);
     }
   }
@@ -66,9 +67,6 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
           List<Map<String, dynamic>> fetchedAffiliations =
               List<Map<String, dynamic>>.from(data['affiliations']);
 
-          // [핵심 로직 1] '전체' 탭을 위한 가상 데이터를 리스트 가장 앞에 추가합니다.
-          fetchedAffiliations.insert(0, {'id': null, 'name': '전체'});
-
           setState(() {
             _affiliations = fetchedAffiliations;
             _isAffiliationLoading = false;
@@ -78,8 +76,8 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
                   TabController(length: _affiliations.length, vsync: this);
               _tabController!.addListener(_handleTabSelection);
 
-              // 화면 첫 로딩 시 '전체' 목록을 불러오도록 affiliationId를 null로 전달합니다.
-              _fetchRefundData(affiliationId: null);
+              final firstAffiliationId = _affiliations.first['_id'] as String;
+              _fetchRefundData(affiliationId: firstAffiliationId);
             }
           });
         } else {
@@ -102,18 +100,14 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
     }
   }
 
-  // [핵심 로직 2] affiliationId를 nullable(String?)로 변경하여 null 값을 받을 수 있게 합니다.
-  Future<void> _fetchRefundData({String? affiliationId}) async {
+  Future<void> _fetchRefundData({required String affiliationId}) async {
     setState(() {
       _isRefundDataLoading = true;
-      _refundRequests = []; // 데이터를 새로 불러오기 전에 기존 목록 초기화
+      _refundRequests = [];
     });
 
-    // [핵심 로직 3] affiliationId가 null이면 쿼리 파라미터를 붙이지 않고, 값이 있으면 붙입니다.
-    String urlString = '${dotenv.env['API_BASE_URL']}/refund/list';
-    if (affiliationId != null) {
-      urlString += '?affiliationId=$affiliationId';
-    }
+    String urlString =
+        '${dotenv.env['API_BASE_URL']}/refund/list?affiliationId=$affiliationId';
     final url = Uri.parse(urlString);
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
@@ -154,7 +148,6 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
         }
       }
     } catch (error) {
-      // 에러 처리 (필요 시 _errorMessage 상태 변수 사용)
       print("Error fetching refund data: $error");
     } finally {
       setState(() {
@@ -229,7 +222,7 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
       onRefresh: () async {
         if (_tabController != null) {
           final selectedAffiliationId =
-              _affiliations[_tabController!.index]['id'];
+              _affiliations[_tabController!.index]['_id'] as String;
           await _fetchRefundData(affiliationId: selectedAffiliationId);
         }
       },
@@ -258,7 +251,7 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
                   );
                   if (result == true && _tabController != null) {
                     final selectedAffiliationId =
-                        _affiliations[_tabController!.index]['id'];
+                        _affiliations[_tabController!.index]['_id'] as String;
                     _fetchRefundData(affiliationId: selectedAffiliationId);
                   }
                 },

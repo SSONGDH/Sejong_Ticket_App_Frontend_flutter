@@ -7,7 +7,6 @@ import 'package:PASSTIME/menu/my_page_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
-// 전화번호 포맷팅을 위한 MaskedInputController 클래스
 class MaskedInputController extends TextEditingController {
   @override
   set value(TextEditingValue newValue) {
@@ -140,7 +139,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
       print('Response Body: ${response.data}');
 
       if (response.data['code'] == 'SUCCESS-0000') {
-        print('소속 생성 신청이 성공적으로 완료되었습니다.');
+        print('소속 신청이 성공적으로 완료되었습니다.');
         _showSuccessDialog();
       } else {
         print(
@@ -159,7 +158,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
       context: context,
       builder: (context) => CupertinoAlertDialog(
         title: const Text('신청 완료'),
-        content: const Text('소속 생성 신청이 성공적으로 완료되었습니다.'),
+        content: const Text('소속 신청이 성공적으로 완료되었습니다.'),
         actions: [
           CupertinoDialogAction(
             onPressed: () {
@@ -273,10 +272,6 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                           controller: _phoneNumberController,
                           hintText: '전화번호 입력',
                           keyboardType: TextInputType.phone,
-                          // MaskedInputController가 포맷팅을 처리하므로, 기존의 inputFormatters는 제거합니다.
-                          // inputFormatters: [
-                          //   FilteringTextInputFormatter.digitsOnly
-                          // ],
                         ),
                       ),
                       const SizedBox(height: 16),

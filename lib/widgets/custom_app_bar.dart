@@ -65,7 +65,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
         _tapCount = 0;
 
         try {
-          final apiUrl = '${dotenv.env['API_BASE_URL']}/admin/connection';
+          final apiUrl = '${dotenv.env['API_BASE_URL']}/root/connection';
           final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
           final cookies =
               await CookieJarSingleton().cookieJar.loadForRequest(uri);

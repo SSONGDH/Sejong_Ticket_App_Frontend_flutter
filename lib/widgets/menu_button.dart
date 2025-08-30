@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
 import 'package:PASSTIME/cookiejar_singleton.dart';
@@ -272,24 +273,37 @@ class _MenuButtonState extends State<MenuButton> {
                                 (Route<dynamic> route) => false,
                               );
                             } else {
-                              showDialog(
+                              showCupertinoDialog(
                                 context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('알림'),
-                                  content: const Text('지정된 관리자가 아닙니다.'),
+                                builder: (context) => CupertinoAlertDialog(
+                                  title: const Text("알림"),
+                                  content: const Text("지정된 주최자가 아닙니다."),
                                   actions: [
-                                    TextButton(
+                                    CupertinoDialogAction(
+                                      child: const Text("확인",
+                                          style: TextStyle(
+                                              color: Color(0xFFC10230))),
                                       onPressed: () => Navigator.pop(context),
-                                      child: const Text('확인'),
                                     ),
                                   ],
                                 ),
                               );
                             }
                           } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('관리자 모드 접속 중 오류가 발생했습니다.')),
+                            showCupertinoDialog(
+                              context: context,
+                              builder: (context) => CupertinoAlertDialog(
+                                title: const Text("알림"),
+                                content: const Text("지정된 주최자가 아닙니다."),
+                                actions: [
+                                  CupertinoDialogAction(
+                                    child: const Text("확인",
+                                        style: TextStyle(
+                                            color: Color(0xFFC10230))),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
                             );
                           }
                         },

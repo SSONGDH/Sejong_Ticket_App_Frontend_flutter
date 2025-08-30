@@ -1,11 +1,46 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:PASSTIME/widgets/custom_app_bar.dart';
 import 'package:PASSTIME/widgets/menu_button.dart';
 import 'package:PASSTIME/menu/affiliation_creation.dart';
 import '../cookiejar_singleton.dart';
+
+class Affiliation {
+  final String id;
+  final String name;
+  final bool admin;
+
+  Affiliation({required this.id, required this.name, required this.admin});
+
+  factory Affiliation.fromJson(Map<String, dynamic> json) {
+    return Affiliation(
+      id: json['_id'],
+      name: json['name'],
+      admin: json['admin'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'name': name,
+      'admin': admin,
+    };
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Affiliation &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+}
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -16,11 +51,11 @@ class MyPageScreen extends StatefulWidget {
 
 class _MyPageScreenState extends State<MyPageScreen> {
   final Dio _dio = Dio();
-  String? _selectedAffiliation;
-  List<String> _currentAffiliations = [];
-  late List<String> _initialAffiliations;
+  Affiliation? _selectedAffiliation;
+  List<Affiliation> _currentAffiliations = [];
+  late List<Affiliation> _initialAffiliations;
+  List<Affiliation> _availableAffiliations = [];
 
-  List<String> _availableAffiliations = [];
   bool _isSaveButtonEnabled = false;
   String _fixedStudentId = '';
   String _userName = '';
@@ -79,31 +114,25 @@ class _MyPageScreenState extends State<MyPageScreen> {
         ),
       );
 
-      print('API 호출 완료 - Status Code: ${response.statusCode}');
-      print('Response Body: ${response.data}');
+      print('마이페이지 데이터 수신: ${response.data}');
 
       if (response.data['code'] == 'SUCCESS-0000') {
         final result = response.data['result'];
 
-        // ✅ 현재 소속: affiliations 배열에서 name만 추출
-        final List<String> affiliations =
-            (result['affiliations'] as List<dynamic>? ?? [])
-                .map((item) => item['name'] as String)
-                .toList();
+        final List<Affiliation> affiliations = (result['affiliations']
+                    as List<dynamic>? ??
+                [])
+            .map((item) => Affiliation.fromJson(item as Map<String, dynamic>))
+            .toList();
 
         final String studentId = result['studentId']?.toString() ?? '';
         final String name = result['name'] ?? '';
 
-        // ✅ 전체 소속: totalAffiliation 배열에서 name만 추출
-        final List<String> totalAffiliations =
-            (result['totalAffiliation'] as List<dynamic>? ?? [])
-                .map((item) => item['name'] as String)
-                .toList();
-
-        print('받아온 소속: $affiliations');
-        print('받아온 학번: $studentId');
-        print('받아온 이름: $name');
-        print('전체 소속 목록: $totalAffiliations');
+        final List<Affiliation> totalAffiliations = (result['totalAffiliation']
+                    as List<dynamic>? ??
+                [])
+            .map((item) => Affiliation.fromJson(item as Map<String, dynamic>))
+            .toList();
 
         setState(() {
           _currentAffiliations = affiliations;
@@ -111,9 +140,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
           _fixedStudentId = studentId;
           _userName = name;
 
-          // 현재 소속에 없는 것만 추가 가능한 소속 목록에 넣기
           _availableAffiliations = totalAffiliations
-              .where((aff) => !_currentAffiliations.contains(aff))
+              .where((totalAff) => !_currentAffiliations.contains(totalAff))
               .toList();
 
           _updateSaveButtonState();
@@ -128,12 +156,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
     }
   }
 
-  bool _areListsEqual(List<String> list1, List<String> list2) {
+  bool _areListsEqual(List<Affiliation> list1, List<Affiliation> list2) {
     if (list1.length != list2.length) return false;
-    for (int i = 0; i < list1.length; i++) {
-      if (list1[i] != list2[i]) return false;
-    }
-    return true;
+    final set1 = list1.map((e) => e.id).toSet();
+    final set2 = list2.map((e) => e.id).toSet();
+    return set1.difference(set2).isEmpty && set2.difference(set1).isEmpty;
   }
 
   void _updateSaveButtonState() {
@@ -143,7 +170,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
     });
   }
 
-  Widget _buildAffiliationItem(String affiliationName,
+  Widget _buildAffiliationItem(Affiliation affiliation,
       {bool canRemove = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
@@ -155,20 +182,44 @@ class _MyPageScreenState extends State<MyPageScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            affiliationName,
+            affiliation.name,
             style: const TextStyle(fontSize: 16, color: Colors.black),
           ),
           if (canRemove)
             InkWell(
               onTap: () {
-                setState(() {
-                  _currentAffiliations.remove(affiliationName);
-                  if (!_availableAffiliations.contains(affiliationName)) {
-                    _availableAffiliations.add(affiliationName);
-                    _availableAffiliations.sort();
-                  }
-                  _updateSaveButtonState();
-                });
+                showCupertinoDialog(
+                  context: context,
+                  builder: (BuildContext dialogContext) => CupertinoAlertDialog(
+                    title: const Text('주의사항'),
+                    content: const Text(
+                        '소속을 제거하면 관련 권한이 삭제되며\n필요한 경우 다시 신청해야 합니다.\n정말 삭제하시겠습니까?'),
+                    actions: [
+                      CupertinoDialogAction(
+                        onPressed: () {
+                          Navigator.pop(dialogContext);
+                        },
+                        child: const Text('취소'),
+                      ),
+                      CupertinoDialogAction(
+                        onPressed: () {
+                          Navigator.pop(dialogContext);
+                          setState(() {
+                            _currentAffiliations.remove(affiliation);
+                            if (!_availableAffiliations.contains(affiliation)) {
+                              _availableAffiliations.add(affiliation);
+                              _availableAffiliations
+                                  .sort((a, b) => a.name.compareTo(b.name));
+                            }
+                            _updateSaveButtonState();
+                          });
+                        },
+                        child: const Text('삭제',
+                            style: TextStyle(color: Color(0xFFC10230))),
+                      ),
+                    ],
+                  ),
+                );
               },
               child: const Icon(Icons.remove, color: Color(0xFF334D61)),
             )
@@ -240,19 +291,38 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _currentAffiliations.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        return _buildAffiliationItem(
-                            _currentAffiliations[index],
-                            canRemove: true);
-                      },
-                    ),
-                    const SizedBox(height: 10),
+                    _currentAffiliations.isEmpty
+                        ? Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 15, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                '현재 등록된 소속이 없습니다',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF868686),
+                                ),
+                              ),
+                            ),
+                          )
+                        : Column(
+                            children: [
+                              for (int i = 0;
+                                  i < _currentAffiliations.length;
+                                  i++) ...[
+                                _buildAffiliationItem(_currentAffiliations[i],
+                                    canRemove: true),
+                                if (i < _currentAffiliations.length - 1)
+                                  const SizedBox(height: 10),
+                              ],
+                            ],
+                          ),
+                    const SizedBox(height: 40),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -265,9 +335,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                           ),
                         ),
                         ElevatedButton.icon(
-                          onPressed: () {
-                            // ⭐ 이름과 학번만 전달하도록 수정 ⭐
-                            Navigator.push(
+                          onPressed: () async {
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => AffiliationCreationScreen(
@@ -276,6 +345,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                                 ),
                               ),
                             );
+                            _fetchMyPageData();
                           },
                           label: const Text(
                             '소속 생성',
@@ -316,7 +386,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         child: ExpansionTile(
                           key: ValueKey(_selectedAffiliation),
                           title: Text(
-                            _selectedAffiliation ?? '추가할 소속 선택',
+                            _selectedAffiliation?.name ?? '추가할 소속 선택',
                             style: TextStyle(
                               fontSize: 16,
                               color: _selectedAffiliation == null
@@ -339,7 +409,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
                                   return InkWell(
                                     onTap: () {
                                       setState(() {
-                                        _selectedAffiliation = affiliation;
                                         if (!_currentAffiliations
                                             .contains(affiliation)) {
                                           _currentAffiliations.add(affiliation);
@@ -355,7 +424,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 15, vertical: 12),
                                       child: Text(
-                                        affiliation,
+                                        affiliation.name,
                                         style: const TextStyle(
                                             fontSize: 16,
                                             color: Color(0xFF282727)),
@@ -369,7 +438,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -381,9 +449,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
               child: ElevatedButton(
                 onPressed: _isSaveButtonEnabled
                     ? () async {
-                        print(
-                            '저장 버튼 클릭: $_fixedStudentId, $_currentAffiliations');
-
                         final apiUrl =
                             '${dotenv.env['API_BASE_URL']}/user/affiliationUpdate';
                         final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
@@ -399,12 +464,32 @@ class _MyPageScreenState extends State<MyPageScreen> {
                                   .join('; ')
                               : '';
 
+                          // ✅✅✅ 수정된 부분 ✅✅✅
+                          // 서버로 보낼 최종 데이터를 가공하는 로직
+                          final List<Map<String, dynamic>> payloadList = [];
+                          for (final currentAff in _currentAffiliations) {
+                            bool wasInitiallyPresent = _initialAffiliations.any(
+                                (initialAff) => initialAff.id == currentAff.id);
+
+                            if (wasInitiallyPresent) {
+                              // 원래 있던 소속이면, 초기 상태의 권한 정보를 그대로 사용
+                              final originalAff = _initialAffiliations
+                                  .firstWhere((aff) => aff.id == currentAff.id);
+                              payloadList.add(originalAff.toJson());
+                            } else {
+                              // 새로 추가된 소속이면, admin 권한을 false로 강제해서 전송
+                              payloadList.add({
+                                '_id': currentAff.id,
+                                'name': currentAff.name,
+                                'admin': false,
+                              });
+                            }
+                          }
+
                           final response = await _dio.put(
                             apiUrl,
                             data: {
-                              "affiliationList": _currentAffiliations
-                                  .map((name) => {"name": name})
-                                  .toList(),
+                              "affiliationList": payloadList, // 가공된 최종 데이터를 전송
                             },
                             options: Options(
                               headers: {
@@ -414,19 +499,67 @@ class _MyPageScreenState extends State<MyPageScreen> {
                             ),
                           );
 
-                          print(
-                              '저장 API 호출 완료 - Status Code: ${response.statusCode}');
-                          print('Response Body: ${response.data}');
+                          print('저장 API 응답 데이터: ${response.data}');
 
-                          setState(() {
-                            _initialAffiliations =
-                                List.from(_currentAffiliations);
-                            _isSaveButtonEnabled = false;
-                          });
+                          if (!context.mounted) return;
+
+                          if (response.data['code'] != null &&
+                              response.data['code'].startsWith('SUCCESS')) {
+                            setState(() {
+                              _initialAffiliations =
+                                  List.from(_currentAffiliations);
+                              _isSaveButtonEnabled = false;
+                            });
+                            showCupertinoDialog(
+                              context: context,
+                              builder: (context) => CupertinoAlertDialog(
+                                title: const Text('저장 완료'),
+                                content: const Text('소속 정보가 성공적으로 저장되었습니다.'),
+                                actions: [
+                                  CupertinoDialogAction(
+                                    child: const Text("확인",
+                                        style: TextStyle(
+                                            color: Color(0xFFC10230))),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else {
+                            showCupertinoDialog(
+                              context: context,
+                              builder: (context) => CupertinoAlertDialog(
+                                title: const Text('저장 실패'),
+                                content: Text(response.data['message'] ??
+                                    '알 수 없는 오류가 발생했습니다.'),
+                                actions: [
+                                  CupertinoDialogAction(
+                                    child: const Text("확인",
+                                        style: TextStyle(
+                                            color: Color(0xFFC10230))),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
                         } catch (e) {
-                          print('저장 API 호출 실패: $e');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')),
+                          if (!context.mounted) return;
+                          showCupertinoDialog(
+                            context: context,
+                            builder: (context) => CupertinoAlertDialog(
+                              title: const Text('오류 발생'),
+                              content:
+                                  const Text('요청 중 오류가 발생했습니다. 다시 시도해주세요.'),
+                              actions: [
+                                CupertinoDialogAction(
+                                  child: const Text("확인",
+                                      style:
+                                          TextStyle(color: Color(0xFFC10230))),
+                                  onPressed: () => Navigator.pop(context),
+                                ),
+                              ],
+                            ),
                           );
                         }
                       }

@@ -41,9 +41,8 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
 
   void _handleTabSelection() {
     if (_tabController != null && !_tabController!.indexIsChanging) {
-      // '전체' 탭을 포함한 _affiliations 리스트에서 현재 탭의 id를 가져옵니다.
-      // '전체' 탭의 id는 null이므로, _fetchPaymentData가 올바르게 호출됩니다.
-      final selectedAffiliationId = _affiliations[_tabController!.index]['id'];
+      final selectedAffiliationId =
+          _affiliations[_tabController!.index]['_id'] as String;
       _fetchPaymentData(affiliationId: selectedAffiliationId);
     }
   }
@@ -68,10 +67,6 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
           List<Map<String, dynamic>> fetchedAffiliations =
               List<Map<String, dynamic>>.from(data['affiliations']);
 
-          // [핵심 로직 1] '전체' 탭을 위한 가상 데이터를 리스트 가장 앞에 추가합니다.
-          // id를 null로 설정하여 '전체' 탭임을 구분합니다.
-          fetchedAffiliations.insert(0, {'id': null, 'name': '전체'});
-
           setState(() {
             _affiliations = fetchedAffiliations;
             _isAffiliationLoading = false;
@@ -81,8 +76,8 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
                   TabController(length: _affiliations.length, vsync: this);
               _tabController!.addListener(_handleTabSelection);
 
-              // 화면 첫 로딩 시 '전체' 목록을 불러오도록 affiliationId를 null로 전달합니다.
-              _fetchPaymentData(affiliationId: null);
+              final firstAffiliationId = _affiliations.first['_id'] as String;
+              _fetchPaymentData(affiliationId: firstAffiliationId);
             }
           });
         } else {
@@ -105,19 +100,18 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
     }
   }
 
-  // [핵심 로직 2] affiliationId를 nullable(String?)로 변경하여 null 값을 받을 수 있게 합니다.
-  Future<void> _fetchPaymentData({String? affiliationId}) async {
+  Future<void> _fetchPaymentData({required String affiliationId}) async {
     setState(() {
       _isPaymentLoading = true;
       _paymentData = {};
       _switchValues = {};
     });
 
-    // [핵심 로직 3] affiliationId가 null이면 쿼리 파라미터를 붙이지 않고, 값이 있으면 붙입니다.
-    String urlString = '${dotenv.env['API_BASE_URL']}/payment/list';
-    if (affiliationId != null) {
-      urlString += '?affiliationId=$affiliationId';
-    }
+    String urlString =
+        '${dotenv.env['API_BASE_URL']}/payment/list?affiliationId=$affiliationId';
+
+    print("Request URL: $urlString");
+
     final url = Uri.parse(urlString);
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
