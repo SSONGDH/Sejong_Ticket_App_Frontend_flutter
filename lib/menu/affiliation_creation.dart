@@ -51,7 +51,6 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
       TextEditingController();
   late final TextEditingController _hostNameController;
   late final TextEditingController _studentIdController;
-  // phoneNumberController를 MaskedInputController로 변경
   final MaskedInputController _phoneNumberController = MaskedInputController();
 
   final Dio _dio = Dio();
@@ -70,7 +69,6 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
 
     final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
-    // Interceptor 등록 (쿠키 자동 주입 및 저장)
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final cookies =
@@ -146,10 +144,21 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
             '소속 생성 신청 실패 - Code: ${response.data['code']}, Message: ${response.data['message']}');
         _showFailureDialog('소속 생성 신청 실패', response.data['message']);
       }
-    } catch (e, st) {
-      print('API 호출 중 오류 발생: $e');
-      print('Stacktrace: $st');
-      _showFailureDialog('서버 오류', 'API 호출 중 오류가 발생했습니다.');
+    } on DioException catch (e) {
+      if (e.response != null) {
+        print('### [DioException] 서버 응답 데이터: ${e.response?.data}');
+        print('### [DioException] 상태 코드: ${e.response?.statusCode}');
+
+        final String errorMessage =
+            e.response?.data?['message'] ?? '서버에서 오류가 발생했습니다.';
+        _showFailureDialog('신청 실패', errorMessage);
+      } else {
+        print('### [DioException] 요청 오류: ${e.message}');
+        _showFailureDialog('네트워크 오류', '서버에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.');
+      }
+    } catch (e) {
+      print('### [Unknown Exception] 알 수 없는 오류: $e');
+      _showFailureDialog('오류', '알 수 없는 오류가 발생했습니다.');
     }
   }
 
@@ -205,13 +214,9 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
     final bool isFormValid = _affiliationNameController.text.isNotEmpty &&
         _phoneNumberController.text.isNotEmpty;
 
-    // PopScope를 사용하여 뒤로가기 제스처를 제어합니다.
     return PopScope(
-      // canPop을 false로 설정하여 자동 뒤로가기를 막습니다.
       canPop: false,
-      // 뒤로가기 시도가 있을 때 호출됩니다.
       onPopInvoked: (bool didPop) {
-        // 이미 pop이 되었다면 아무것도 하지 않습니다.
         if (didPop) return;
 
         // 사용자에게 확인 다이얼로그를 표시합니다.

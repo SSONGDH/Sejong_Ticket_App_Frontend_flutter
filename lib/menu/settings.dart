@@ -57,8 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final response = await _dio.get(url);
 
-      if (response.statusCode == 200 &&
-          response.data['code'] == 'SUCCESS-0000') {
+      if (response.data['code'] == 'SUCCESS-0000') {
         setState(() {
           isNotificationOn = response.data['notification'];
         });
@@ -204,10 +203,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                // '문의사항' 타일을 GestureDetector로 감싸서 탭 이벤트 처리
                 GestureDetector(
                   onTap: _showInquiryDialog,
-                  child: _buildCustomTile(title: '문의사항', infoText: '클릭'),
+                  child: _buildCustomTile(title: '문의사항', showMoreIcon: true),
                 ),
                 const SizedBox(height: 16),
                 _buildCustomTile(title: '패치버전', infoText: '1.0.1'),
@@ -246,6 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     String? infoText,
     bool isSwitch = false,
+    bool showMoreIcon = false, // 아이콘을 표시할지 결정하는 파라미터
     bool switchValue = false,
     Function(bool)? onSwitchChanged,
   }) {
@@ -272,6 +271,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: switchValue,
               onChanged: onSwitchChanged,
               activeTrackColor: const Color(0xFFC10230),
+            )
+          else if (showMoreIcon) // 아이콘 표시 로직
+            Icon(
+              Icons.more_horiz_rounded,
+              color: const Color(0xFF334D61).withOpacity(0.6),
             )
           else if (infoText != null)
             Text(
