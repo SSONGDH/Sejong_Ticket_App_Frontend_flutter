@@ -205,130 +205,172 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
     final bool isFormValid = _affiliationNameController.text.isNotEmpty &&
         _phoneNumberController.text.isNotEmpty;
 
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
+    // PopScope를 사용하여 뒤로가기 제스처를 제어합니다.
+    return PopScope(
+      // canPop을 false로 설정하여 자동 뒤로가기를 막습니다.
+      canPop: false,
+      // 뒤로가기 시도가 있을 때 호출됩니다.
+      onPopInvoked: (bool didPop) {
+        // 이미 pop이 되었다면 아무것도 하지 않습니다.
+        if (didPop) return;
+
+        // 사용자에게 확인 다이얼로그를 표시합니다.
+        showCupertinoDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return CupertinoAlertDialog(
+              title: const Text('페이지를 나가시겠습니까?'),
+              content: const Text('작성한 내용은 저장되지 않습니다.'),
+              actions: <Widget>[
+                CupertinoDialogAction(
+                  child: const Text('취소'),
+                  onPressed: () {
+                    // 다이얼로그만 닫습니다.
+                    Navigator.of(context).pop();
+                  },
+                ),
+                CupertinoDialogAction(
+                  isDestructiveAction: true,
+                  child: const Text('나가기'),
+                  onPressed: () {
+                    // 다이얼로그를 닫습니다.
+                    Navigator.of(context).pop();
+                    // 현재 화면을 닫습니다.
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
       },
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        appBar: AppBar(
-          toolbarHeight: 70,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.close_rounded,
-              color: Color(0xFF334D61),
-              size: 30,
+      child: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: Scaffold(
+          resizeToAvoidBottomInset: true,
+          appBar: AppBar(
+            toolbarHeight: 70,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Color(0xFF334D61),
+                size: 30,
+              ),
+              // AppBar의 닫기 버튼은 기존처럼 동작하도록 pop을 직접 호출합니다.
+              onPressed: () => Navigator.of(context).pop(),
             ),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          centerTitle: true,
-          title: const Text(
-            '소속 생성',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        backgroundColor: const Color(0xFFF5F6F7),
-        body: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildFormGroup(
-                        label: '소속명',
-                        child: _buildInputField(
-                          controller: _affiliationNameController,
-                          hintText: '소속명 입력',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFormGroup(
-                        label: '주최자명',
-                        child: _buildReadOnlyField(
-                          text: _hostNameController.text,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFormGroup(
-                        label: '학번',
-                        child: _buildReadOnlyField(
-                          text: _studentIdController.text,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFormGroup(
-                        label: '전화번호',
-                        child: _buildInputField(
-                          controller: _phoneNumberController,
-                          hintText: '전화번호 입력',
-                          keyboardType: TextInputType.phone,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFormGroup(
-                        label: '생성 요청',
-                        child: _buildToggleButtons(
-                          value: _canCreate,
-                          onChanged: (newValue) {
-                            setState(() {
-                              _canCreate = newValue;
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFormGroup(
-                        label: '권한 요청',
-                        child: _buildToggleButtons(
-                          value: _hasPermission,
-                          onChanged: (newValue) {
-                            setState(() {
-                              _hasPermission = newValue;
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 50),
-                    ],
-                  ),
-                ),
+            centerTitle: true,
+            title: const Text(
+              '소속 생성',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
-              child: SafeArea(
-                child: ElevatedButton(
-                  onPressed: isFormValid ? _submitAffiliationRequest : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC10230),
-                    disabledBackgroundColor:
-                        const Color(0xFFC10230).withOpacity(0.3),
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
+          ),
+          backgroundColor: const Color(0xFFF5F6F7),
+          body: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildFormGroup(
+                          label: '소속명',
+                          child: _buildInputField(
+                            controller: _affiliationNameController,
+                            hintText: '소속명 입력',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormGroup(
+                          label: '주최자명',
+                          child: _buildReadOnlyField(
+                            text: _hostNameController.text,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormGroup(
+                          label: '학번',
+                          child: _buildReadOnlyField(
+                            text: _studentIdController.text,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormGroup(
+                          label: '전화번호',
+                          child: _buildInputField(
+                            controller: _phoneNumberController,
+                            hintText: '전화번호 입력',
+                            keyboardType: TextInputType.phone,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormGroup(
+                          label: '생성 요청',
+                          child: _buildToggleButtons(
+                            value: _canCreate,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _canCreate = newValue;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormGroup(
+                          label: '권한 요청',
+                          child: _buildToggleButtons(
+                            value: _hasPermission,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _hasPermission = newValue;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 50),
+                      ],
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    foregroundColor: Colors.white,
-                    disabledForegroundColor: Colors.white.withOpacity(0.7),
-                  ),
-                  child: const Text(
-                    '신청',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                child: SafeArea(
+                  child: ElevatedButton(
+                    onPressed: isFormValid ? _submitAffiliationRequest : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFC10230),
+                      disabledBackgroundColor:
+                          const Color(0xFFC10230).withOpacity(0.3),
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white.withOpacity(0.7),
+                    ),
+                    child: const Text(
+                      '신청',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
