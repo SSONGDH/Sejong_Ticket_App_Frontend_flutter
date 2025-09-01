@@ -67,9 +67,6 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
                   .stopSession(alertMessage: "태그 UID: $hexId");
 
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('NDEF 메시지는 없지만 태그 UID: $hexId')),
-                );
                 setState(() => _isLoading = false);
               }
               return;
@@ -78,9 +75,6 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
               await NfcManager.instance
                   .stopSession(alertMessage: "인식 불가 태그입니다.");
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('읽을 수 없는 태그입니다.')),
-                );
                 setState(() => _isLoading = false);
               }
               return;
@@ -96,9 +90,6 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
             await NfcManager.instance
                 .stopSession(alertMessage: "태그에 데이터가 없습니다.");
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('태그에 데이터가 없습니다.')),
-              );
               setState(() => _isLoading = false);
             }
             return;
@@ -121,9 +112,6 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
         onError: (error) async {
           print("[NFC] 세션 에러 발생: $error");
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('NFC 세션 에러: $error')),
-            );
             setState(() => _isLoading = false);
           }
         },
@@ -132,9 +120,6 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
     } catch (e) {
       print("[NFC] startSession 예외 발생: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('NFC 세션 시작 실패: $e')),
-        );
         setState(() => _isLoading = false);
       }
     }
@@ -228,7 +213,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
               : Text(
                   'NFC 기능을 켜고 카드를 대주세요',
                   style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       color: const Color(0xFF334D61).withOpacity(0.5),
                       fontWeight: FontWeight.w600),
                 ),

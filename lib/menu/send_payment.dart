@@ -345,7 +345,6 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
               hintStyle: TextStyle(
                 color: Colors.black.withOpacity(0.3),
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
               ),
               isDense: true,
               contentPadding: EdgeInsets.zero,
@@ -387,7 +386,6 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
                   style: TextStyle(
                     color: Colors.black.withOpacity(0.3),
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 isExpanded: true,

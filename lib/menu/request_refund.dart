@@ -8,7 +8,6 @@ import 'package:PASSTIME/screens/ticket_screen.dart';
 import '../cookiejar_singleton.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 
-// 전화번호 포맷팅을 위한 MaskedInputController 클래스
 class MaskedInputController extends TextEditingController {
   @override
   set value(TextEditingValue newValue) {
@@ -27,9 +26,12 @@ class MaskedInputController extends TextEditingController {
       return text;
     } else if (text.length <= 7) {
       return '${text.substring(0, 3)}-${text.substring(3)}';
-    } else {
+    } else if (text.length > 7 && text.length <= 11) {
       return '${text.substring(0, 3)}-${text.substring(3, 7)}-${text.substring(7, text.length)}';
+    } else if (text.length > 11) {
+      return '${text.substring(0, 3)}-${text.substring(3, 7)}-${text.substring(7, 11)}';
     }
+    return text;
   }
 }
 
@@ -44,8 +46,6 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
   String? selectedDate;
   String? selectedTime;
   String? selectedTicketId;
-  String? refundReason;
-  String? phoneNumber;
   List<Map<String, dynamic>> tickets = [];
 
   final TextEditingController refundReasonController = TextEditingController();
@@ -58,13 +58,21 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     super.initState();
     _setupDio();
     _fetchTickets();
+    refundReasonController.addListener(_updateButtonState);
+    phoneNumberController.addListener(_updateButtonState);
   }
 
   @override
   void dispose() {
+    refundReasonController.removeListener(_updateButtonState);
+    phoneNumberController.removeListener(_updateButtonState);
     refundReasonController.dispose();
     phoneNumberController.dispose();
     super.dispose();
+  }
+
+  void _updateButtonState() {
+    setState(() {});
   }
 
   void _setupDio() {
@@ -234,7 +242,8 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                padding:
+                    const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0), // 하단 패딩 조정
                 child: SafeArea(
                   child: ElevatedButton(
                     onPressed: _isFormValid() ? _submitRefundRequest : null,
@@ -305,7 +314,6 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
               hintStyle: TextStyle(
                 color: Colors.black.withOpacity(0.3),
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
               ),
               isDense: true,
               contentPadding: EdgeInsets.zero,
@@ -347,7 +355,6 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
                   style: TextStyle(
                     color: Colors.black.withOpacity(0.3),
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 isExpanded: true,
@@ -427,12 +434,9 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     String? suffixText,
     IconData? icon,
   }) {
-    // 텍스트 색상을 결정하는 로직
     final isHintText =
         displayText == "방문 가능 날짜 선택" || displayText == "방문 가능 시간 선택";
-    final textColor = isHintText
-        ? Colors.black.withOpacity(0.3)
-        : Colors.black; // 선택된 값이면 검은색, 힌트면 흐린색
+    final textColor = isHintText ? Colors.black.withOpacity(0.3) : Colors.black;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -459,14 +463,12 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
                 child: Text(
                   displayText,
                   style: TextStyle(
-                    color: textColor, // 동적으로 색상 변경
+                    color: textColor,
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              Icon(icon ?? Icons.calendar_today_outlined,
-                  color: Colors.grey, size: 20),
+              if (icon != null) Icon(icon, color: Colors.grey, size: 20),
             ],
           ),
           if (suffixText != null) ...[

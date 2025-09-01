@@ -187,7 +187,6 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
                               hintStyle: TextStyle(
                                 color: Colors.black.withOpacity(0.3),
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
                               ),
                               isDense: true,
                               contentPadding: EdgeInsets.zero,

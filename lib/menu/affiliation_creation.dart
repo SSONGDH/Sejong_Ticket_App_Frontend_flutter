@@ -368,7 +368,6 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
       style: const TextStyle(
         fontSize: 16,
         color: Colors.black,
-        fontWeight: FontWeight.w600,
       ),
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,

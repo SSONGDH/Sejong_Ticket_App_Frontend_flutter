@@ -362,7 +362,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                   style: TextStyle(
                     color: Colors.black.withOpacity(0.3),
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 isExpanded: true,
@@ -373,7 +372,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                       affiliation,
                       style: const TextStyle(
                         color: Colors.black,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   );
@@ -388,7 +386,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                   color:
                       hasValue ? Colors.black : Colors.black.withOpacity(0.3),
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -595,14 +592,12 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                   ? Colors.black
                   : Colors.black.withOpacity(0.3),
               fontSize: 16,
-              fontWeight: FontWeight.w600,
             ),
             decoration: InputDecoration(
               hintText: hintText,
               hintStyle: TextStyle(
                 color: Colors.black.withOpacity(0.3),
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
               ),
               isDense: true,
               contentPadding: EdgeInsets.zero,
@@ -734,7 +729,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                     color:
                         hasValue ? Colors.black : Colors.black.withOpacity(0.3),
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
