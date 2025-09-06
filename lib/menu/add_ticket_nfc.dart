@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -148,26 +149,62 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
 
       if (response.statusCode == 200 && response.data['isSuccess']) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('입장권이 성공적으로 추가되었습니다!')),
-          );
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const TicketScreen()),
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text("성공"),
+              content: const Text("입장권이 성공적으로 추가되었습니다!"),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text("확인",
+                      style: TextStyle(color: Color(0xFFC10230))),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TicketScreen()),
+                    );
+                  },
+                ),
+              ],
+            ),
           );
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response.data['message'] ?? '티켓 등록 실패')),
+          final message = response.data['message'] ?? '티켓 등록 실패';
+          showCupertinoDialog(
+            context: context,
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text("오류"),
+              content: Text(message),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text("확인",
+                      style: TextStyle(color: Color(0xFFC10230))),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
           );
         }
       }
     } catch (e) {
       print("[API] 요청 실패: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('서버 오류. 다시 시도해 주세요.')),
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text("네트워크 오류"),
+            content: const Text("서버 오류. 다시 시도해 주세요."),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text("확인",
+                    style: TextStyle(color: Color(0xFFC10230))),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
         );
       }
     } finally {
