@@ -17,7 +17,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -25,9 +28,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
-        return windows;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -40,19 +49,9 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAnPgLABNLYypa8UlLzmcmMHkldbd9WDwI',
-    appId: '1:27155348743:web:15b62c35cb03332ac1d9a2',
-    messagingSenderId: '27155348743',
-    projectId: 'passtime-95bad',
-    authDomain: 'passtime-95bad.firebaseapp.com',
-    storageBucket: 'passtime-95bad.firebasestorage.app',
-    measurementId: 'G-9VPZB5C4VM',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCgjqd22m_YCNrZXxh_rFd159YkpWKUsxU',
-    appId: '1:27155348743:android:e5d473ebfe8afda3c1d9a2',
+    appId: '1:27155348743:android:e6701a02490418f4c1d9a2',
     messagingSenderId: '27155348743',
     projectId: 'passtime-95bad',
     storageBucket: 'passtime-95bad.firebasestorage.app',
@@ -60,29 +59,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDgmhKral8eHdkZaaTiUzLC95HQ_l4oW0U',
-    appId: '1:27155348743:ios:13f9609c6498c800c1d9a2',
+    appId: '1:27155348743:ios:c46591376f2a6024c1d9a2',
     messagingSenderId: '27155348743',
     projectId: 'passtime-95bad',
     storageBucket: 'passtime-95bad.firebasestorage.app',
-    iosBundleId: 'com.example.passtime',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDgmhKral8eHdkZaaTiUzLC95HQ_l4oW0U',
-    appId: '1:27155348743:ios:13f9609c6498c800c1d9a2',
-    messagingSenderId: '27155348743',
-    projectId: 'passtime-95bad',
-    storageBucket: 'passtime-95bad.firebasestorage.app',
-    iosBundleId: 'com.example.passtime',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAnPgLABNLYypa8UlLzmcmMHkldbd9WDwI',
-    appId: '1:27155348743:web:157e73c65f4a3194c1d9a2',
-    messagingSenderId: '27155348743',
-    projectId: 'passtime-95bad',
-    authDomain: 'passtime-95bad.firebaseapp.com',
-    storageBucket: 'passtime-95bad.firebasestorage.app',
-    measurementId: 'G-HS11DS78MR',
+    iosBundleId: 'com.yoonjaemin.passtime',
   );
 }

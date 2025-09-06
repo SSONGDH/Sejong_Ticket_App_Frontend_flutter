@@ -6,11 +6,12 @@ import 'package:flutter/cupertino.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'package:logger/logger.dart';
-import 'package:kakao_map_plugin/kakao_map_plugin.dart';
+import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
 
 final logger = Logger();
 
 // ✅ 백그라운드 메시지 핸들러: 앱이 종료 상태일 때 호출됨
+@pragma('vm:entry-point') // 개선 제안: 어노테이션 추가
 Future<void> _onBackgroundMessage(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -24,15 +25,19 @@ Future<void> _onBackgroundMessage(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ✅ .env 로드 (Firebase보다 먼저 로드해서 키를 사용할 수 있도록 함)
+  await dotenv.load(fileName: ".env");
+
+  // ✅ Firebase 초기화
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // ✅ .env 로드
-  await dotenv.load(fileName: ".env");
-
-  // ✅ 카카오맵 JavaScript 키 초기화
-  AuthRepository.initialize(appKey: dotenv.env['KAKAO_MAP_JS_KEY']!);
+  // ✅ (가장 중요) 카카오 SDK 네이티브 앱 키 초기화 (수정됨)
+  // AuthRepository.initialize() 대신 KakaoSdk.init()을 사용해야 합니다.
+  KakaoSdk.init(
+    nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY'],
+  );
 
   // ✅ iOS: 알림 권한 요청
   NotificationSettings settings =
@@ -50,16 +55,12 @@ void main() async {
     sound: true,
   );
 
-  // 🔔 [Foreground] 포그라운드 메시지 핸들러: 앱이 실행 중일 때 호출됨
+  // 🔔 [Foreground] 포그라운드 메시지 핸들러
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     logger.i("🔔 [Foreground] 메시지 수신");
     logger.i("Title: ${message.notification?.title}");
     logger.i("Body: ${message.notification?.body}");
     logger.i("Data: ${message.data}");
-
-    // 포그라운드에서는 기본적으로 알림이 표시되지 않습니다.
-    // 만약 표시하려면, flutter_local_notifications 패키지를 사용해
-    // 직접 알림을 띄우는 로직을 여기에 추가해야 합니다.
   });
 
   // ✅ 백그라운드 메시지 핸들러 등록
@@ -79,6 +80,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  // ... (이하 동일)
   const MyApp({super.key});
 
   @override

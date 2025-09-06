@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:27155348743:android:e5d473ebfe8afda3c1d9a2",
+        "mobilesdk_app_id": "1:27155348743:android:e6701a02490418f4c1d9a2",
         "android_client_info": {
-          "package_name": "com.example.passtime"
+          "package_name": "com.yoonjaemin.passtime"
         }
       },
       "oauth_client": [],

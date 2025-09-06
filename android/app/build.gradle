@@ -1,10 +1,7 @@
 plugins {
     id "com.android.application"
-    // START: FlutterFire Configuration
     id 'com.google.gms.google-services'
-    // END: FlutterFire Configuration
     id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -27,11 +24,12 @@ if (flutterVersionName == null) {
 }
 
 android {
-    // ✅ 1. 네임스페이스를 고유 ID와 맞춰주는 것이 좋습니다.
-    namespace = "com.yourcompany.passtime"
-    // ✅ 2. 최신 안드로이드 버전에 맞춰 SDK 버전을 명시적으로 지정합니다.
-    compileSdk = 34
-    ndkVersion = flutter.ndkVersion
+    // ✅ 1. 본인의 고유한 패키지 이름으로 변경 (아래 applicationId와 동일하게)
+    namespace = "com.yoonjaemin.passtime"
+    compileSdk = 35
+
+    // ✅ 2. (가장 중요) 이전에 설치한 특정 NDK 버전으로 직접 지정
+    ndkVersion "26.2.11394342"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -43,21 +41,21 @@ android {
     }
 
     defaultConfig {
-        // ✅ 3. 매우 중요: 고유한 Application ID로 반드시 변경해야 합니다.
-        applicationId = "com.yourcompany.passtime"
-        
-        // ✅ 4. 최소 및 타겟 SDK 버전을 명시적으로 지정합니다.
-        minSdk = 23
-        targetSdk = 34
-        
-        // ✅ 5. 앱 버전 정보를 명시적으로 지정합니다.
+        // ✅ 3. (필수) 본인의 고유한 앱 ID로 변경 (위 namespace와 동일하게)
+        applicationId = "com.yoonjaemin.passtime"
+
+        // 특별한 이유가 없다면 이 설정은 좋습니다.
+        minSdk = 26
+        targetSdk = 35
+
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
 
     buildTypes {
         release {
-            // TODO: 출시 전에는 반드시 실제 서명(signing config)을 설정해야 합니다.
+            // TODO: 앱 출시 전에는 반드시 실제 서명(signing config)을 설정해야 합니다.
+            // 예: signingConfig signingConfigs.release
             signingConfig = signingConfigs.debug
         }
     }
