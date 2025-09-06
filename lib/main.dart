@@ -6,12 +6,13 @@ import 'package:flutter/cupertino.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'package:logger/logger.dart';
-import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 
 final logger = Logger();
 
 // ✅ 백그라운드 메시지 핸들러: 앱이 종료 상태일 때 호출됨
-@pragma('vm:entry-point') // 개선 제안: 어노테이션 추가
+@pragma('vm:entry-point')
 Future<void> _onBackgroundMessage(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -25,7 +26,7 @@ Future<void> _onBackgroundMessage(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ .env 로드 (Firebase보다 먼저 로드해서 키를 사용할 수 있도록 함)
+  // ✅ .env 로드
   await dotenv.load(fileName: ".env");
 
   // ✅ Firebase 초기화
@@ -33,11 +34,16 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // ✅ (가장 중요) 카카오 SDK 네이티브 앱 키 초기화 (수정됨)
-  // AuthRepository.initialize() 대신 KakaoSdk.init()을 사용해야 합니다.
-  KakaoSdk.init(
-    nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY'],
-  );
+  // ✅ Kakao SDK & Kakao Maps 초기화
+  final kakaoKey = dotenv.env['KAKAO_NATIVE_APP_KEY'];
+  if (kakaoKey != null && kakaoKey.isNotEmpty) {
+    logger.i("[KakaoSDK] 🔑 KAKAO_NATIVE_APP_KEY: $kakaoKey");
+    KakaoSdk.init(nativeAppKey: kakaoKey);
+    await KakaoMapsFlutter.init(kakaoKey);
+    logger.i("[KakaoMap] ✅ 초기화 완료");
+  } else {
+    logger.e("[KakaoSDK] ❌ KAKAO_NATIVE_APP_KEY가 비어있습니다!");
+  }
 
   // ✅ iOS: 알림 권한 요청
   NotificationSettings settings =
@@ -48,14 +54,14 @@ void main() async {
   );
   logger.i("🔐 알림 권한 상태: ${settings.authorizationStatus}");
 
-  // ✅ iOS: 포그라운드 알림 표시 옵션 설정
+  // ✅ iOS: 포그라운드 알림 표시 옵션
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: true,
     badge: true,
     sound: true,
   );
 
-  // 🔔 [Foreground] 포그라운드 메시지 핸들러
+  // 🔔 [Foreground] 메시지 핸들러
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     logger.i("🔔 [Foreground] 메시지 수신");
     logger.i("Title: ${message.notification?.title}");
@@ -80,7 +86,6 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  // ... (이하 동일)
   const MyApp({super.key});
 
   @override

@@ -8,64 +8,50 @@ plugins {
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
+    localPropertiesFile.withReader('UTF-8') { reader -> localProperties.load(reader) }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
 android {
-    // ✅ 1. 본인의 고유한 패키지 이름으로 변경 (아래 applicationId와 동일하게)
     namespace = "com.yoonjaemin.passtime"
-    compileSdk = 35
-
-    // ✅ 2. (가장 중요) 이전에 설치한 특정 NDK 버전으로 직접 지정
+    compileSdk = 36
     ndkVersion "26.2.11394342"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled = true // ✅ 필수
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = "17"
+        freeCompilerArgs += ["-Xskip-prerelease-check"]
     }
 
     defaultConfig {
-        // ✅ 3. (필수) 본인의 고유한 앱 ID로 변경 (위 namespace와 동일하게)
         applicationId = "com.yoonjaemin.passtime"
-
-        // 특별한 이유가 없다면 이 설정은 좋습니다.
-        minSdk = 26
-        targetSdk = 35
-
+        minSdkVersion = 26
+        targetSdk = 36
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
 
     buildTypes {
-    release {
-        // 코드 축소 및 최적화 활성화
-        minifyEnabled true
-        // proguard-rules.pro 파일 적용
-        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        
-        // TODO: 앱 출시 전에는 반드시 실제 서명(signing config)을 설정해야 합니다.
-        // 예: signingConfig signingConfigs.release
-        signingConfig = signingConfigs.debug
+        release {
+            signingConfig = signingConfigs.debug
+        }
     }
 }
-}
 
+dependencies {
+    // ✅ core library desugaring 라이브러리 (2.1.4 이상 필요)
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+
+    // Flutter Local Notifications, Firebase 등 필요시 추가
+    implementation "androidx.core:core-ktx:1.10.1"
+}
 flutter {
     source = "../.."
 }

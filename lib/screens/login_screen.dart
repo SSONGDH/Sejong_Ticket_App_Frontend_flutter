@@ -343,44 +343,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
-          InkWell(
-            onTap: () {
-              setState(() {
-                isAutoLogin = !isAutoLogin;
-                // _saveLoginData(); // <<< 자동 로그인 기능을 추가하지 않으므로 이 줄은 삭제 또는 주석 처리
-              });
-            },
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: isAutoLogin,
-                    onChanged: (bool? newValue) {
-                      setState(() {
-                        isAutoLogin = newValue!;
-                      });
-                    },
-                    activeColor: const Color(0xFFC10230),
-                    checkColor: Colors.white,
-                    side: BorderSide.none,
-                    fillColor: WidgetStateProperty.resolveWith<Color>(
-                      (Set<WidgetState> states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return const Color(0xFFC10230);
-                        }
-                        return const Color(0xFF334D61).withOpacity(0.05);
-                      },
-                    ),
-                    shape: const CircleBorder(),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-                const Text(' 자동 로그인', style: TextStyle(fontSize: 14)),
-              ],
-            ),
-          ),
         ],
       ),
     );
