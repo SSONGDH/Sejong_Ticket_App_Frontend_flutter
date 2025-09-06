@@ -14,13 +14,13 @@ class AddTicketNfcScreen extends StatefulWidget {
 }
 
 class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
-  bool _isLoading = false;
+  // Use a state variable to track if a tag is being processed
+  bool _isProcessingTag = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _logNfcAvailability();
       _startNfcSession();
     });
   }
@@ -33,7 +33,6 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
   Future<void> _startNfcSession() async {
     await _logNfcAvailability();
     if (!mounted) return;
-    setState(() => _isLoading = true);
 
     print("[NFC] 기존 세션 중지 시도 (iOS 안정화용)");
     try {
@@ -54,6 +53,13 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
           await _logNfcAvailability();
           print("[NFC] 태그 발견됨: ${tag.data}");
 
+          if (mounted) {
+            // Immediately show a loading indicator after a tag is discovered
+            setState(() {
+              _isProcessingTag = true;
+            });
+          }
+
           final ndef = Ndef.from(tag);
           if (ndef == null) {
             final tagId = tag.data['id'];
@@ -68,7 +74,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
                   .stopSession(alertMessage: "태그 UID: $hexId");
 
               if (mounted) {
-                setState(() => _isLoading = false);
+                setState(() => _isProcessingTag = false);
               }
               return;
             } else {
@@ -76,7 +82,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
               await NfcManager.instance
                   .stopSession(alertMessage: "인식 불가 태그입니다.");
               if (mounted) {
-                setState(() => _isLoading = false);
+                setState(() => _isProcessingTag = false);
               }
               return;
             }
@@ -91,7 +97,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
             await NfcManager.instance
                 .stopSession(alertMessage: "태그에 데이터가 없습니다.");
             if (mounted) {
-              setState(() => _isLoading = false);
+              setState(() => _isProcessingTag = false);
             }
             return;
           }
@@ -113,7 +119,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
         onError: (error) async {
           print("[NFC] 세션 에러 발생: $error");
           if (mounted) {
-            setState(() => _isLoading = false);
+            setState(() => _isProcessingTag = false);
           }
         },
       );
@@ -121,7 +127,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
     } catch (e) {
       print("[NFC] startSession 예외 발생: $e");
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isProcessingTag = false);
       }
     }
   }
@@ -209,7 +215,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isProcessingTag = false);
       }
     }
   }
@@ -245,7 +251,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
         ),
         body: Align(
           alignment: const Alignment(0.0, -0.1),
-          child: _isLoading
+          child: _isProcessingTag
               ? const CircularProgressIndicator()
               : Text(
                   'NFC 기능을 켜고 카드를 대주세요',
