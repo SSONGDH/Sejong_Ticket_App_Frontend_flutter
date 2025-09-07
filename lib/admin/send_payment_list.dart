@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:passtime/widgets/admin_menu_button.dart';
 import 'package:passtime/cookiejar_singleton.dart';
+import 'package:passtime/admin/admin_ticket_screen.dart'; // AdminTicketScreen을 import합니다.
 
 class SendPaymentListScreen extends StatefulWidget {
   const SendPaymentListScreen({super.key});
@@ -239,42 +240,56 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: const CustomAppBar(title: "납부 내역 목록"),
-      floatingActionButton: const AdminMenuButton(),
-      body: _isAffiliationLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? Center(child: Text(_errorMessage!))
-              : _affiliations.isEmpty
-                  ? const Center(child: Text("관리 중인 소속이 없습니다."))
-                  : Column(
-                      children: [
-                        Container(
-                          color: Colors.white,
-                          child: TabBar(
-                            isScrollable: true,
-                            controller: _tabController,
-                            tabAlignment: TabAlignment.start,
-                            tabs: _affiliations.map((affiliation) {
-                              return Tab(text: affiliation['name']);
-                            }).toList(),
-                            labelColor: const Color(0xFFC10230),
-                            unselectedLabelColor: Colors.grey,
-                            indicatorColor: const Color(0xFFC10230),
+    return PopScope(
+      canPop: false, // 뒤로가기 동작을 가로챕니다.
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          return;
+        }
+        // 뒤로가기 제스처가 발생하면 AdminTicketScreen으로 돌아갑니다.
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminTicketScreen()),
+          (Route<dynamic> route) => false,
+        );
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: const CustomAppBar(title: "납부 내역 목록"),
+        floatingActionButton: const AdminMenuButton(),
+        body: _isAffiliationLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+                ? Center(child: Text(_errorMessage!))
+                : _affiliations.isEmpty
+                    ? const Center(child: Text("관리 중인 소속이 없습니다."))
+                    : Column(
+                        children: [
+                          Container(
+                            color: Colors.white,
+                            child: TabBar(
+                              isScrollable: true,
+                              controller: _tabController,
+                              tabAlignment: TabAlignment.start,
+                              tabs: _affiliations.map((affiliation) {
+                                return Tab(text: affiliation['name']);
+                              }).toList(),
+                              labelColor: const Color(0xFFC10230),
+                              unselectedLabelColor: Colors.grey,
+                              indicatorColor: const Color(0xFFC10230),
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: _affiliations.map((_) {
-                              return _buildPaymentList();
-                            }).toList(),
+                          Expanded(
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: _affiliations.map((_) {
+                                return _buildPaymentList();
+                              }).toList(),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+      ),
     );
   }
 

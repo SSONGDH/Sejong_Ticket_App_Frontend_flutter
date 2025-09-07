@@ -8,6 +8,7 @@ import 'package:passtime/widgets/custom_app_bar.dart';
 import 'package:passtime/screens/login_screen.dart';
 import 'package:passtime/widgets/menu_button.dart';
 import '../cookiejar_singleton.dart';
+import 'package:passtime/screens/ticket_screen.dart'; // TicketScreen import 추가
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -181,62 +182,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F7),
-      appBar: const CustomAppBar(title: "설정"),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCustomTile(
-                  title: '알림',
-                  isSwitch: true,
-                  switchValue: isNotificationOn,
-                  onSwitchChanged: (value) {
-                    setState(() {
-                      isNotificationOn = value;
-                    });
-                    _toggleNotification(value);
-                  },
-                ),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: _showInquiryDialog,
-                  child: _buildCustomTile(title: '문의사항', showMoreIcon: true),
-                ),
-                const SizedBox(height: 16),
-                _buildCustomTile(title: '패치버전', infoText: '1.0.1'),
-                const SizedBox(height: 48),
-                GestureDetector(
-                  onTap: _showLogoutDialog,
-                  child: Container(
-                    width: double.infinity,
-                    height: 56,
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4.0),
-                    ),
-                    child: const Text(
-                      '로그아웃',
-                      style: TextStyle(
-                        fontSize: 16.0,
-                        color: Color(0xFFC10230),
+    // PopScope 위젯을 추가하여 뒤로가기 동작을 제어합니다.
+    return PopScope(
+      canPop: false, // 뒤로가기 동작을 가로챕니다.
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          return;
+        }
+        // 뒤로가기 제스처가 발생하면 TicketScreen으로 돌아갑니다.
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const TicketScreen()),
+          (Route<dynamic> route) => false,
+        );
+      },
+      child: Scaffold(
+        appBar: const CustomAppBar(title: "설정"),
+        backgroundColor: const Color(0xFFF5F6F7),
+        body: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCustomTile(
+                    title: '알림',
+                    isSwitch: true,
+                    switchValue: isNotificationOn,
+                    onSwitchChanged: (value) {
+                      setState(() {
+                        isNotificationOn = value;
+                      });
+                      _toggleNotification(value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: _showInquiryDialog,
+                    child: _buildCustomTile(title: '문의사항', showMoreIcon: true),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCustomTile(title: '패치버전', infoText: '1.0.1'),
+                  const SizedBox(height: 48),
+                  GestureDetector(
+                    onTap: _showLogoutDialog,
+                    child: Container(
+                      width: double.infinity,
+                      height: 56,
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4.0),
+                      ),
+                      child: const Text(
+                        '로그아웃',
+                        style: TextStyle(
+                          fontSize: 16.0,
+                          color: Color(0xFFC10230),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        floatingActionButton: const MenuButton(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
-      floatingActionButton: const MenuButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -244,7 +260,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     String? infoText,
     bool isSwitch = false,
-    bool showMoreIcon = false, // 아이콘을 표시할지 결정하는 파라미터
+    bool showMoreIcon = false,
     bool switchValue = false,
     Function(bool)? onSwitchChanged,
   }) {
@@ -272,7 +288,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: onSwitchChanged,
               activeTrackColor: const Color(0xFFC10230),
             )
-          else if (showMoreIcon) // 아이콘 표시 로직
+          else if (showMoreIcon)
             Icon(
               Icons.more_horiz_rounded,
               color: const Color(0xFF334D61).withOpacity(0.6),

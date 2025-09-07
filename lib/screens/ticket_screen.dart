@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
 import 'package:passtime/widgets/custom_app_bar.dart';
@@ -26,9 +27,12 @@ class _TicketScreenState extends State<TicketScreen> {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+        final cookies =
+            await CookieJarSingleton().cookieJar.loadForRequest(uri);
         options.headers['Cookie'] = cookies.isNotEmpty
-            ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
+            ? cookies
+                .map((cookie) => '${cookie.name}=${cookie.value}')
+                .join('; ')
             : '';
         return handler.next(options);
       },
@@ -46,6 +50,7 @@ class _TicketScreenState extends State<TicketScreen> {
         return handler.next(error);
       },
     ));
+    _ticketsFuture = fetchTickets();
   }
 
   Future<List<Map<String, dynamic>>> fetchTickets() async {
@@ -104,37 +109,37 @@ class _TicketScreenState extends State<TicketScreen> {
     }
   }
 
-  Future<bool> _onWillPop() async {
+  Future<void> _onPopInvoked(bool didPop) async {
+    if (didPop) {
+      return;
+    }
     final shouldExit = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white, // 팝업창 배경 하얀색
+      builder: (context) => CupertinoAlertDialog(
         title: const Text('앱을 종료하시겠습니까?'),
-        content: const Text('앱을 나가시겠습니까?'),
+        content: const Text('앱을 완전히 종료합니다.'),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
+            child: const Text('취소', style: TextStyle(color: Color(0xFFC10230))),
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('머무르기'),
           ),
-          TextButton(
+          CupertinoDialogAction(
+            child: const Text('종료'),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('나가기'),
           ),
         ],
       ),
     );
-
     if (shouldExit == true) {
       SystemNavigator.pop();
-      return true;
     }
-    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false, // 뒤로가기 동작을 가로챕니다.
+      onPopInvoked: _onPopInvoked, // 콜백 함수로 앱 종료 로직 연결
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F6F7),
         appBar: const CustomAppBar(title: '입장권'),
@@ -170,16 +175,19 @@ class _TicketScreenState extends State<TicketScreen> {
                     } else {
                       final tickets = snapshot.data!;
                       return ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10.0, vertical: 0),
                         itemCount: tickets.length,
                         itemBuilder: (context, index) {
                           final ticket = tickets[index];
                           return Padding(
-                            padding: EdgeInsets.only(top: index == 0 ? 10.0 : 5.0),
+                            padding:
+                                EdgeInsets.only(top: index == 0 ? 10.0 : 5.0),
                             child: TicketCard(
                               ticketId: ticket['_id'],
                               title: ticket['eventTitle'],
-                              dateTime: '${ticket['eventDay']} • ${ticket['eventStartTime']}',
+                              dateTime:
+                                  '${ticket['eventDay']} • ${ticket['eventStartTime']}',
                               location: ticket['eventPlace'],
                               status: '${ticket['status']}',
                               statusColor: _getStatusColor(ticket['status']),

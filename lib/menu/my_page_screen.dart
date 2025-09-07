@@ -7,6 +7,7 @@ import 'package:passtime/widgets/custom_app_bar.dart';
 import 'package:passtime/widgets/menu_button.dart';
 import 'package:passtime/menu/affiliation_creation.dart';
 import '../cookiejar_singleton.dart';
+import 'package:passtime/screens/ticket_screen.dart';
 
 class Affiliation {
   final String id;
@@ -232,362 +233,378 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(title: '마이페이지'),
-      backgroundColor: const Color(0xFFF5F6F7),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 10),
-                    Text(
-                      '안녕하세요 $_userName님 :)',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF334D61),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 15, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        children: [
-                          const Text(
-                            '학번',
-                            style: TextStyle(fontSize: 16, color: Colors.black),
-                          ),
-                          const SizedBox(width: 30),
-                          Expanded(
-                            child: Text(
-                              _fixedStudentId,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.black.withOpacity(0.5),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    const Text(
-                      '현재 소속',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF334D61),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _currentAffiliations.isEmpty
-                        ? Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 15, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                '현재 등록된 소속이 없습니다',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xFF868686),
-                                ),
-                              ),
-                            ),
-                          )
-                        : Column(
-                            children: [
-                              for (int i = 0;
-                                  i < _currentAffiliations.length;
-                                  i++) ...[
-                                _buildAffiliationItem(_currentAffiliations[i],
-                                    canRemove: true),
-                                if (i < _currentAffiliations.length - 1)
-                                  const SizedBox(height: 10),
-                              ],
-                            ],
-                          ),
-                    const SizedBox(height: 40),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          '소속 추가',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF334D61),
-                          ),
+    return PopScope(
+      canPop: false, // 뒤로가기 동작을 가로챕니다.
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          return;
+        }
+        // 뒤로가기 동작을 감지하면 TicketScreen으로 이동합니다.
+        // pushAndRemoveUntil을 사용하여 TicketScreen을 새 스택의 루트로 만듭니다.
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const TicketScreen()),
+          (route) => false,
+        );
+      },
+      child: Scaffold(
+        appBar: const CustomAppBar(title: '마이페이지'),
+        backgroundColor: const Color(0xFFF5F6F7),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      Text(
+                        '안녕하세요 $_userName님 :)',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF334D61),
                         ),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AffiliationCreationScreen(
-                                  hostName: _userName,
-                                  studentId: _fixedStudentId,
-                                ),
-                              ),
-                            );
-                            _fetchMyPageData();
-                          },
-                          label: const Text(
-                            '소속 생성',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          icon: const Icon(Icons.add_rounded,
-                              color: Colors.white),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF7E929F),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        splashColor: Colors.transparent,
-                        highlightColor: Colors.transparent,
-                        focusColor: Colors.transparent,
-                        hoverColor: Colors.transparent,
-                        dividerColor: Colors.transparent,
                       ),
-                      child: Container(
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 15, vertical: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: ExpansionTile(
-                          key: ValueKey(_selectedAffiliation),
-                          title: Text(
-                            _selectedAffiliation?.name ?? '추가할 소속 선택',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: _selectedAffiliation == null
-                                  ? const Color(0xFF868686)
-                                  : const Color(0xFF282727),
-                            ),
-                          ),
-                          trailing: const Icon(Icons.keyboard_arrow_down,
-                              color: Color(0xFF868686)),
+                        child: Row(
                           children: [
-                            SizedBox(
-                              height: _availableAffiliations.length > 5
-                                  ? (5 * 48.0)
-                                  : _availableAffiliations.length * 48.0,
-                              child: ListView.builder(
-                                itemCount: _availableAffiliations.length,
-                                itemBuilder: (context, index) {
-                                  final affiliation =
-                                      _availableAffiliations[index];
-                                  return InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        if (!_currentAffiliations
-                                            .contains(affiliation)) {
-                                          _currentAffiliations.add(affiliation);
-                                          _availableAffiliations
-                                              .remove(affiliation);
-                                          _selectedAffiliation = null;
-                                        }
-                                        _updateSaveButtonState();
-                                      });
-                                    },
-                                    child: Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 15, vertical: 12),
-                                      child: Text(
-                                        affiliation.name,
-                                        style: const TextStyle(
-                                            fontSize: 16,
-                                            color: Color(0xFF282727)),
-                                      ),
-                                    ),
-                                  );
-                                },
+                            const Text(
+                              '학번',
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.black),
+                            ),
+                            const SizedBox(width: 30),
+                            Expanded(
+                              child: Text(
+                                _fixedStudentId,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black.withOpacity(0.5),
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
-            child: SafeArea(
-              child: ElevatedButton(
-                onPressed: _isSaveButtonEnabled
-                    ? () async {
-                        final apiUrl =
-                            '${dotenv.env['API_BASE_URL']}/user/affiliationUpdate';
-                        final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
-
-                        try {
-                          final cookies = await CookieJarSingleton()
-                              .cookieJar
-                              .loadForRequest(uri);
-                          final cookieHeader = cookies.isNotEmpty
-                              ? cookies
-                                  .map((cookie) =>
-                                      '${cookie.name}=${cookie.value}')
-                                  .join('; ')
-                              : '';
-
-                          // ✅✅✅ 수정된 부분 ✅✅✅
-                          // 서버로 보낼 최종 데이터를 가공하는 로직
-                          final List<Map<String, dynamic>> payloadList = [];
-                          for (final currentAff in _currentAffiliations) {
-                            bool wasInitiallyPresent = _initialAffiliations.any(
-                                (initialAff) => initialAff.id == currentAff.id);
-
-                            if (wasInitiallyPresent) {
-                              // 원래 있던 소속이면, 초기 상태의 권한 정보를 그대로 사용
-                              final originalAff = _initialAffiliations
-                                  .firstWhere((aff) => aff.id == currentAff.id);
-                              payloadList.add(originalAff.toJson());
-                            } else {
-                              // 새로 추가된 소속이면, admin 권한을 false로 강제해서 전송
-                              payloadList.add({
-                                '_id': currentAff.id,
-                                'name': currentAff.name,
-                                'admin': false,
-                              });
-                            }
-                          }
-
-                          final response = await _dio.put(
-                            apiUrl,
-                            data: {
-                              "affiliationList": payloadList, // 가공된 최종 데이터를 전송
-                            },
-                            options: Options(
-                              headers: {
-                                'Content-Type': 'application/json',
-                                'Cookie': cookieHeader,
-                              },
-                            ),
-                          );
-
-                          print('저장 API 응답 데이터: ${response.data}');
-
-                          if (!context.mounted) return;
-
-                          if (response.data['code'] != null &&
-                              response.data['code'].startsWith('SUCCESS')) {
-                            setState(() {
-                              _initialAffiliations =
-                                  List.from(_currentAffiliations);
-                              _isSaveButtonEnabled = false;
-                            });
-                            showCupertinoDialog(
-                              context: context,
-                              builder: (context) => CupertinoAlertDialog(
-                                title: const Text('저장 완료'),
-                                content: const Text('소속 정보가 성공적으로 저장되었습니다.'),
-                                actions: [
-                                  CupertinoDialogAction(
-                                    child: const Text("확인",
-                                        style: TextStyle(
-                                            color: Color(0xFFC10230))),
-                                    onPressed: () => Navigator.pop(context),
-                                  ),
-                                ],
+                      const SizedBox(height: 40),
+                      const Text(
+                        '현재 소속',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF334D61),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _currentAffiliations.isEmpty
+                          ? Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 15, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
                               ),
-                            );
-                          } else {
-                            showCupertinoDialog(
-                              context: context,
-                              builder: (context) => CupertinoAlertDialog(
-                                title: const Text('저장 실패'),
-                                content: Text(response.data['message'] ??
-                                    '알 수 없는 오류가 발생했습니다.'),
-                                actions: [
-                                  CupertinoDialogAction(
-                                    child: const Text("확인",
-                                        style: TextStyle(
-                                            color: Color(0xFFC10230))),
-                                    onPressed: () => Navigator.pop(context),
+                              child: const Center(
+                                child: Text(
+                                  '현재 등록된 소속이 없습니다',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Color(0xFF868686),
                                   ),
-                                ],
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (!context.mounted) return;
-                          showCupertinoDialog(
-                            context: context,
-                            builder: (context) => CupertinoAlertDialog(
-                              title: const Text('오류 발생'),
-                              content:
-                                  const Text('요청 중 오류가 발생했습니다. 다시 시도해주세요.'),
-                              actions: [
-                                CupertinoDialogAction(
-                                  child: const Text("확인",
-                                      style:
-                                          TextStyle(color: Color(0xFFC10230))),
-                                  onPressed: () => Navigator.pop(context),
                                 ),
+                              ),
+                            )
+                          : Column(
+                              children: [
+                                for (int i = 0;
+                                    i < _currentAffiliations.length;
+                                    i++) ...[
+                                  _buildAffiliationItem(_currentAffiliations[i],
+                                      canRemove: true),
+                                  if (i < _currentAffiliations.length - 1)
+                                    const SizedBox(height: 10),
+                                ],
                               ],
                             ),
-                          );
-                        }
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFC10230),
-                  disabledBackgroundColor:
-                      const Color(0xFFC10230).withOpacity(0.3),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4)),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor: Colors.white.withOpacity(0.7),
+                      const SizedBox(height: 40),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            '소속 추가',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF334D61),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AffiliationCreationScreen(
+                                    hostName: _userName,
+                                    studentId: _fixedStudentId,
+                                  ),
+                                ),
+                              );
+                              _fetchMyPageData();
+                            },
+                            label: const Text(
+                              '소속 생성',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            icon: const Icon(Icons.add_rounded,
+                                color: Colors.white),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7E929F),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                          dividerColor: Colors.transparent,
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: ExpansionTile(
+                            key: ValueKey(_selectedAffiliation),
+                            title: Text(
+                              _selectedAffiliation?.name ?? '추가할 소속 선택',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: _selectedAffiliation == null
+                                    ? const Color(0xFF868686)
+                                    : const Color(0xFF282727),
+                              ),
+                            ),
+                            trailing: const Icon(Icons.keyboard_arrow_down,
+                                color: Color(0xFF868686)),
+                            children: [
+                              SizedBox(
+                                height: _availableAffiliations.length > 5
+                                    ? (5 * 48.0)
+                                    : _availableAffiliations.length * 48.0,
+                                child: ListView.builder(
+                                  itemCount: _availableAffiliations.length,
+                                  itemBuilder: (context, index) {
+                                    final affiliation =
+                                        _availableAffiliations[index];
+                                    return InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          if (!_currentAffiliations
+                                              .contains(affiliation)) {
+                                            _currentAffiliations
+                                                .add(affiliation);
+                                            _availableAffiliations
+                                                .remove(affiliation);
+                                            _selectedAffiliation = null;
+                                          }
+                                          _updateSaveButtonState();
+                                        });
+                                      },
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 15, vertical: 12),
+                                        child: Text(
+                                          affiliation.name,
+                                          style: const TextStyle(
+                                              fontSize: 16,
+                                              color: Color(0xFF282727)),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Text('저장',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+              child: SafeArea(
+                child: ElevatedButton(
+                  onPressed: _isSaveButtonEnabled
+                      ? () async {
+                          final apiUrl =
+                              '${dotenv.env['API_BASE_URL']}/user/affiliationUpdate';
+                          final uri =
+                              Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+
+                          try {
+                            final cookies = await CookieJarSingleton()
+                                .cookieJar
+                                .loadForRequest(uri);
+                            final cookieHeader = cookies.isNotEmpty
+                                ? cookies
+                                    .map((cookie) =>
+                                        '${cookie.name}=${cookie.value}')
+                                    .join('; ')
+                                : '';
+
+                            final List<Map<String, dynamic>> payloadList = [];
+                            for (final currentAff in _currentAffiliations) {
+                              bool wasInitiallyPresent =
+                                  _initialAffiliations.any((initialAff) =>
+                                      initialAff.id == currentAff.id);
+
+                              if (wasInitiallyPresent) {
+                                final originalAff =
+                                    _initialAffiliations.firstWhere(
+                                        (aff) => aff.id == currentAff.id);
+                                payloadList.add(originalAff.toJson());
+                              } else {
+                                payloadList.add({
+                                  '_id': currentAff.id,
+                                  'name': currentAff.name,
+                                  'admin': false,
+                                });
+                              }
+                            }
+
+                            final response = await _dio.put(
+                              apiUrl,
+                              data: {
+                                "affiliationList": payloadList,
+                              },
+                              options: Options(
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Cookie': cookieHeader,
+                                },
+                              ),
+                            );
+
+                            print('저장 API 응답 데이터: ${response.data}');
+
+                            if (!context.mounted) return;
+
+                            if (response.data['code'] != null &&
+                                response.data['code'].startsWith('SUCCESS')) {
+                              setState(() {
+                                _initialAffiliations =
+                                    List.from(_currentAffiliations);
+                                _isSaveButtonEnabled = false;
+                              });
+                              showCupertinoDialog(
+                                context: context,
+                                builder: (context) => CupertinoAlertDialog(
+                                  title: const Text('저장 완료'),
+                                  content: const Text('소속 정보가 성공적으로 저장되었습니다.'),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      child: const Text("확인",
+                                          style: TextStyle(
+                                              color: Color(0xFFC10230))),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            } else {
+                              showCupertinoDialog(
+                                context: context,
+                                builder: (context) => CupertinoAlertDialog(
+                                  title: const Text('저장 실패'),
+                                  content: Text(response.data['message'] ??
+                                      '알 수 없는 오류가 발생했습니다.'),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      child: const Text("확인",
+                                          style: TextStyle(
+                                              color: Color(0xFFC10230))),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            showCupertinoDialog(
+                              context: context,
+                              builder: (context) => CupertinoAlertDialog(
+                                title: const Text('오류 발생'),
+                                content:
+                                    const Text('요청 중 오류가 발생했습니다. 다시 시도해주세요.'),
+                                actions: [
+                                  CupertinoDialogAction(
+                                    child: const Text("확인",
+                                        style: TextStyle(
+                                            color: Color(0xFFC10230))),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFC10230),
+                    disabledBackgroundColor:
+                        const Color(0xFFC10230).withOpacity(0.3),
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4)),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white.withOpacity(0.7),
+                  ),
+                  child: const Text('저장',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        floatingActionButton: const Padding(
+          padding: EdgeInsets.only(bottom: 60.0),
+          child: MenuButton(),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
-      floatingActionButton: const Padding(
-        padding: EdgeInsets.only(bottom: 60.0),
-        child: MenuButton(),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

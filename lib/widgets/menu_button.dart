@@ -56,9 +56,8 @@ class _MenuButtonState extends State<MenuButton> {
   }
 
   // 메뉴 항목을 구성하는 헬퍼 위젯
-  // ⭐ IconData 대신 String imagePath로 변경 ⭐
   Widget _buildMenuItem(BuildContext context,
-      {required String imagePath, // 이미지 경로로 변경
+      {required String imagePath,
       required String text,
       required VoidCallback onTap}) {
     return InkWell(
@@ -70,7 +69,6 @@ class _MenuButtonState extends State<MenuButton> {
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         child: Row(
           children: [
-            // ⭐ Icon 대신 Image.asset 사용 ⭐
             Image.asset(
               imagePath,
               width: 24,
@@ -117,10 +115,11 @@ class _MenuButtonState extends State<MenuButton> {
                       // '입장권' 메뉴
                       _buildMenuItem(
                         context,
-                        // ⭐ 이미지 경로 지정 ⭐
-                        imagePath: 'assets/images/ticket.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/ticket.png',
                         text: '입장권',
                         onTap: () {
+                          // TicketScreen으로 이동하며 스택을 초기화합니다.
+                          // 이렇게 하면 TicketScreen이 메인 페이지가 됩니다.
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
@@ -132,8 +131,7 @@ class _MenuButtonState extends State<MenuButton> {
                       // '입장권 추가' 메뉴 - 중첩 바텀시트
                       _buildMenuItem(
                         context,
-                        // ⭐ 이미지 경로 지정 ⭐
-                        imagePath: 'assets/images/ticket-plus.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/ticket-plus.png',
                         text: '입장권 추가',
                         onTap: () {
                           showModalBottomSheet(
@@ -149,9 +147,7 @@ class _MenuButtonState extends State<MenuButton> {
                                 children: [
                                   _buildMenuItem(
                                     context,
-                                    // ⭐ 이미지 경로 지정 ⭐
-                                    imagePath:
-                                        'assets/images/ticket-plus.png', // 예시 이미지 경로
+                                    imagePath: 'assets/images/ticket-plus.png',
                                     text: 'CODE',
                                     onTap: () {
                                       Navigator.push(
@@ -164,23 +160,18 @@ class _MenuButtonState extends State<MenuButton> {
                                   ),
                                   _buildMenuItem(
                                     context,
-                                    // ⭐ 이미지 경로 지정 ⭐
-                                    imagePath:
-                                        'assets/images/ticket-plus.png', // 예시 이미지 경로
+                                    imagePath: 'assets/images/ticket-plus.png',
                                     text: 'NFC',
                                     onTap: () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) =>
-                                              const AddTicketNfcScreen(),
-                                        ),
+                                            builder: (_) =>
+                                                const AddTicketNfcScreen()),
                                       );
                                     },
                                   ),
-                                  const SizedBox(
-                                    height: 15,
-                                  )
+                                  const SizedBox(height: 15),
                                 ],
                               );
                             },
@@ -196,9 +187,7 @@ class _MenuButtonState extends State<MenuButton> {
                       // '납부 내역 보내기' 메뉴
                       _buildMenuItem(
                         context,
-                        // ⭐ 이미지 경로 지정 ⭐
-                        imagePath:
-                            'assets/images/coins-stacked.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/coins-stacked.png',
                         text: '납부 내역 보내기',
                         onTap: () {
                           Navigator.push(
@@ -211,8 +200,7 @@ class _MenuButtonState extends State<MenuButton> {
                       // '환불 신청' 메뉴
                       _buildMenuItem(
                         context,
-                        // ⭐ 이미지 경로 지정 ⭐
-                        imagePath: 'assets/images/coins-out.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/coins-out.png',
                         text: '환불 신청',
                         onTap: () {
                           Navigator.push(
@@ -222,35 +210,38 @@ class _MenuButtonState extends State<MenuButton> {
                           );
                         },
                       ),
-                      // '마이페이지' 메뉴
+                      // '마이페이지' 메뉴 - 스택 초기화
                       _buildMenuItem(
                         context,
-                        // ⭐ 이미지 경로 지정 ⭐
-                        imagePath: 'assets/images/user.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/user.png',
                         text: '마이페이지',
                         onTap: () {
-                          Navigator.pushReplacement(
+                          // 마이페이지로 이동하며 스택을 초기화합니다.
+                          // 이렇게 하면 마이페이지에서 뒤로가기 시 TicketScreen으로 돌아갑니다.
+                          Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
                                 builder: (_) => const MyPageScreen()),
+                            (Route<dynamic> route) => false,
                           );
                         },
                       ),
-                      // '설정' 메뉴
+                      // '설정' 메뉴 - 스택 초기화
                       _buildMenuItem(
                         context,
-                        // ⭐ 이미지 경로 지정 ⭐
-                        imagePath: 'assets/images/settings.png', // 예시 이미지 경로
+                        imagePath: 'assets/images/settings.png',
                         text: '설정',
                         onTap: () {
-                          Navigator.pushReplacement(
+                          // 설정으로 이동하며 스택을 초기화합니다.
+                          Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
                                 builder: (_) => const SettingsScreen()),
+                            (Route<dynamic> route) => false,
                           );
                         },
                       ),
-                      // '주최자 모드' 메뉴
+                      // '주최자 모드' 메뉴 - 스택 초기화
                       InkWell(
                         onTap: () async {
                           try {
@@ -269,6 +260,7 @@ class _MenuButtonState extends State<MenuButton> {
 
                             if (response.statusCode == 200 &&
                                 response.data['isSuccess'] == true) {
+                              // 주최자 모드로 이동하며 스택을 초기화합니다.
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
@@ -334,9 +326,7 @@ class _MenuButtonState extends State<MenuButton> {
                           ),
                         ),
                       ),
-                      const SizedBox(
-                        height: 15,
-                      )
+                      const SizedBox(height: 15),
                     ],
                   ),
                 ),
