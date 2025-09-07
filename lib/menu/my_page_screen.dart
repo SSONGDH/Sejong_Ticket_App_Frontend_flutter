@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:PASSTIME/widgets/custom_app_bar.dart';
-import 'package:PASSTIME/widgets/menu_button.dart';
-import 'package:PASSTIME/menu/affiliation_creation.dart';
+import 'package:passtime/widgets/custom_app_bar.dart';
+import 'package:passtime/widgets/menu_button.dart';
+import 'package:passtime/menu/affiliation_creation.dart';
 import '../cookiejar_singleton.dart';
 
 class Affiliation {

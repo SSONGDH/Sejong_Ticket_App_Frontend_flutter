@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../cookiejar_singleton.dart';
-import 'package:PASSTIME/menu/my_page_screen.dart';
+import 'package:passtime/menu/my_page_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 

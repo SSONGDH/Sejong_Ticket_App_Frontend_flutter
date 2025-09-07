@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:PASSTIME/admin/admin_ticket_screen.dart';
-import 'package:PASSTIME/admin/ticket_produce.dart';
-import 'package:PASSTIME/admin/send_payment_list.dart';
-import 'package:PASSTIME/admin/request_refund_list.dart';
-import 'package:PASSTIME/screens/ticket_screen.dart';
+import 'package:passtime/admin/admin_ticket_screen.dart';
+import 'package:passtime/admin/ticket_produce.dart';
+import 'package:passtime/admin/send_payment_list.dart';
+import 'package:passtime/admin/request_refund_list.dart';
+import 'package:passtime/screens/ticket_screen.dart';
 
 class AdminMenuButton extends StatefulWidget {
   const AdminMenuButton({super.key});

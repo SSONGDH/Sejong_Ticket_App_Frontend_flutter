@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
-import 'package:PASSTIME/cookiejar_singleton.dart';
-import 'package:PASSTIME/screens/ticket_screen.dart';
-import 'package:PASSTIME/menu/add_ticket_code.dart';
-import 'package:PASSTIME/menu/add_ticket_nfc.dart';
-import 'package:PASSTIME/menu/send_payment.dart';
-import 'package:PASSTIME/menu/request_refund.dart';
-import 'package:PASSTIME/menu/my_page_screen.dart';
-import 'package:PASSTIME/menu/settings.dart';
-import 'package:PASSTIME/admin/admin_ticket_screen.dart';
+import 'package:passtime/cookiejar_singleton.dart';
+import 'package:passtime/screens/ticket_screen.dart';
+import 'package:passtime/menu/add_ticket_code.dart';
+import 'package:passtime/menu/add_ticket_nfc.dart';
+import 'package:passtime/menu/send_payment.dart';
+import 'package:passtime/menu/request_refund.dart';
+import 'package:passtime/menu/my_page_screen.dart';
+import 'package:passtime/menu/settings.dart';
+import 'package:passtime/admin/admin_ticket_screen.dart';
 
 class MenuButton extends StatefulWidget {
   const MenuButton({super.key});

@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
 import 'package:marquee/marquee.dart';
 import 'package:flutter/rendering.dart';
-import 'package:PASSTIME/menu/request_refund.dart';
+import 'package:passtime/menu/request_refund.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 
 class TicketDetailScreen extends StatefulWidget {

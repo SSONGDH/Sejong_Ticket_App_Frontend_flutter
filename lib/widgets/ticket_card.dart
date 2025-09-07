@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:PASSTIME/screens/ticket_detail_screen.dart';
-import 'package:PASSTIME/screens/refund_screen.dart';
+import 'package:passtime/screens/ticket_detail_screen.dart';
+import 'package:passtime/screens/refund_screen.dart';
 
 class TicketCard extends StatelessWidget {
   final String ticketId;

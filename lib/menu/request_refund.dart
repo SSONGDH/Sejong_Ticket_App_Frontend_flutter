@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:PASSTIME/screens/ticket_screen.dart';
+import 'package:passtime/screens/ticket_screen.dart';
 import '../cookiejar_singleton.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 

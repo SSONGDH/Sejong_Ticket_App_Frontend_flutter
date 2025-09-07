@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:PASSTIME/screens/ticket_screen.dart';
+import 'package:passtime/screens/ticket_screen.dart';
 import '../cookiejar_singleton.dart';
 
 // 전화번호 포맷팅을 위한 MaskedInputController 클래스

@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
-import 'package:PASSTIME/cookiejar_singleton.dart';
-import 'package:PASSTIME/admin/request_admin_list.dart';
+import 'package:passtime/cookiejar_singleton.dart';
+import 'package:passtime/admin/request_admin_list.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;

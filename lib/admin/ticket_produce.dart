@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:PASSTIME/admin/admin_ticket_screen.dart';
+import 'package:passtime/admin/admin_ticket_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
@@ -8,7 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import '../place_search_screen.dart';
-import 'package:PASSTIME/cookiejar_singleton.dart';
+import 'package:passtime/cookiejar_singleton.dart';
 
 class TicketProduceScreen extends StatefulWidget {
   const TicketProduceScreen({super.key});
