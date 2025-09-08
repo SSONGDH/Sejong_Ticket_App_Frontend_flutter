@@ -51,15 +51,27 @@ Future<void> _onBackgroundMessage(RemoteMessage message) async {
 
 // FlutterLocalNotifications 초기화
 Future<void> _initLocalNotifications() async {
+  // iOS 초기화 설정
+  final DarwinInitializationSettings initializationSettingsIOS =
+      DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+
+  // Android 초기화 설정
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  const InitializationSettings initializationSettings =
-      InitializationSettings(android: initializationSettingsAndroid);
+  // 공통 초기화
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsIOS,
+  );
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-  // Android 8.0+용 Notification Channel 생성
+  // Android 8.0+ Notification Channel 생성
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
     'high_importance_channel', // id
     'High Importance Notifications', // 이름
