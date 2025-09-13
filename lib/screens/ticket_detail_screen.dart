@@ -244,13 +244,19 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                                             FontWeight.w600),
                                                   ),
                                                   const SizedBox(height: 5),
-                                                  Text(
-                                                    ticketData?["eventDay"] ??
-                                                        "",
-                                                    style: const TextStyle(
+                                                  FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    alignment:
+                                                        Alignment.centerLeft,
+                                                    child: Text(
+                                                      ticketData?["eventDay"] ??
+                                                          "",
+                                                      style: const TextStyle(
                                                         fontSize: 14,
                                                         fontWeight:
-                                                            FontWeight.bold),
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
                                                   ),
                                                 ],
                                               ),
@@ -279,14 +285,20 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                                             FontWeight.w600),
                                                   ),
                                                   const SizedBox(height: 5),
-                                                  Text(
-                                                    ticketData?[
-                                                            "eventStartTime"] ??
-                                                        "",
-                                                    style: const TextStyle(
+                                                  FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    alignment:
+                                                        Alignment.centerLeft,
+                                                    child: Text(
+                                                      ticketData?[
+                                                              "eventStartTime"] ??
+                                                          "",
+                                                      style: const TextStyle(
                                                         fontSize: 14,
                                                         fontWeight:
-                                                            FontWeight.bold),
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
                                                   ),
                                                 ],
                                               ),

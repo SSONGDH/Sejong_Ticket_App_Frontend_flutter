@@ -61,91 +61,91 @@ class _AdminMenuButtonState extends State<AdminMenuButton> {
         if (_isMenuOpen) {
           showModalBottomSheet(
             context: context,
+            isScrollControlled: true, // 키보드/인셋 대응
             backgroundColor: Colors.white,
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
             builder: (context) {
-              return SingleChildScrollView(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // '행사 관리' 메뉴
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/calendar.png', // 예시 이미지 경로
-                        text: '행사 관리',
-                        onTap: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const AdminTicketScreen()),
-                            (Route<dynamic> route) => false,
-                          );
-                        },
-                      ),
-                      // '행사 제작' 메뉴
-                      _buildMenuItem(
-                        context,
-                        imagePath:
-                            'assets/images/calendar-plus.png', // 예시 이미지 경로
-                        text: '행사 제작',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const TicketProduceScreen()),
-                          );
-                        },
-                      ),
-                      // '납부 내역 목록' 메뉴
-                      _buildMenuItem(
-                        context,
-                        imagePath:
-                            'assets/images/coins-stacked.png', // 예시 이미지 경로
-                        text: '납부 내역 목록',
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const SendPaymentListScreen()),
-                          );
-                        },
-                      ),
-                      // '환불 신청 목록' 메뉴
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/coins-out.png', // 예시 이미지 경로
-                        text: '환불 신청 목록',
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                    const RequestRefundListScreen()),
-                          );
-                        },
-                      ),
-                      // '참가자 모드' 메뉴
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/users.png', // 예시 이미지 경로
-                        text: '참가자 모드',
-                        onTap: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const TicketScreen()),
-                            (Route<dynamic> route) => false,
-                          );
-                        },
-                      ),
-                      const SizedBox(
-                        height: 15,
-                      )
-                    ],
+              return SafeArea(
+                child: SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // '행사 관리' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/calendar.png',
+                          text: '행사 관리',
+                          onTap: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const AdminTicketScreen()),
+                              (Route<dynamic> route) => false,
+                            );
+                          },
+                        ),
+                        // '행사 제작' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/calendar-plus.png',
+                          text: '행사 제작',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const TicketProduceScreen()),
+                            );
+                          },
+                        ),
+                        // '납부 내역 목록' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/coins-stacked.png',
+                          text: '납부 내역 목록',
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      const SendPaymentListScreen()),
+                            );
+                          },
+                        ),
+                        // '환불 신청 목록' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/coins-out.png',
+                          text: '환불 신청 목록',
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      const RequestRefundListScreen()),
+                            );
+                          },
+                        ),
+                        // '참가자 모드' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/users.png',
+                          text: '참가자 모드',
+                          onTap: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const TicketScreen()),
+                              (Route<dynamic> route) => false,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 15),
+                      ],
+                    ),
                   ),
                 ),
               );

@@ -106,168 +106,187 @@ class _MenuButtonState extends State<MenuButton> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
             builder: (context) {
-              return SingleChildScrollView(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // '입장권' 메뉴
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/ticket.png',
-                        text: '입장권',
-                        onTap: () {
-                          // TicketScreen으로 이동하며 스택을 초기화합니다.
-                          // 이렇게 하면 TicketScreen이 메인 페이지가 됩니다.
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const TicketScreen()),
-                            (Route<dynamic> route) => false,
-                          );
-                        },
-                      ),
-                      // '입장권 추가' 메뉴 - 중첩 바텀시트
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/ticket-plus.png',
-                        text: '입장권 추가',
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            backgroundColor: Colors.white,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(16)),
-                            ),
-                            builder: (context) {
-                              return Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _buildMenuItem(
-                                    context,
-                                    imagePath: 'assets/images/ticket-plus.png',
-                                    text: 'CODE',
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (_) =>
-                                                const AddTicketCodeScreen()),
-                                      );
-                                    },
-                                  ),
-                                  _buildMenuItem(
-                                    context,
-                                    imagePath: 'assets/images/ticket-plus.png',
-                                    text: 'NFC',
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (_) =>
-                                                const AddTicketNfcScreen()),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 15),
-                                ],
-                              );
-                            },
-                          ).then((_) {
-                            if (mounted) {
-                              setState(() {
-                                _isMenuOpen = false;
-                              });
-                            }
-                          });
-                        },
-                      ),
-                      // '납부 내역 보내기' 메뉴
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/coins-stacked.png',
-                        text: '납부 내역 보내기',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const SendPaymentScreen()),
-                          );
-                        },
-                      ),
-                      // '환불 신청' 메뉴
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/coins-out.png',
-                        text: '환불 신청',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const RequestRefundScreen()),
-                          );
-                        },
-                      ),
-                      // '마이페이지' 메뉴 - 스택 초기화
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/user.png',
-                        text: '마이페이지',
-                        onTap: () {
-                          // 마이페이지로 이동하며 스택을 초기화합니다.
-                          // 이렇게 하면 마이페이지에서 뒤로가기 시 TicketScreen으로 돌아갑니다.
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const MyPageScreen()),
-                            (Route<dynamic> route) => false,
-                          );
-                        },
-                      ),
-                      // '설정' 메뉴 - 스택 초기화
-                      _buildMenuItem(
-                        context,
-                        imagePath: 'assets/images/settings.png',
-                        text: '설정',
-                        onTap: () {
-                          // 설정으로 이동하며 스택을 초기화합니다.
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const SettingsScreen()),
-                            (Route<dynamic> route) => false,
-                          );
-                        },
-                      ),
-                      // '주최자 모드' 메뉴 - 스택 초기화
-                      InkWell(
-                        onTap: () async {
-                          try {
-                            final apiUrl =
-                                '${dotenv.env['API_BASE_URL']}/admin/connection';
-                            final uri =
-                                Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
-                            final cookies = await CookieJarSingleton()
-                                .cookieJar
-                                .loadForRequest(uri);
-
-                            final response = await dio.get(
-                              apiUrl,
-                              options: Options(headers: {'Cookie': cookies}),
+              return SafeArea(
+                bottom: true, // ✅ 내비게이션 영역 반영
+                child: SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // '입장권' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/ticket.png',
+                          text: '입장권',
+                          onTap: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const TicketScreen()),
+                              (Route<dynamic> route) => false,
                             );
+                          },
+                        ),
+                        // '입장권 추가' 메뉴 - 중첩 바텀시트
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/ticket-plus.png',
+                          text: '입장권 추가',
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              backgroundColor: Colors.white,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16)),
+                              ),
+                              builder: (context) {
+                                return SafeArea(
+                                  bottom: true,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _buildMenuItem(
+                                        context,
+                                        imagePath:
+                                            'assets/images/ticket-plus.png',
+                                        text: 'CODE',
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const AddTicketCodeScreen()),
+                                          );
+                                        },
+                                      ),
+                                      _buildMenuItem(
+                                        context,
+                                        imagePath:
+                                            'assets/images/ticket-plus.png',
+                                        text: 'NFC',
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const AddTicketNfcScreen()),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 15),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ).then((_) {
+                              if (mounted) {
+                                setState(() {
+                                  _isMenuOpen = false;
+                                });
+                              }
+                            });
+                          },
+                        ),
+                        // '납부 내역 보내기' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/coins-stacked.png',
+                          text: '납부 내역 보내기',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SendPaymentScreen()),
+                            );
+                          },
+                        ),
+                        // '환불 신청' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/coins-out.png',
+                          text: '환불 신청',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const RequestRefundScreen()),
+                            );
+                          },
+                        ),
+                        // '마이페이지' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/user.png',
+                          text: '마이페이지',
+                          onTap: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const MyPageScreen()),
+                              (Route<dynamic> route) => false,
+                            );
+                          },
+                        ),
+                        // '설정' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/settings.png',
+                          text: '설정',
+                          onTap: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SettingsScreen()),
+                              (Route<dynamic> route) => false,
+                            );
+                          },
+                        ),
+                        // '주최자 모드' 메뉴
+                        InkWell(
+                          onTap: () async {
+                            try {
+                              final apiUrl =
+                                  '${dotenv.env['API_BASE_URL']}/admin/connection';
+                              final uri =
+                                  Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+                              final cookies = await CookieJarSingleton()
+                                  .cookieJar
+                                  .loadForRequest(uri);
 
-                            if (response.statusCode == 200 &&
-                                response.data['isSuccess'] == true) {
-                              // 주최자 모드로 이동하며 스택을 초기화합니다.
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => const AdminTicketScreen()),
-                                (Route<dynamic> route) => false,
+                              final response = await dio.get(
+                                apiUrl,
+                                options: Options(headers: {'Cookie': cookies}),
                               );
-                            } else {
+
+                              if (response.statusCode == 200 &&
+                                  response.data['isSuccess'] == true) {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const AdminTicketScreen()),
+                                  (Route<dynamic> route) => false,
+                                );
+                              } else {
+                                showCupertinoDialog(
+                                  context: context,
+                                  builder: (context) => CupertinoAlertDialog(
+                                    title: const Text("알림"),
+                                    content: const Text("지정된 주최자가 아닙니다."),
+                                    actions: [
+                                      CupertinoDialogAction(
+                                        child: const Text("확인",
+                                            style: TextStyle(
+                                                color: Color(0xFFC10230))),
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            } catch (e) {
                               showCupertinoDialog(
                                 context: context,
                                 builder: (context) => CupertinoAlertDialog(
@@ -284,50 +303,34 @@ class _MenuButtonState extends State<MenuButton> {
                                 ),
                               );
                             }
-                          } catch (e) {
-                            showCupertinoDialog(
-                              context: context,
-                              builder: (context) => CupertinoAlertDialog(
-                                title: const Text("알림"),
-                                content: const Text("지정된 주최자가 아닙니다."),
-                                actions: [
-                                  CupertinoDialogAction(
-                                    child: const Text("확인",
-                                        style: TextStyle(
-                                            color: Color(0xFFC10230))),
-                                    onPressed: () => Navigator.pop(context),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20.0, vertical: 12.0),
-                          child: Row(
-                            children: [
-                              Image.asset(
-                                'assets/images/user-check.png',
-                                width: 24,
-                                height: 24,
-                                color: const Color(0xFF7E929F),
-                              ),
-                              const SizedBox(width: 16),
-                              const Text(
-                                '주최자 모드',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20.0, vertical: 12.0),
+                            child: Row(
+                              children: [
+                                Image.asset(
+                                  'assets/images/user-check.png',
+                                  width: 24,
+                                  height: 24,
+                                  color: const Color(0xFF7E929F),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 16),
+                                const Text(
+                                  '주최자 모드',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 15),
-                    ],
+                        const SizedBox(height: 15),
+                      ],
+                    ),
                   ),
                 ),
               );

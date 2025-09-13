@@ -27,16 +27,16 @@ Future<void> _onBackgroundMessage(RemoteMessage message) async {
   logger.i("Body: ${message.notification?.body}");
   logger.i("Data: ${message.data}");
 
-  // Android 알림 표시
+  // Android 알림 표시 (백그라운드/종료 시 시스템 알림)
   if (message.notification != null && message.notification!.android != null) {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-      'high_importance_channel', // 채널 ID
-      'High Importance Notifications', // 채널 이름
+      'high_importance_channel',
+      'High Importance Notifications',
       channelDescription: 'This channel is used for important notifications.',
       importance: Importance.high,
       priority: Priority.high,
-      icon: '@mipmap/ic_launcher', // 앱 아이콘
+      icon: '@mipmap/ic_launcher',
     );
     const NotificationDetails platformDetails =
         NotificationDetails(android: androidDetails);
@@ -51,7 +51,6 @@ Future<void> _onBackgroundMessage(RemoteMessage message) async {
 
 // FlutterLocalNotifications 초기화
 Future<void> _initLocalNotifications() async {
-  // iOS 초기화 설정
   final DarwinInitializationSettings initializationSettingsIOS =
       DarwinInitializationSettings(
     requestAlertPermission: true,
@@ -59,11 +58,9 @@ Future<void> _initLocalNotifications() async {
     requestSoundPermission: true,
   );
 
-  // Android 초기화 설정
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  // 공통 초기화
   final InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
     iOS: initializationSettingsIOS,
@@ -71,10 +68,9 @@ Future<void> _initLocalNotifications() async {
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-  // Android 8.0+ Notification Channel 생성
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'high_importance_channel', // id
-    'High Importance Notifications', // 이름
+    'high_importance_channel',
+    'High Importance Notifications',
     description: 'This channel is used for important notifications.',
     importance: Importance.high,
   );
@@ -88,15 +84,12 @@ Future<void> _initLocalNotifications() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // .env 로드
   await dotenv.load(fileName: ".env");
 
-  // Firebase 초기화
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // FlutterLocalNotifications 초기화
   await _initLocalNotifications();
 
   // Kakao SDK & Kakao Maps 초기화
@@ -141,7 +134,7 @@ void main() async {
         channelDescription: 'This channel is used for important notifications.',
         importance: Importance.high,
         priority: Priority.high,
-        icon: '@mipmap/ic_launcher', // 앱 아이콘
+        icon: '@mipmap/ic_launcher',
       );
       const NotificationDetails platformDetails =
           NotificationDetails(android: androidDetails);
@@ -157,10 +150,20 @@ void main() async {
   // 백그라운드 메시지 핸들러 등록
   FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
 
-  // 알림 클릭 처리
+  // 앱 종료 상태에서 알림 클릭 처리
+  FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+    if (message != null && message.notification != null) {
+      logger.i("📩 앱 종료 상태에서 알림 클릭됨");
+      logger.i("Title: ${message.notification!.title}");
+      logger.i("Body: ${message.notification!.body}");
+      logger.i("click_action: ${message.data["click_action"]}");
+    }
+  });
+
+  // 백그라운드 상태에서 알림 클릭 처리
   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage? message) {
     if (message != null && message.notification != null) {
-      logger.i("🔔 알림 클릭됨");
+      logger.i("📩 백그라운드 상태에서 알림 클릭됨");
       logger.i("Title: ${message.notification!.title}");
       logger.i("Body: ${message.notification!.body}");
       logger.i("click_action: ${message.data["click_action"]}");

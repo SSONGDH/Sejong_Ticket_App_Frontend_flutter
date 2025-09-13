@@ -258,7 +258,7 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
           ? Center(
               child: Image.network(
                 imageUrl,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 width: 240,
                 height: 240,
               ),
