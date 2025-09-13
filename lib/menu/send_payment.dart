@@ -89,7 +89,7 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
   Future<void> _fetchTickets() async {
     try {
       final response =
-          await _dio.get('${dotenv.env['API_BASE_URL']}/ticket/manageList');
+          await _dio.get('${dotenv.env['API_BASE_URL']}/ticket/List');
       final List<dynamic> data = response.data['result'];
       setState(() {
         tickets = data.cast<Map<String, dynamic>>();
