@@ -28,12 +28,7 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
     final String apiUrl = "${dotenv.env['API_BASE_URL']}/payment/detail";
     final uri = Uri.parse("$apiUrl?paymentId=${widget.paymentId}");
 
-    print("[FETCH] GET $uri"); // 🔍 요청 URI 출력
-
     final response = await http.get(uri);
-
-    print(
-        "[FETCH] Response: ${response.statusCode} - ${response.body}"); // 🔍 응답 출력
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseBody = json.decode(response.body);
@@ -55,13 +50,8 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
     final String apiUrl = "${dotenv.env['API_BASE_URL']}/payment/permission";
     final uri = Uri.parse("$apiUrl?paymentId=$paymentId");
 
-    print("[APPROVE] PUT $uri"); // 🔍 승인 요청 URI 출력
-
     try {
       final response = await http.put(uri);
-
-      print(
-          "[APPROVE] Response: ${response.statusCode} - ${response.body}"); // 🔍 응답 출력
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseBody = json.decode(response.body);
@@ -77,8 +67,8 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
                 actions: [
                   CupertinoDialogAction(
                     onPressed: () {
-                      Navigator.of(context).pop(); // 다이얼로그 닫기
-                      Navigator.of(context).pop(true); // 이전 화면으로 true 전달
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pop(true);
                     },
                     child: const Text("확인",
                         style: TextStyle(color: Color(0xFFC10230))),
@@ -149,98 +139,83 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
             ),
           ),
         ),
-        body: Column(
-          children: [
-            Divider(
-              height: 2,
-              thickness: 2,
-              color: const Color(0xFF334D61).withOpacity(0.05),
-            ),
-            Expanded(
-              child: FutureBuilder<Map<String, dynamic>>(
-                future: paymentDetail,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text("오류 발생: ${snapshot.error}"));
-                  } else if (!snapshot.hasData) {
-                    return const Center(child: Text("데이터 없음"));
-                  }
+        body: FutureBuilder<Map<String, dynamic>>(
+          future: paymentDetail,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text("오류 발생: ${snapshot.error}"));
+            } else if (!snapshot.hasData) {
+              return const Center(child: Text("데이터 없음"));
+            }
 
-                  final data = snapshot.data!;
+            final data = snapshot.data!;
+            final isApproved = data["paymentPermissionStatus"] == true;
 
-                  return Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 16),
-                        _buildPaymentImage(data["paymentPicture"]),
-                        const SizedBox(height: 32),
-                        _buildInfoTile("이름", data["name"]),
-                        _buildInfoTile("학번", data["studentId"]),
-                        _buildInfoTile("전화번호", data["phone"]),
-                        _buildInfoTile("행사", data["eventTitle"]),
-                      ],
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 16),
+                  _buildPaymentImage(data["paymentPicture"]),
+                  const SizedBox(height: 32),
+                  _buildInfoTile("이름", data["name"]),
+                  _buildInfoTile("학번", data["studentId"]),
+                  _buildInfoTile("전화번호", data["phone"]),
+                  _buildInfoTile("행사", data["eventTitle"]),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      0,
+                      0,
+                      0,
+                      MediaQuery.of(context).viewPadding.bottom > 0
+                          ? 16.0
+                          : 0.0,
                     ),
-                  );
-                },
-              ),
-            ),
-            FutureBuilder<Map<String, dynamic>>(
-              future: paymentDetail,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting ||
-                    !snapshot.hasData) {
-                  return const SizedBox.shrink();
-                }
-                final data = snapshot.data!;
-                final isApproved = data["paymentPermissionStatus"] == true;
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
-                  child: SafeArea(
-                    child: // SendPaymentDetailScreen.dart 파일의 하단 FutureBuilder 내부
-
-                        ElevatedButton(
-                      onPressed: (isApproved || isApproving)
-                          ? null
-                          : () => approvePayment(widget.paymentId),
-                      style: ElevatedButton.styleFrom(
-                        // 활성화 상태일 때의 색상
-                        backgroundColor: const Color(0xFF334D61),
-                        // ❗ 비활성화 상태일 때의 색상을 여기에 지정합니다.
-                        disabledBackgroundColor:
-                            const Color(0xFF334D61).withOpacity(0.3),
-                        minimumSize: const Size(double.infinity, 55),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+                    child: SafeArea(
+                      bottom: true,
+                      child: ElevatedButton(
+                        onPressed: (isApproved || isApproving)
+                            ? null
+                            : () => approvePayment(widget.paymentId),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF334D61),
+                          disabledBackgroundColor:
+                              const Color(0xFF334D61).withOpacity(0.3),
+                          minimumSize: const Size(double.infinity, 55),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor:
+                              Colors.white.withOpacity(0.7),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        foregroundColor: Colors.white,
-                        disabledForegroundColor:
-                            Colors.white.withOpacity(0.7), // 비활성화 시 텍스트 색상
-                      ),
-                      child: isApproving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
+                        child: isApproving
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                isApproved ? "승인됨" : "승인",
+                                style: const TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
                               ),
-                            )
-                          : Text(
-                              isApproved ? "승인됨" : "승인",
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
+                      ),
                     ),
                   ),
-                );
-              },
-            ),
-          ],
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -264,7 +239,6 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
               ),
             )
           : Center(
-              // Added Center for the text as well
               child: Text("납부내역 사진",
                   style: TextStyle(
                       fontSize: 16,

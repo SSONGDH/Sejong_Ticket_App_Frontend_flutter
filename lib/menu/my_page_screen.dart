@@ -461,7 +461,14 @@ class _MyPageScreenState extends State<MyPageScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+              padding: EdgeInsets.fromLTRB(
+                16.0,
+                0,
+                16.0,
+                MediaQuery.of(context).viewPadding.bottom > 0
+                    ? 16.0
+                    : 0.0, // 👈 조건부 여백
+              ),
               child: SafeArea(
                 child: ElevatedButton(
                   onPressed: _isSaveButtonEnabled

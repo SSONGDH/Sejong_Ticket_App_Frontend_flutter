@@ -58,6 +58,29 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
     super.initState();
     _setupDio();
     _fetchTickets();
+    _fetchUserInfo(); // ✅ 유저 정보 가져오기
+  }
+
+// ✅ 유저 정보 불러오기 함수
+  Future<void> _fetchUserInfo() async {
+    try {
+      final response =
+          await _dio.get("${dotenv.env['API_BASE_URL']}/user/mypage");
+
+      if (response.data['code'] == "SUCCESS-0000") {
+        final user = response.data['result'];
+
+        setState(() {
+          nameController.text = user['name'] ?? '';
+          studentIdController.text = user['studentId'] ?? '';
+          departmentController.text = user['major'] ?? '';
+        });
+      } else {
+        debugPrint("유저 정보 불러오기 실패: ${response.data['message']}");
+      }
+    } catch (e) {
+      debugPrint("유저 정보 불러오기 오류: $e");
+    }
   }
 
   @override
@@ -176,7 +199,14 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                padding: EdgeInsets.fromLTRB(
+                  16.0,
+                  0,
+                  16.0,
+                  MediaQuery.of(context).viewPadding.bottom > 0
+                      ? 16.0
+                      : 0.0, // 👈 조건부 여백
+                ),
                 child: SafeArea(
                   child: ElevatedButton(
                     onPressed: _isFormValid() ? _showConfirmationDialog : null,
@@ -396,14 +426,16 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
                 items: tickets.map((ticket) {
                   return DropdownMenuItem<String>(
                     value: ticket['_id'],
-                    child: Text(ticket['eventTitle']),
+                    child: Text(
+                        "${ticket['eventTitle']} (${ticket['affiliation']})"), // ✅ 행사 + 소속
                   );
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
                     selectedTicketId = value;
                     selectedEvent = tickets.firstWhere(
-                        (ticket) => ticket['_id'] == value)['eventTitle'];
+                      (ticket) => ticket['_id'] == value,
+                    )['eventTitle'];
                   });
                 },
               ),

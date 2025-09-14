@@ -299,11 +299,12 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
   Widget _buildBottomButton(AffiliationRequest detail) {
     final bool isApproved = detail.status == 'approved';
 
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset > 0 ? 16 : 0),
       child: SafeArea(
         child: ElevatedButton(
-          // [수정 3] onPressed가 확인 팝업을 띄우도록 변경
           onPressed: isApproved || _isApproving
               ? null
               : _showApprovalConfirmationDialog,

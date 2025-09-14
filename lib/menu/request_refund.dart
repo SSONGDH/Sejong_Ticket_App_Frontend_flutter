@@ -236,6 +236,30 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
                                 fontSize: 13),
                           ),
                         ),
+                        const SizedBox(height: 24), // 버튼 위 여백
+                        ElevatedButton(
+                          onPressed:
+                              _isFormValid() ? _submitRefundRequest : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFC10230),
+                            disabledBackgroundColor:
+                                const Color(0xFFC10230).withOpacity(0.3),
+                            minimumSize: const Size(double.infinity, 55),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            foregroundColor: Colors.white,
+                            disabledForegroundColor:
+                                Colors.white.withOpacity(0.7),
+                          ),
+                          child: const Text(
+                            "신청",
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 16), // 스크롤 끝에 여백
                       ],
                     ),
                   ),
@@ -359,9 +383,11 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
                 ),
                 isExpanded: true,
                 items: tickets.map((ticket) {
+                  final affiliation = ticket['affiliation'] ?? '';
                   return DropdownMenuItem<String>(
                     value: ticket['_id'],
-                    child: Text(ticket['eventTitle']),
+                    child: Text(
+                        "${ticket['eventTitle']} ($affiliation)"), // ✅ 행사 + 소속
                   );
                 }).toList(),
                 onChanged: (value) {

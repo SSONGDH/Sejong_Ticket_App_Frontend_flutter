@@ -161,50 +161,78 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                 color: const Color(0xFF334D61).withOpacity(0.05),
               ),
               Expanded(
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAffiliationDropdown(),
-                      const SizedBox(height: 14),
-                      _buildInputField(
-                          controller: _titleController,
-                          label: "제목",
-                          hintText: "제목 입력"),
-                      const SizedBox(height: 14),
-                      _buildDatePickerField(),
-                      const SizedBox(height: 14),
-                      _buildStartTimePickerField(),
-                      const SizedBox(height: 14),
-                      _buildEndTimePickerField(),
-                      const SizedBox(height: 14),
-                      _buildKakaoMap(),
-                      const SizedBox(height: 14),
-                      _buildPlaceSearchField(),
-                      const SizedBox(height: 14),
-                      _buildInputField(
-                          controller: _placeCommentController,
-                          label: "장소 설명",
-                          hintText: "장소 설명 입력"),
-                      const SizedBox(height: 14),
-                      _buildInputField(
-                          controller: _eventCommentController,
-                          label: "관리자 멘트",
-                          hintText: "관리자 멘트 입력"),
-                      const SizedBox(height: 14),
-                      _buildInputField(
-                          controller: _eventCodeController,
-                          label: "행사 코드",
-                          hintText: "행사 코드 입력"),
-                      const SizedBox(height: 14),
-                    ],
-                  ),
+                  child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildAffiliationDropdown(),
+                    const SizedBox(height: 14),
+                    _buildInputField(
+                        controller: _titleController,
+                        label: "제목",
+                        hintText: "제목 입력"),
+                    const SizedBox(height: 14),
+                    _buildDatePickerField(),
+                    const SizedBox(height: 14),
+                    _buildStartTimePickerField(),
+                    const SizedBox(height: 14),
+                    _buildEndTimePickerField(),
+                    const SizedBox(height: 14),
+                    _buildKakaoMap(),
+                    const SizedBox(height: 14),
+                    _buildPlaceSearchField(),
+                    const SizedBox(height: 14),
+                    _buildInputField(
+                        controller: _placeCommentController,
+                        label: "장소 설명",
+                        hintText: "장소 설명 입력"),
+                    const SizedBox(height: 14),
+                    _buildInputField(
+                        controller: _eventCommentController,
+                        label: "관리자 멘트",
+                        hintText: "관리자 멘트 입력"),
+                    const SizedBox(height: 14),
+                    _buildInputField(
+                        controller: _eventCodeController,
+                        label: "행사 코드",
+                        hintText: "행사 코드 입력"),
+                    const SizedBox(height: 24), // 버튼 위 여백
+                    ElevatedButton(
+                      onPressed:
+                          _isFormValid() ? _showConfirmationDialog : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isFormValid()
+                            ? const Color(0xFF334D61)
+                            : const Color(0xFF334D61).withOpacity(0.3),
+                        disabledBackgroundColor:
+                            const Color(0xFF334D61).withOpacity(0.3),
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        foregroundColor: Colors.white,
+                        disabledForegroundColor: Colors.white.withOpacity(0.7),
+                      ),
+                      child: const Text(
+                        "완료",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 16), // 맨 아래 여백
+                  ],
                 ),
-              ),
+              )),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
+                padding: EdgeInsets.fromLTRB(
+                  16.0,
+                  0,
+                  16.0,
+                  MediaQuery.of(context).viewPadding.bottom > 0 ? 16.0 : 0.0,
+                ),
                 child: SafeArea(
                   child: ElevatedButton(
                     onPressed: _isFormValid() ? _showConfirmationDialog : null,
@@ -216,7 +244,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                           const Color(0xFF334D61).withOpacity(0.3),
                       minimumSize: const Size(double.infinity, 55),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(5),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       foregroundColor: Colors.white,

@@ -353,7 +353,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
             ),
             centerTitle: true,
             title: const Text(
-              '수정',
+              '행사 수정',
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 22,
@@ -363,68 +363,60 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
           ),
           body: _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  children: [
-                    Divider(
-                      height: 2,
-                      thickness: 2,
-                      color: const Color(0xFF334D61).withOpacity(0.05),
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildAffiliationDropdown(),
-                            const SizedBox(height: 14),
-                            _buildInputField(
-                                controller: _titleController,
-                                label: "제목",
-                                hintText: "제목 입력"),
-                            const SizedBox(height: 14),
-                            _buildDatePickerField(),
-                            const SizedBox(height: 14),
-                            _buildStartTimePickerField(),
-                            const SizedBox(height: 14),
-                            _buildEndTimePickerField(),
-                            const SizedBox(height: 14),
-                            // 3. 지도 위젯 배치
-                            _buildKakaoMap(),
-                            const SizedBox(height: 14),
-                            _buildPlaceSearchField(),
-                            const SizedBox(height: 14),
-                            _buildInputField(
-                                controller: _placeCommentController,
-                                label: "장소 설명",
-                                hintText: "장소 설명 입력"),
-                            const SizedBox(height: 14),
-                            _buildInputField(
-                                controller: _commentController,
-                                label: "관리자 멘트",
-                                hintText: "관리자 멘트 입력"),
-                            const SizedBox(height: 14),
-                            _buildInputField(
-                                controller: _codeController,
-                                label: "행사 코드",
-                                hintText: "행사 코드 입력"),
-                            const SizedBox(height: 14),
-                          ],
+              : SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildAffiliationDropdown(),
+                      const SizedBox(height: 14),
+                      _buildInputField(
+                          controller: _titleController,
+                          label: "제목",
+                          hintText: "제목 입력"),
+                      const SizedBox(height: 14),
+                      _buildDatePickerField(),
+                      const SizedBox(height: 14),
+                      _buildStartTimePickerField(),
+                      const SizedBox(height: 14),
+                      _buildEndTimePickerField(),
+                      const SizedBox(height: 14),
+                      _buildKakaoMap(),
+                      const SizedBox(height: 14),
+                      _buildPlaceSearchField(),
+                      const SizedBox(height: 14),
+                      _buildInputField(
+                          controller: _placeCommentController,
+                          label: "장소 설명",
+                          hintText: "장소 설명 입력"),
+                      const SizedBox(height: 14),
+                      _buildInputField(
+                          controller: _commentController,
+                          label: "관리자 멘트",
+                          hintText: "관리자 멘트 입력"),
+                      const SizedBox(height: 14),
+                      _buildInputField(
+                          controller: _codeController,
+                          label: "행사 코드",
+                          hintText: "행사 코드 입력"),
+                      const SizedBox(height: 14),
+                      // ✅ 완료 버튼도 스크롤 안에 넣어서 고정 X
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          0,
+                          0,
+                          0,
+                          MediaQuery.of(context).viewPadding.bottom > 0
+                              ? 16
+                              : 0,
                         ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
-                      child: SafeArea(
                         child: ElevatedButton(
                           onPressed: canSubmit ? _showConfirmationDialog : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: canSubmit
                                 ? const Color(0xFF334D61)
                                 : const Color(0xFF334D61).withOpacity(0.3),
-                            disabledBackgroundColor:
-                                const Color(0xFF334D61).withOpacity(0.3),
                             minimumSize: const Size(double.infinity, 55),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(5),
@@ -441,8 +433,8 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
         ),
       ),

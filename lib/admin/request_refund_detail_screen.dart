@@ -117,7 +117,6 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
               color: Colors.black,
               size: 30,
             ),
-            // ✅ 제안: 이전 화면에 변경사항 없음을 알리기 위해 false 전달
             onPressed: () => Navigator.of(context).pop(false),
           ),
           centerTitle: true,
@@ -150,60 +149,64 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
                   }
 
                   final data = snapshot.data!;
-                  return Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildDetailRow("이름", data["name"]),
-                        _buildDetailRow("학번", data["studentId"]),
-                        _buildDetailRow("전화번호", data["phone"]),
-                        _buildDetailRow("행사", data["eventTitle"]),
-                        _buildDetailRow("환불 사유", data["refundReason"]),
-                        _buildDetailRow("방문 가능 날짜", data["visitDate"]),
-                        _buildDetailRow("방문 가능 시간", data["visitTime"]),
-                      ],
+                  final isApproved = data["refundPermissionStatus"] == true;
+
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDetailRow("이름", data["name"]),
+                          _buildDetailRow("학번", data["studentId"]),
+                          _buildDetailRow("전화번호", data["phone"]),
+                          _buildDetailRow("행사", data["eventTitle"]),
+                          _buildDetailRow("환불 사유", data["refundReason"]),
+                          _buildDetailRow("방문 가능 날짜", data["visitDate"]),
+                          _buildDetailRow("방문 가능 시간", data["visitTime"]),
+                          const SizedBox(height: 24),
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              0,
+                              0,
+                              0,
+                              MediaQuery.of(context).viewPadding.bottom > 0
+                                  ? 16.0
+                                  : 0.0,
+                            ),
+                            child: SafeArea(
+                              bottom: true,
+                              child: ElevatedButton(
+                                onPressed: () =>
+                                    _updateRefundStatus(!isApproved),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isApproved
+                                      ? const Color(0xFFC10230)
+                                      : const Color(0xFF334D61),
+                                  minimumSize: const Size(double.infinity, 55),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 15),
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: Text(
+                                  isApproved ? "미승인" : "승인",
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
               ),
-            ),
-            FutureBuilder<Map<String, dynamic>>(
-              future: refundDetail,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting ||
-                    !snapshot.hasData) {
-                  return const SizedBox.shrink();
-                }
-                final data = snapshot.data!;
-                // ✅ 수정: Boolean 타입으로 직접 비교
-                final isApproved = data["refundPermissionStatus"] == true;
-
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 0),
-                  child: SafeArea(
-                    child: ElevatedButton(
-                      onPressed: () => _updateRefundStatus(!isApproved),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isApproved
-                            ? const Color(0xFFC10230) // 미승인 상태일 때의 색상
-                            : const Color(0xFF334D61), // 승인 상태일 때의 색상
-                        minimumSize: const Size(double.infinity, 55),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        foregroundColor: Colors.white,
-                      ),
-                      child: Text(
-                        isApproved ? "미승인" : "승인",
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                );
-              },
             ),
           ],
         ),
