@@ -43,6 +43,8 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
   }
 
   Future<void> approvePayment(String paymentId) async {
+    if (isApproving) return;
+
     setState(() {
       isApproving = true;
     });
@@ -52,37 +54,32 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
 
     try {
       final response = await http.put(uri);
+      final Map<String, dynamic> responseBody = json.decode(response.body);
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseBody = json.decode(response.body);
-
-        if (responseBody["isSuccess"] == true &&
-            responseBody["result"]["paymentPermissionStatus"] == true) {
-          if (context.mounted) {
-            showCupertinoDialog(
-              context: context,
-              builder: (_) => CupertinoAlertDialog(
-                title: const Text("승인 완료"),
-                content: const Text("결제 승인이 완료되었습니다."),
-                actions: [
-                  CupertinoDialogAction(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pop(true);
-                    },
-                    child: const Text("확인",
-                        style: TextStyle(color: Color(0xFFC10230))),
-                  ),
-                ],
-              ),
-            );
-          }
-        } else {
-          throw Exception(
-              responseBody["message"] ?? "결제 승인에 실패했습니다. 다시 시도해주세요.");
+      if (response.statusCode == 200 &&
+          responseBody["isSuccess"] == true &&
+          responseBody["result"]["paymentPermissionStatus"] == true) {
+        if (context.mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (_) => CupertinoAlertDialog(
+              title: const Text("승인 완료"),
+              content: const Text("결제 승인이 완료되었습니다."),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(true);
+                  },
+                  child: const Text("확인",
+                      style: TextStyle(color: Color(0xFFC10230))),
+                ),
+              ],
+            ),
+          );
         }
       } else {
-        throw Exception("서버 오류: ${response.statusCode}");
+        throw Exception(responseBody["message"] ?? "결제 승인에 실패했습니다. 다시 시도해주세요.");
       }
     } catch (e) {
       if (context.mounted) {
@@ -112,6 +109,9 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+    final bottomPadding = (bottomInset > 0 ? bottomInset : 16).toDouble();
+
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -153,67 +153,66 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
             final data = snapshot.data!;
             final isApproved = data["paymentPermissionStatus"] == true;
 
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 16),
-                  _buildPaymentImage(data["paymentPicture"]),
-                  const SizedBox(height: 32),
-                  _buildInfoTile("이름", data["name"]),
-                  _buildInfoTile("학번", data["studentId"]),
-                  _buildInfoTile("전화번호", data["phone"]),
-                  _buildInfoTile("행사", data["eventTitle"]),
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      0,
-                      0,
-                      0,
-                      MediaQuery.of(context).viewPadding.bottom > 0
-                          ? 16.0
-                          : 0.0,
-                    ),
-                    child: SafeArea(
-                      bottom: true,
-                      child: ElevatedButton(
-                        onPressed: (isApproved || isApproving)
-                            ? null
-                            : () => approvePayment(widget.paymentId),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF334D61),
-                          disabledBackgroundColor:
-                              const Color(0xFF334D61).withOpacity(0.3),
-                          minimumSize: const Size(double.infinity, 55),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          foregroundColor: Colors.white,
-                          disabledForegroundColor:
-                              Colors.white.withOpacity(0.7),
-                        ),
-                        child: isApproving
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(
-                                isApproved ? "승인됨" : "승인",
-                                style: const TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                      ),
+            return Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _buildPaymentImage(data["paymentPicture"]),
+                        const SizedBox(height: 32),
+                        _buildInfoTile("이름", data["name"]),
+                        _buildInfoTile("학번", data["studentId"]),
+                        _buildInfoTile("전화번호", data["phone"]),
+                        _buildInfoTile("행사", data["eventTitle"]),
+                        const SizedBox(height: 24),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
+                  child: SafeArea(
+                    top: false,
+                    child: ElevatedButton(
+                      onPressed: (isApproved || isApproving)
+                          ? null
+                          : () => approvePayment(widget.paymentId),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isApproved
+                            ? const Color(0xFFC10230)
+                            : const Color(0xFF334D61),
+                        disabledBackgroundColor:
+                            const Color(0xFF334D61).withOpacity(0.3),
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        foregroundColor: Colors.white,
+                        disabledForegroundColor: Colors.white.withOpacity(0.7),
+                      ),
+                      child: isApproving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              isApproved ? "승인됨" : "승인",
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),

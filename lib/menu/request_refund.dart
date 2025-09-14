@@ -22,16 +22,11 @@ class MaskedInputController extends TextEditingController {
   }
 
   String _formatPhoneNumber(String text) {
-    if (text.length <= 3) {
-      return text;
-    } else if (text.length <= 7) {
-      return '${text.substring(0, 3)}-${text.substring(3)}';
-    } else if (text.length > 7 && text.length <= 11) {
-      return '${text.substring(0, 3)}-${text.substring(3, 7)}-${text.substring(7, text.length)}';
-    } else if (text.length > 11) {
-      return '${text.substring(0, 3)}-${text.substring(3, 7)}-${text.substring(7, 11)}';
-    }
-    return text;
+    if (text.length <= 3) return text;
+    if (text.length <= 7) return '${text.substring(0, 3)}-${text.substring(3)}';
+    if (text.length <= 11)
+      return '${text.substring(0, 3)}-${text.substring(3, 7)}-${text.substring(7)}';
+    return '${text.substring(0, 3)}-${text.substring(3, 7)}-${text.substring(7, 11)}';
   }
 }
 
@@ -71,21 +66,17 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     super.dispose();
   }
 
-  void _updateButtonState() {
-    setState(() {});
-  }
+  void _updateButtonState() => setState(() {});
 
   void _setupDio() {
     final uri = Uri.parse(dotenv.env['API_BASE_URL']!);
-
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final cookies =
             await CookieJarSingleton().cookieJar.loadForRequest(uri);
         if (cookies.isNotEmpty) {
-          options.headers[HttpHeaders.cookieHeader] = cookies
-              .map((cookie) => '${cookie.name}=${cookie.value}')
-              .join('; ');
+          options.headers[HttpHeaders.cookieHeader] =
+              cookies.map((c) => '${c.name}=${c.value}').join('; ');
         }
         handler.next(options);
       },
@@ -97,20 +88,14 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
       final response =
           await _dio.get('${dotenv.env['API_BASE_URL']}/ticket/main');
       final List<dynamic> data = response.data['result'];
-      setState(() {
-        tickets = data.cast<Map<String, dynamic>>();
-      });
+      setState(() => tickets = data.cast<Map<String, dynamic>>());
     } catch (e) {
       debugPrint('티켓 불러오기 실패: $e');
     }
   }
 
   Future<void> _submitRefundRequest() async {
-    if (selectedTicketId == null ||
-        refundReasonController.text.isEmpty ||
-        selectedDate == null ||
-        selectedTime == null ||
-        phoneNumberController.text.isEmpty) {
+    if (!_isFormValid()) {
       _showCupertinoDialog('알림', '모든 필드를 입력해주세요.');
       return;
     }
@@ -127,15 +112,13 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
       final response = await _dio.post(
         '${dotenv.env['API_BASE_URL']}/refund/request',
         data: json.encode(body),
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       final result = response.data;
       if (result['isSuccess']) {
         _showCupertinoDialog('성공', '환불 요청이 완료되었습니다.', onConfirm: () {
-          Navigator.of(context).pop(); // 팝업 닫기
+          Navigator.of(context).pop();
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const TicketScreen()),
@@ -166,113 +149,6 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      child: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Scaffold(
-          resizeToAvoidBottomInset: true,
-          backgroundColor: const Color(0xFFF5F6F7),
-          appBar: AppBar(
-            toolbarHeight: 70,
-            backgroundColor: Colors.white,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            leading: IconButton(
-              icon: const Icon(
-                Icons.close_rounded,
-                color: Color(0xFF334D61),
-                size: 30,
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            centerTitle: true,
-            title: const Text(
-              '환불 신청',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildEventDropdown(),
-                        const SizedBox(height: 14),
-                        _buildInputField(
-                          controller: refundReasonController,
-                          label: "환불 사유",
-                          hintText: "환불 사유 입력",
-                        ),
-                        const SizedBox(height: 14),
-                        _buildDatePickerField(),
-                        const SizedBox(height: 14),
-                        _buildTimePickerField(),
-                        const SizedBox(height: 14),
-                        _buildInputField(
-                          controller: phoneNumberController,
-                          label: "전화번호",
-                          hintText: "전화번호 입력",
-                          keyboardType: TextInputType.phone,
-                        ),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            "현금 수령을 해야 하므로 방문이 필요합니다.",
-                            style: TextStyle(
-                                color: const Color(0xFFC10230).withOpacity(0.5),
-                                fontSize: 13),
-                          ),
-                        ),
-                        const SizedBox(height: 24), // 버튼 위 여백
-                        ElevatedButton(
-                          onPressed:
-                              _isFormValid() ? _submitRefundRequest : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFC10230),
-                            disabledBackgroundColor:
-                                const Color(0xFFC10230).withOpacity(0.3),
-                            minimumSize: const Size(double.infinity, 55),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            foregroundColor: Colors.white,
-                            disabledForegroundColor:
-                                Colors.white.withOpacity(0.7),
-                          ),
-                          child: const Text(
-                            "신청",
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(height: 16), // 스크롤 끝에 여백
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   bool _isFormValid() {
     return selectedTicketId != null &&
         refundReasonController.text.isNotEmpty &&
@@ -281,43 +157,129 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
         phoneNumberController.text.isNotEmpty;
   }
 
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String label,
-    required String hintText,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewPadding.bottom + 16;
+
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        backgroundColor: const Color(0xFFF5F6F7),
+        appBar: AppBar(
+          toolbarHeight: 70,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close_rounded,
+                color: Color(0xFF334D61), size: 30),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          centerTitle: true,
+          title: const Text(
+            '환불 신청',
+            style: TextStyle(
+                color: Colors.black, fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildEventDropdown(),
+                    const SizedBox(height: 14),
+                    _buildInputField(
+                        controller: refundReasonController,
+                        label: "환불 사유",
+                        hintText: "환불 사유 입력"),
+                    const SizedBox(height: 14),
+                    _buildDatePickerField(),
+                    const SizedBox(height: 14),
+                    _buildTimePickerField(),
+                    const SizedBox(height: 14),
+                    _buildInputField(
+                        controller: phoneNumberController,
+                        label: "전화번호",
+                        hintText: "전화번호 입력",
+                        keyboardType: TextInputType.phone),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        "현금 수령을 해야 하므로 방문이 필요합니다.",
+                        style: TextStyle(
+                            color: const Color(0xFFC10230).withOpacity(0.5),
+                            fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
+                child: ElevatedButton(
+                  onPressed: _isFormValid() ? _submitRefundRequest : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFC10230),
+                    disabledBackgroundColor:
+                        const Color(0xFFC10230).withOpacity(0.3),
+                    minimumSize: const Size(double.infinity, 55),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4)),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white.withOpacity(0.7),
+                  ),
+                  child: const Text("신청",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField(
+      {required TextEditingController controller,
+      required String label,
+      required String hintText,
+      TextInputType keyboardType = TextInputType.text}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-      ),
+          color: Colors.white, borderRadius: BorderRadius.circular(4)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.6),
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(label,
+              style: TextStyle(
+                  color: Colors.black.withOpacity(0.6),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 2),
           TextField(
             controller: controller,
             keyboardType: keyboardType,
             decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: TextStyle(
-                color: Colors.black.withOpacity(0.3),
-                fontSize: 16,
-              ),
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-              border: InputBorder.none,
-            ),
+                hintText: hintText,
+                hintStyle: TextStyle(
+                    color: Colors.black.withOpacity(0.3), fontSize: 16),
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                border: InputBorder.none),
             textInputAction: TextInputAction.done,
           ),
         ],
@@ -329,47 +291,33 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-      ),
+          color: Colors.white, borderRadius: BorderRadius.circular(4)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "행사",
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.6),
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text("행사",
+              style: TextStyle(
+                  color: Colors.black.withOpacity(0.6),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 2),
           Theme(
             data: Theme.of(context).copyWith(canvasColor: Colors.white),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: selectedTicketId,
-                hint: Text(
-                  '행사 선택',
-                  style: TextStyle(
-                    color: Colors.black.withOpacity(0.3),
-                    fontSize: 16,
-                  ),
-                ),
+                hint: Text('행사 선택',
+                    style: TextStyle(
+                        color: Colors.black.withOpacity(0.3), fontSize: 16)),
                 isExpanded: true,
                 items: tickets.map((ticket) {
                   final affiliation = ticket['affiliation'] ?? '';
                   return DropdownMenuItem<String>(
                     value: ticket['_id'],
-                    child: Text(
-                        "${ticket['eventTitle']} ($affiliation)"), // ✅ 행사 + 소속
+                    child: Text("${ticket['eventTitle']} ($affiliation)"),
                   );
                 }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedTicketId = value;
-                  });
-                },
+                onChanged: (value) => setState(() => selectedTicketId = value),
               ),
             ),
           ),
@@ -386,21 +334,16 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
           showTitleActions: true,
           minTime: DateTime(1900, 1, 1),
           maxTime: DateTime(2100, 1, 1),
-          onConfirm: (date) {
-            setState(() {
-              selectedDate =
-                  "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}(${_getKoreanWeekday(date.weekday)})";
-            });
-          },
+          onConfirm: (date) => setState(() => selectedDate =
+              "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}(${_getKoreanWeekday(date.weekday)})"),
           currentTime: DateTime.now(),
           locale: LocaleType.ko,
         );
       },
       child: _buildDisplayField(
-        label: "방문 가능 날짜",
-        displayText: selectedDate ?? "방문 가능 날짜 선택",
-        icon: Icons.calendar_today_outlined,
-      ),
+          label: "방문 가능 날짜",
+          displayText: selectedDate ?? "방문 가능 날짜 선택",
+          icon: Icons.calendar_today_outlined),
     );
   }
 
@@ -411,73 +354,53 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
           context,
           showTitleActions: true,
           showSecondsColumn: false,
-          onConfirm: (date) {
-            setState(() {
-              selectedTime =
-                  "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
-            });
-          },
+          onConfirm: (date) => setState(() => selectedTime =
+              "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}"),
           currentTime: DateTime.now(),
           locale: LocaleType.ko,
         );
       },
       child: _buildDisplayField(
-        label: "방문 가능 시간",
-        displayText: selectedTime ?? "방문 가능 시간 선택",
-        icon: Icons.access_time_outlined,
-      ),
+          label: "방문 가능 시간",
+          displayText: selectedTime ?? "방문 가능 시간 선택",
+          icon: Icons.access_time_outlined),
     );
   }
 
-  Widget _buildDisplayField({
-    required String label,
-    required String displayText,
-    String? suffixText,
-    IconData? icon,
-  }) {
-    final isHintText =
-        displayText == "방문 가능 날짜 선택" || displayText == "방문 가능 시간 선택";
+  Widget _buildDisplayField(
+      {required String label,
+      required String displayText,
+      String? suffixText,
+      IconData? icon}) {
+    final isHintText = displayText.contains("선택");
     final textColor = isHintText ? Colors.black.withOpacity(0.3) : Colors.black;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-      ),
+          color: Colors.white, borderRadius: BorderRadius.circular(4)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.6),
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(label,
+              style: TextStyle(
+                  color: Colors.black.withOpacity(0.6),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 2),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  displayText,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
+                  child: Text(displayText,
+                      style: TextStyle(color: textColor, fontSize: 16))),
               if (icon != null) Icon(icon, color: Colors.grey, size: 20),
             ],
           ),
           if (suffixText != null) ...[
             const SizedBox(height: 5),
-            Text(
-              suffixText,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
-            ),
+            Text(suffixText,
+                style: const TextStyle(color: Colors.red, fontSize: 12)),
           ],
         ],
       ),
