@@ -265,32 +265,7 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
                   ),
                 ),
               ),
-              Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0), // 하단 패딩 조정
-                child: SafeArea(
-                  child: ElevatedButton(
-                    onPressed: _isFormValid() ? _submitRefundRequest : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC10230),
-                      disabledBackgroundColor:
-                          const Color(0xFFC10230).withOpacity(0.3),
-                      minimumSize: const Size(double.infinity, 55),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      foregroundColor: Colors.white,
-                      disabledForegroundColor: Colors.white.withOpacity(0.7),
-                    ),
-                    child: const Text(
-                      "신청",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ),
+              
             ],
           ),
         ),

@@ -402,14 +402,14 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                           hintText: "행사 코드 입력"),
                       const SizedBox(height: 14),
                       // ✅ 완료 버튼도 스크롤 안에 넣어서 고정 X
+                      // 완료 버튼 padding
                       Padding(
                         padding: EdgeInsets.fromLTRB(
                           0,
                           0,
                           0,
-                          MediaQuery.of(context).viewPadding.bottom > 0
-                              ? 16
-                              : 0,
+                          MediaQuery.of(context).viewPadding.bottom +
+                              16, // 하단 안전 영역 + 여유 공간
                         ),
                         child: ElevatedButton(
                           onPressed: canSubmit ? _showConfirmationDialog : null,
@@ -432,7 +432,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                                 fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                         ),
-                      ),
+                      )
                     ],
                   ),
                 ),
