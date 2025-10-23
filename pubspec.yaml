@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.5+5
+version: 1.1.0+8
 
 environment:
   sdk: ^3.5.4
@@ -50,6 +50,7 @@ dependencies:
   kakao_maps_flutter: ^0.1.1
   kakao_flutter_sdk_common: ^1.9.1+2
   flutter_local_notifications: ^19.4.1
+  flutter_launcher_icons: ^0.13.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -95,6 +96,11 @@ flutter:
     - .env
     - assets/images/
     - assets/images/sejong.png
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/PASSTIME_LOGO_FINAL.png"
 
   # To add assets to your application, add an assets section, like this:
   # assets:
