@@ -31,18 +31,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _setupDio() {
     final uri = Uri.parse(dotenv.env['API_BASE_URL']!);
 
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final cookies =
-            await CookieJarSingleton().cookieJar.loadForRequest(uri);
-        if (cookies.isNotEmpty) {
-          options.headers[HttpHeaders.cookieHeader] = cookies
-              .map((cookie) => '${cookie.name}=${cookie.value}')
-              .join('; ');
-        }
-        handler.next(options);
-      },
-    ));
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final cookies = await CookieJarSingleton().cookieJar.loadForRequest(
+                uri,
+              );
+          if (cookies.isNotEmpty) {
+            options.headers[HttpHeaders.cookieHeader] = cookies
+                .map((cookie) => '${cookie.name}=${cookie.value}')
+                .join('; ');
+          }
+          handler.next(options);
+        },
+      ),
+    );
   }
 
   // ✅ 서버에서 현재 알림 상태를 가져오는 함수
@@ -88,9 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final response = await _dio.patch(
         url,
         data: requestBody,
-        options: Options(
-          contentType: 'application/json',
-        ),
+        options: Options(contentType: 'application/json'),
       );
 
       if (response.statusCode == 200) {
@@ -109,9 +110,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         isNotificationOn = !value;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('네트워크 오류가 발생했습니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('네트워크 오류가 발생했습니다.')));
     }
   }
 
@@ -130,8 +131,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () {
                 Navigator.of(context).pop(); // 팝업 닫기
               },
-              child:
-                  const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
+              child: const Text(
+                "확인",
+                style: TextStyle(color: Color(0xFFC10230)),
+              ),
             ),
           ],
         );
@@ -151,9 +154,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                "취소",
-              ),
+              child: const Text("취소"),
             ),
             CupertinoDialogAction(
               onPressed: () async {
@@ -223,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: _buildCustomTile(title: '문의사항', showMoreIcon: true),
                   ),
                   const SizedBox(height: 16),
-                  _buildCustomTile(title: '패치버전', infoText: '1.1.0'),
+                  _buildCustomTile(title: '패치버전', infoText: '1.1.7'),
                   const SizedBox(height: 48),
                   GestureDetector(
                     onTap: _showLogoutDialog,
@@ -277,10 +278,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 16.0,
-              color: Colors.black,
-            ),
+            style: const TextStyle(fontSize: 16.0, color: Colors.black),
           ),
           if (isSwitch)
             CupertinoSwitch(
