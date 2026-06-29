@@ -24,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final FocusNode _idFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   final Dio _dio = Dio();
 
@@ -323,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: TextField(
         controller: controller,
         focusNode: focusNode,
-        obscureText: isPassword,
+        obscureText: isPassword ? _obscurePassword : false,
         style: const TextStyle(fontSize: 14),
         decoration: InputDecoration(
           prefixIcon: Icon(
@@ -331,6 +332,22 @@ class _LoginScreenState extends State<LoginScreen> {
             color: const Color(0xFF334D61),
             size: 26,
           ),
+          suffixIcon: isPassword
+              ? IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: const Color(0xFF334D61),
+                    size: 22,
+                  ),
+                )
+              : null,
           hintText: hintText,
           hintStyle: TextStyle(
             color: Colors.black.withOpacity(0.3),
