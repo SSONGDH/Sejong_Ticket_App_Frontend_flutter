@@ -5,9 +5,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:passtime/widgets/custom_app_bar.dart';
-import 'package:passtime/screens/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:passtime/widgets/menu_button.dart';
 import '../cookiejar_singleton.dart';
+import 'package:passtime/screens/login_screen.dart';
 import 'package:passtime/screens/ticket_screen.dart'; // TicketScreen import 추가
 
 class SettingsScreen extends StatefulWidget {
@@ -160,6 +161,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () async {
                 Navigator.of(context).pop();
                 await CookieJarSingleton().cookieJar.deleteAll();
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('isAutoLogin', false);
+                await prefs.remove('password');
                 _logout();
               },
               isDestructiveAction: true,
@@ -224,7 +228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: _buildCustomTile(title: '문의사항', showMoreIcon: true),
                   ),
                   const SizedBox(height: 16),
-                  _buildCustomTile(title: '패치버전', infoText: '1.1.7'),
+                  _buildCustomTile(title: '패치버전', infoText: '1.1.8'),
                   const SizedBox(height: 48),
                   GestureDetector(
                     onTap: _showLogoutDialog,

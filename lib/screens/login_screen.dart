@@ -40,23 +40,55 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loadLoginData() async {
     final prefs = await SharedPreferences.getInstance();
+    final rememberId = prefs.getBool('isRememberId') ?? false;
+    final autoLogin = prefs.getBool('isAutoLogin') ?? false;
+    final userId = prefs.getString('userId') ?? '';
+    final password = autoLogin ? (prefs.getString('password') ?? '') : '';
+
+    if (!mounted) return;
     setState(() {
-      isRememberId = prefs.getBool('isRememberId') ?? false;
-      if (isRememberId) {
-        _idController.text = prefs.getString('userId') ?? '';
+      isRememberId = rememberId;
+      isAutoLogin = autoLogin;
+      if (rememberId || autoLogin) {
+        _idController.text = userId;
+      }
+      if (autoLogin) {
+        _passwordController.text = password;
       }
     });
+
+    if (autoLogin && userId.isNotEmpty && password.isNotEmpty) {
+      await _performLogin(userId, password, isAutoLoginAttempt: true);
+    }
   }
 
   Future<void> _saveLoginData() async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool('isRememberId', isRememberId);
+    prefs.setBool('isAutoLogin', isAutoLogin);
 
-    if (isRememberId) {
+    if (isRememberId || isAutoLogin) {
       prefs.setString('userId', _idController.text.trim());
     } else {
       prefs.remove('userId');
     }
+
+    if (isAutoLogin) {
+      prefs.setString('password', _passwordController.text.trim());
+    } else {
+      prefs.remove('password');
+    }
+  }
+
+  Future<void> _clearAutoLoginData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isAutoLogin', false);
+    await prefs.remove('password');
+    if (!mounted) return;
+    setState(() {
+      isAutoLogin = false;
+      _passwordController.clear();
+    });
   }
 
   void _updateButtonState() {
@@ -75,6 +107,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
+    await _performLogin(
+      _idController.text.trim(),
+      _passwordController.text.trim(),
+    );
+  }
+
+  Future<void> _performLogin(
+    String userId,
+    String password, {
+    bool isAutoLoginAttempt = false,
+  }) async {
     FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
 
@@ -82,15 +125,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final String url = '$baseUrl/auth/login';
 
     try {
-      print('🚀 로그인 요청 URI: $url');
-      print(
-          '📝 로그인 요청 데이터: { "userId": "${_idController.text.trim()}", "password": "******" }');
-
       final response = await _dio.post(
         url,
         data: {
-          "userId": _idController.text.trim(),
-          "password": _passwordController.text.trim(),
+          "userId": userId,
+          "password": password,
         },
         options: Options(
           headers: {
@@ -113,13 +152,8 @@ class _LoginScreenState extends State<LoginScreen> {
           try {
             String? fcmToken = await FirebaseMessaging.instance.getToken();
             if (fcmToken != null) {
-              print('FCM Token: $fcmToken');
-
               final fcmUrl = '$baseUrl/fcm/tokenAdd';
-              print('🚀 FCM 토큰 전송 URI: $fcmUrl');
-              print('📝 FCM 토큰 전송 데이터: { "fcmToken": "$fcmToken" }');
-
-              final fcmResponse = await _dio.post(
+              await _dio.post(
                 fcmUrl,
                 data: {"fcmToken": fcmToken},
                 options: Options(
@@ -128,35 +162,46 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
               );
-
-              if (fcmResponse.statusCode == 200) {
-                print('✅ FCM 토큰 서버 전송 성공');
-              } else {
-                print('⚠️ FCM 토큰 서버 전송 실패: ${fcmResponse.statusCode}');
-              }
-            } else {
-              print('FCM Token을 가져오지 못했습니다.');
             }
           } catch (e) {
             print('FCM 토큰 요청/전송 중 오류 발생: $e');
           }
 
+          if (isAutoLogin) {
+            isRememberId = true;
+          }
           await _saveLoginData();
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const TicketScreen()),
           );
         } else {
+          if (isAutoLoginAttempt) {
+            await _clearAutoLoginData();
+          }
           _showErrorDialog('로그인 실패: 쿠키를 받을 수 없습니다.');
         }
       } else {
+        if (isAutoLoginAttempt) {
+          await _clearAutoLoginData();
+        }
         _showErrorDialog('로그인 실패');
       }
 
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
-      _showErrorDialog('학번과 비밀번호가 일치하지 않습니다.');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      if (isAutoLoginAttempt) {
+        await _clearAutoLoginData();
+        _showErrorDialog('자동 로그인에 실패했습니다. 다시 로그인해주세요.');
+      } else {
+        _showErrorDialog('학번과 비밀번호가 일치하지 않습니다.');
+      }
     }
   }
 
@@ -304,45 +349,72 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            onTap: () {
+          _buildLoginOption(
+            value: isRememberId,
+            label: '아이디 저장',
+            onChanged: (newValue) {
               setState(() {
-                isRememberId = !isRememberId;
-                _saveLoginData();
+                isRememberId = newValue;
+                if (!isRememberId && !isAutoLogin) {
+                  _idController.clear();
+                }
               });
+              _saveLoginData();
             },
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: isRememberId,
-                    onChanged: (bool? newValue) {
-                      setState(() {
-                        isRememberId = newValue!;
-                        _saveLoginData();
-                      });
-                    },
-                    activeColor: const Color(0xFFC10230),
-                    checkColor: Colors.white,
-                    side: BorderSide.none,
-                    fillColor: WidgetStateProperty.resolveWith<Color>(
-                      (Set<WidgetState> states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return const Color(0xFFC10230);
-                        }
-                        return const Color(0xFF334D61).withOpacity(0.05);
-                      },
-                    ),
-                    shape: const CircleBorder(),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-                const Text(' 아이디 저장', style: TextStyle(fontSize: 14)),
-              ],
+          ),
+          _buildLoginOption(
+            value: isAutoLogin,
+            label: '자동 로그인',
+            onChanged: (newValue) {
+              setState(() {
+                isAutoLogin = newValue;
+                if (isAutoLogin) {
+                  isRememberId = true;
+                }
+              });
+              _saveLoginData();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoginOption({
+    required bool value,
+    required String label,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: Checkbox(
+              value: value,
+              onChanged: (bool? newValue) {
+                if (newValue != null) {
+                  onChanged(newValue);
+                }
+              },
+              activeColor: const Color(0xFFC10230),
+              checkColor: Colors.white,
+              side: BorderSide.none,
+              fillColor: WidgetStateProperty.resolveWith<Color>(
+                (Set<WidgetState> states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return const Color(0xFFC10230);
+                  }
+                  return const Color(0xFF334D61).withOpacity(0.05);
+                },
+              ),
+              shape: const CircleBorder(),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
+          Text(' $label', style: const TextStyle(fontSize: 14)),
         ],
       ),
     );
