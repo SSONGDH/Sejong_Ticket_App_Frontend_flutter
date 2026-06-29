@@ -163,6 +163,7 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
         backgroundColor: Colors.white,
         appBar: const CustomAppBar(
           title: "행사 관리",
+          isOrganizerMode: true,
         ),
         body: Column(
           children: [

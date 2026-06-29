@@ -174,7 +174,10 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: const CustomAppBar(title: "환불 신청 목록"),
+        appBar: const CustomAppBar(
+          title: "환불 신청 목록",
+          isOrganizerMode: true,
+        ),
         floatingActionButton: const AdminMenuButton(),
         body: _isAffiliationLoading
             ? const Center(child: CircularProgressIndicator())

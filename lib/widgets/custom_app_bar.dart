@@ -4,13 +4,17 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
 import 'package:passtime/cookiejar_singleton.dart';
 import 'package:passtime/admin/request_admin_list.dart';
+import 'package:passtime/admin/admin_ticket_screen.dart';
+import 'package:passtime/screens/ticket_screen.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
+  final bool isOrganizerMode;
 
   const CustomAppBar({
     super.key,
     required this.title,
+    this.isOrganizerMode = false,
   });
 
   @override
@@ -56,43 +60,65 @@ class _CustomAppBarState extends State<CustomAppBar> {
     ));
   }
 
+  void _navigateToHome(BuildContext context) {
+    final home = widget.isOrganizerMode
+        ? const AdminTicketScreen()
+        : const TicketScreen();
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => home),
+      (route) => false,
+    );
+  }
+
+  Future<void> _handleRootAdminTap(BuildContext context) async {
+    try {
+      final apiUrl = '${dotenv.env['API_BASE_URL']}/root/connection';
+      final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+      final cookies =
+          await CookieJarSingleton().cookieJar.loadForRequest(uri);
+
+      final response = await dio.get(
+        apiUrl,
+        options: Options(headers: {'Cookie': cookies}),
+      );
+
+      if (response.data['isSuccess'] == true) {
+        if (!context.mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const RequestAdminListScreen(),
+          ),
+        );
+      }
+    } on DioException {
+      // root 권한 없음 — 무시
+    }
+  }
+
   void _handleTap(BuildContext context) async {
     final now = DateTime.now();
 
-    if (_lastTapTime == null || now.difference(_lastTapTime!).inSeconds <= 1) {
-      _tapCount++;
-      if (_tapCount == 5) {
-        _tapCount = 0;
-
-        try {
-          final apiUrl = '${dotenv.env['API_BASE_URL']}/root/connection';
-          final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
-          final cookies =
-              await CookieJarSingleton().cookieJar.loadForRequest(uri);
-
-          final response = await dio.get(
-            apiUrl,
-            options: Options(headers: {'Cookie': cookies}),
-          );
-
-          // 서버 응답이 성공(isSuccess == true)일 때만 화면 전환
-          if (response.data['isSuccess'] == true) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const RequestAdminListScreen(),
-              ),
-            );
-          }
-          // else { ... } 실패 시 로직은 제거됨
-        } on DioException {
-          // catch (e) { ... } 오류 발생 시 로직은 제거됨
-          // 아무런 동작도 하지 않습니다.
-        }
-      }
-    } else {
-      _tapCount = 1;
+    if (_lastTapTime != null && now.difference(_lastTapTime!).inSeconds > 1) {
+      _tapCount = 0;
     }
+    _tapCount++;
     _lastTapTime = now;
+
+    if (_tapCount == 5) {
+      _tapCount = 0;
+      await _handleRootAdminTap(context);
+      return;
+    }
+
+    final tapCountAtPress = _tapCount;
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+    if (_tapCount == tapCountAtPress && tapCountAtPress < 5) {
+      _tapCount = 0;
+      _navigateToHome(context);
+    }
   }
 
   @override

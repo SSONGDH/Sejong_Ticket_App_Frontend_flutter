@@ -59,6 +59,7 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
       backgroundColor: Colors.white,
       appBar: const CustomAppBar(
         title: "주최자 신청 목록",
+        isOrganizerMode: true,
       ),
       body: Column(
         children: [

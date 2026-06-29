@@ -255,7 +255,10 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: const CustomAppBar(title: "납부 내역 목록"),
+        appBar: const CustomAppBar(
+          title: "납부 내역 목록",
+          isOrganizerMode: true,
+        ),
         floatingActionButton: const AdminMenuButton(),
         body: _isAffiliationLoading
             ? const Center(child: CircularProgressIndicator())
