@@ -26,7 +26,10 @@ class AdminTicketCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Stack(
+      child: InkWell(
+        onTap: onEdit,
+        borderRadius: BorderRadius.circular(4),
+        child: Stack(
         // Stack 위젯 추가
         children: [
           Padding(
@@ -148,6 +151,7 @@ class AdminTicketCard extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

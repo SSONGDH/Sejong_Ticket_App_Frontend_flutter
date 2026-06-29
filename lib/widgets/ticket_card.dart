@@ -20,40 +20,44 @@ class TicketCard extends StatelessWidget {
     required this.statusColor,
   });
 
+  bool get _isClickable => status != '사용 불가';
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        if (status == '환불중' || status == '환불됨') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => RefundScreen(ticketId: ticketId),
-            ),
-          );
-        } else if (status == '미승인') {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text("알림"),
-              content: const Text("아직 승인되지 않았습니다."),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("확인"),
-                ),
-              ],
-            ),
-          );
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => TicketDetailScreen(ticketId: ticketId),
-            ),
-          );
-        }
-      },
+      onTap: _isClickable
+          ? () {
+              if (status == '환불중' || status == '환불됨') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RefundScreen(ticketId: ticketId),
+                  ),
+                );
+              } else if (status == '미승인') {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text("알림"),
+                    content: const Text("아직 승인되지 않았습니다."),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text("확인"),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TicketDetailScreen(ticketId: ticketId),
+                  ),
+                );
+              }
+            }
+          : null,
       child: Card(
         color: Colors.white,
         elevation: 0,
