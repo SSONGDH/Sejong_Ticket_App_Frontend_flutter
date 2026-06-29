@@ -10,11 +10,13 @@ import 'package:passtime/screens/ticket_screen.dart';
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
   final bool isOrganizerMode;
+  final bool logoNavigatesToParticipantHome;
 
   const CustomAppBar({
     super.key,
     required this.title,
     this.isOrganizerMode = false,
+    this.logoNavigatesToParticipantHome = false,
   });
 
   @override
@@ -61,9 +63,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
   }
 
   void _navigateToHome(BuildContext context) {
-    final home = widget.isOrganizerMode
-        ? const AdminTicketScreen()
-        : const TicketScreen();
+    final home = widget.logoNavigatesToParticipantHome || !widget.isOrganizerMode
+        ? const TicketScreen()
+        : const AdminTicketScreen();
 
     Navigator.pushAndRemoveUntil(
       context,

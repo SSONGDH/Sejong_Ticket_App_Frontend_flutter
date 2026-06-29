@@ -70,6 +70,7 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
       appBar: const CustomAppBar(
         title: "주최자 신청 목록",
         isOrganizerMode: true,
+        logoNavigatesToParticipantHome: true,
       ),
       body: Column(
         children: [
