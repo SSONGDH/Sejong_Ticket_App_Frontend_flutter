@@ -350,8 +350,12 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                           onPressed: () => Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                                builder: (_) =>
-                                                    const RequestRefundScreen()),
+                                              builder: (_) =>
+                                                  RequestRefundScreen(
+                                                initialTicketId:
+                                                    widget.ticketId,
+                                              ),
+                                            ),
                                           ),
                                           style: TextButton.styleFrom(
                                             backgroundColor:

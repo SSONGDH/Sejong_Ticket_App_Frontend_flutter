@@ -31,7 +31,9 @@ class MaskedInputController extends TextEditingController {
 }
 
 class RequestRefundScreen extends StatefulWidget {
-  const RequestRefundScreen({super.key});
+  final String? initialTicketId;
+
+  const RequestRefundScreen({super.key, this.initialTicketId});
 
   @override
   _RequestRefundScreenState createState() => _RequestRefundScreenState();
@@ -88,7 +90,18 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
       final response =
           await _dio.get('${dotenv.env['API_BASE_URL']}/ticket/main');
       final List<dynamic> data = response.data['result'];
-      setState(() => tickets = data.cast<Map<String, dynamic>>());
+      final fetchedTickets = data.cast<Map<String, dynamic>>();
+      setState(() {
+        tickets = fetchedTickets;
+        if (widget.initialTicketId != null) {
+          final hasTicket = fetchedTickets.any(
+            (ticket) => ticket['_id'] == widget.initialTicketId,
+          );
+          if (hasTicket) {
+            selectedTicketId = widget.initialTicketId;
+          }
+        }
+      });
     } catch (e) {
       debugPrint('티켓 불러오기 실패: $e');
     }
