@@ -8,6 +8,7 @@ import 'screens/login_screen.dart';
 import 'package:logger/logger.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
+import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 final logger = Logger();
@@ -94,6 +95,9 @@ void main() async {
 
   // Kakao SDK & Kakao Maps 초기화
   final kakaoKey = dotenv.env['KAKAO_NATIVE_APP_KEY'];
+  final kakaoJsKey = dotenv.env['KAKAO_MAP_JS_KEY'] ??
+      dotenv.env['KAKAO_JAVASCRIPT_KEY'] ??
+      dotenv.env['KAKAO_NATIVE_APP_KEY'];
   if (kakaoKey != null && kakaoKey.isNotEmpty) {
     logger.i("[KakaoSDK] 🔑 KAKAO_NATIVE_APP_KEY: $kakaoKey");
     KakaoSdk.init(nativeAppKey: kakaoKey);
@@ -101,6 +105,14 @@ void main() async {
     logger.i("[KakaoMap] ✅ 초기화 완료");
   } else {
     logger.e("[KakaoSDK] ❌ KAKAO_NATIVE_APP_KEY가 비어있습니다!");
+  }
+
+  if (kakaoJsKey != null && kakaoJsKey.isNotEmpty) {
+    AuthRepository.initialize(
+      appKey: kakaoJsKey,
+      baseUrl: 'https://dapi.kakao.com',
+    );
+    logger.i("[KakaoMapPlugin] ✅ JavaScript 키 초기화 완료");
   }
 
   // iOS: 알림 권한 요청

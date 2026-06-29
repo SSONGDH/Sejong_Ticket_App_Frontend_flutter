@@ -5,6 +5,7 @@ import 'package:marquee/marquee.dart';
 import 'package:flutter/rendering.dart';
 import 'package:passtime/menu/request_refund.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
+import 'package:passtime/map_view_screen.dart';
 
 class TicketDetailScreen extends StatefulWidget {
   final String ticketId;
@@ -86,6 +87,35 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           _dottedLineY = yPosition - 15;
         });
       }
+    }
+  }
+
+  void _openMapView() {
+    final kakaoPlace = ticketData?['kakaoPlace'] as Map<String, dynamic>?;
+    if (kakaoPlace == null ||
+        kakaoPlace['y'] == null ||
+        kakaoPlace['x'] == null) {
+      return;
+    }
+
+    try {
+      final double lat = double.parse(kakaoPlace['y'].toString());
+      final double lng = double.parse(kakaoPlace['x'].toString());
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MapViewScreen(
+            latitude: lat,
+            longitude: lng,
+            placeName: kakaoPlace['place_name']?.toString() ??
+                ticketData?['eventTitle']?.toString(),
+            addressName: kakaoPlace['address_name']?.toString(),
+          ),
+        ),
+      );
+    } catch (e) {
+      return;
     }
   }
 
@@ -397,54 +427,80 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                       bottomLeft: Radius.circular(20),
                                       bottomRight: Radius.circular(20),
                                     ),
-                                    child: Stack(
-                                      children: [
-                                        // 지도 (배경)
-                                        SizedBox(
-                                          height: 200,
-                                          width: double.infinity,
-                                          child: IgnorePointer(
-                                            ignoring: true,
-                                            child: _buildKakaoMap(),
-                                          ),
-                                        ),
-                                        // Marquee (지도 위에 겹쳐짐)
-                                        Positioned(
-                                          bottom: 0,
-                                          left: 0,
-                                          right: 0,
-                                          child: Container(
+                                    child: GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: _openMapView,
+                                      child: Stack(
+                                        children: [
+                                          SizedBox(
+                                            height: 200,
                                             width: double.infinity,
-                                            height: 23,
-                                            color: const Color(0xFFC10230),
-                                            child: Marquee(
-                                              text: "캡쳐하신 입장권은 사용할 수 없습니다.",
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
+                                            child: IgnorePointer(
+                                              ignoring: true,
+                                              child: _buildKakaoMap(),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
                                               ),
-                                              scrollAxis: Axis.horizontal,
-                                              blankSpace: 50.0,
-                                              velocity: 50.0,
+                                              decoration: BoxDecoration(
+                                                color: Colors.black
+                                                    .withOpacity(0.55),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                '탭하여 확대',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        // 여기에 이미지 추가
-                                        Positioned(
-                                          top: 65, // Stack 상단에서 20픽셀 아래에 위치
-                                          left: 0,
-                                          right: 0,
-                                          child: Align(
-                                            alignment: Alignment.center,
-                                            child: Image.asset(
-                                              'assets/images/marker.png', // 사용할 이미지 경로
-                                              width: 40, // 이미지 너비
-                                              height: 40, // 이미지 높이
+                                          Positioned(
+                                            bottom: 0,
+                                            left: 0,
+                                            right: 0,
+                                            child: Container(
+                                              width: double.infinity,
+                                              height: 23,
+                                              color: const Color(0xFFC10230),
+                                              child: Marquee(
+                                                text:
+                                                    "캡쳐하신 입장권은 사용할 수 없습니다.",
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
+                                                ),
+                                                scrollAxis: Axis.horizontal,
+                                                blankSpace: 50.0,
+                                                velocity: 50.0,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                          Positioned(
+                                            top: 65,
+                                            left: 0,
+                                            right: 0,
+                                            child: Align(
+                                              alignment: Alignment.center,
+                                              child: Image.asset(
+                                                'assets/images/marker.png',
+                                                width: 40,
+                                                height: 40,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],

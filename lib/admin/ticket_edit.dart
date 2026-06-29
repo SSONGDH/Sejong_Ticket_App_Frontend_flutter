@@ -8,6 +8,7 @@ import 'package:passtime/admin/admin_ticket_screen.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import '../place_search_screen.dart';
+import 'package:passtime/map_picker_screen.dart';
 
 class TicketEditScreen extends StatefulWidget {
   final String ticketId;
@@ -441,19 +442,26 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     );
   }
 
-  // 4. 지도 위젯을 생성하는 메서드
   Widget _buildKakaoMap() {
+    Widget mapContent;
     if (_selectedPlace == null ||
         _selectedPlace!['y'] == null ||
         _selectedPlace!['x'] == null) {
-      return SizedBox(
+      mapContent = Container(
         height: 200,
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF334D61).withOpacity(0.05),
-            borderRadius: BorderRadius.circular(4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF334D61).withOpacity(0.05),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Center(
+          child: Text(
+            '장소를 선택하면 여기에 지도가 표시됩니다.',
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.3),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          child: const Center(child: Text('지도 정보가 없습니다.')),
         ),
       );
     } else {
@@ -462,10 +470,9 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
         final double lng = double.parse(_selectedPlace!['x']);
         final LatLng position = LatLng(latitude: lat, longitude: lng);
 
-        return SizedBox(
+        mapContent = SizedBox(
           height: 200,
           child: Stack(
-            // Stack을 사용하여 지도와 마커 이미지를 겹칩니다.
             children: [
               IgnorePointer(
                 ignoring: true,
@@ -477,17 +484,16 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                   initialLevel: 17,
                 ),
               ),
-              // 장소가 선택되었을 때만 마커 이미지를 표시합니다.
               Positioned(
-                top: 65, // 지도의 중앙 근처에 오도록 조정 (높이 200의 절반 - 이미지 높이의 절반)
+                top: 65,
                 left: 0,
                 right: 0,
                 child: Align(
                   alignment: Alignment.center,
                   child: Image.asset(
-                    'assets/images/marker.png', // 사용할 이미지 경로
-                    width: 40, // 이미지 너비
-                    height: 40, // 이미지 높이
+                    'assets/images/marker.png',
+                    width: 40,
+                    height: 40,
                   ),
                 ),
               ),
@@ -495,15 +501,74 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
           ),
         );
       } catch (e) {
-        return SizedBox(
+        mapContent = Container(
           height: 200,
-          child: Container(
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Center(child: Text('지도를 불러올 수 없습니다.'))),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const Center(child: Text('지도를 불러올 수 없습니다.')),
         );
+      }
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _openMapPicker,
+      child: mapContent,
+    );
+  }
+
+  Future<void> _openMapPicker() async {
+    LatLng? initialPosition;
+    String? initialPlaceName;
+    String? initialAddress;
+
+    if (_selectedPlace != null) {
+      try {
+        initialPosition = LatLng(
+          latitude: double.parse(_selectedPlace!['y']),
+          longitude: double.parse(_selectedPlace!['x']),
+        );
+        initialPlaceName = _selectedPlace!['place_name']?.toString();
+        initialAddress = _selectedPlace!['address_name']?.toString();
+      } catch (e) {
+        debugPrint('초기 지도 위치 파싱 실패: $e');
+      }
+    }
+
+    final selected = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          initialPosition: initialPosition,
+          initialPlaceName: initialPlaceName,
+          initialAddress: initialAddress,
+        ),
+      ),
+    );
+
+    if (selected != null) {
+      _applySelectedPlace(selected);
+    }
+  }
+
+  void _applySelectedPlace(Map<String, dynamic> selected) {
+    setState(() {
+      _selectedPlace = selected;
+      _updateButtonState();
+    });
+
+    if (_mapController != null) {
+      try {
+        final double lat = double.parse(selected['y']);
+        final double lng = double.parse(selected['x']);
+        final newPosition = LatLng(latitude: lat, longitude: lng);
+        _mapController!.moveCamera(
+          cameraUpdate: CameraUpdate.fromLatLng(newPosition),
+        );
+      } catch (e) {
+        debugPrint('Camera move failed: $e');
       }
     }
   }
@@ -727,22 +792,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
         );
 
         if (selected != null) {
-          setState(() {
-            _selectedPlace = selected;
-            _updateButtonState();
-          });
-          if (_mapController != null) {
-            try {
-              final double lat = double.parse(selected['y']);
-              final double lng = double.parse(selected['x']);
-              final newPosition = LatLng(latitude: lat, longitude: lng);
-              _mapController!.moveCamera(
-                cameraUpdate: CameraUpdate.fromLatLng(newPosition),
-              );
-            } catch (e) {
-              debugPrint('Camera move failed: $e');
-            }
-          }
+          _applySelectedPlace(selected);
         }
       },
       child: _buildDisplayField(

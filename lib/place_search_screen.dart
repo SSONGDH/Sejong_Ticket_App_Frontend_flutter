@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as kakao_maps;
+import 'package:passtime/map_picker_screen.dart';
+import 'package:passtime/utils/kakao_local_service.dart';
 
 class PlaceSearchScreen extends StatefulWidget {
   const PlaceSearchScreen({super.key});
@@ -20,37 +20,73 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
   final List<CustomOverlay> _customOverlays = [];
   final List<Polyline> _polylines = [];
   List<Map<String, dynamic>> _places = [];
-  bool _isSearchActive = false;
+  bool _isSearchActive = true;
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
-    // 초기 화면에서 검색 안내 문구가 보이도록 _isSearchActive를 true로 설정
     _isSearchActive = true;
+    _searchController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _searchPlace(String query) async {
-    if (query.isEmpty) return;
+    if (query.trim().isEmpty) return;
 
-    final url = Uri.parse(
-        'https://dapi.kakao.com/v2/local/search/keyword.json?query=${Uri.encodeQueryComponent(query)}');
-    print('Request URL: $url');
-
-    final response = await http.get(url, headers: {
-      'Authorization': 'KakaoAK ${dotenv.env['KAKAO_REST_API_KEY']}',
+    setState(() {
+      _isSearching = true;
+      _isSearchActive = true;
     });
 
-    print('Status Code: ${response.statusCode}');
-    print('Response Body: ${response.body}');
+    final places = await KakaoLocalService.searchPlaces(query);
 
-    if (response.statusCode == 200) {
-      final decodedData = json.decode(response.body);
-      setState(() {
-        _places = List<Map<String, dynamic>>.from(decodedData['documents']);
-        _isSearchActive = true;
-      });
-    } else {
-      print('Failed to load places');
+    if (!mounted) return;
+    setState(() {
+      _places = places;
+      _isSearching = false;
+    });
+  }
+
+  Future<void> _openMapPicker({String? query}) async {
+    kakao_maps.LatLng? initialPosition;
+    String? initialAddress;
+    String? initialPlaceName;
+
+    if (query?.trim().isNotEmpty == true) {
+      final trimmedQuery = query!.trim();
+      initialPlaceName = trimmedQuery;
+      final place = await KakaoLocalService.geocodeAddress(trimmedQuery);
+      if (place != null) {
+        initialPosition = kakao_maps.LatLng(
+          latitude: double.parse(place['y'].toString()),
+          longitude: double.parse(place['x'].toString()),
+        );
+        initialAddress =
+            place['address_name']?.toString() ?? place['place_name']?.toString();
+      }
+    }
+
+    if (!mounted) return;
+
+    final selected = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          initialPosition: initialPosition,
+          initialPlaceName: initialPlaceName,
+          initialAddress: initialAddress,
+        ),
+      ),
+    );
+
+    if (selected != null && mounted) {
+      Navigator.pop(context, selected);
     }
   }
 
@@ -70,12 +106,52 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
     }
   }
 
+  Widget _buildDirectSelectActions(String query) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Column(
+        children: [
+          Text(
+            query.isNotEmpty ? '검색 결과가 없습니다.' : '장소, 주소, 도로명을 검색해주세요.',
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.5),
+              fontSize: 16,
+            ),
+          ),
+          if (query.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton(
+                onPressed: () => _openMapPicker(query: query),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF334D61)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                child: Text(
+                  '"$query" 주소로 지도에서 위치 지정',
+                  style: const TextStyle(
+                    color: Color(0xFF334D61),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final query = _searchController.text.trim();
+
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-      },
+      onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -103,12 +179,7 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
         ),
         body: Column(
           children: [
-            const Divider(
-              // ⭐ 앱바 아래에 Divider 추가
-              height: 1,
-              thickness: 1,
-              color: Color(0xFFEEEDE3),
-            ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFEEEDE3)),
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -119,13 +190,9 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
                 ),
                 child: TextField(
                   controller: _searchController,
-                  onTap: () {
-                    setState(() {
-                      _isSearchActive = true;
-                    });
-                  },
+                  onTap: () => setState(() => _isSearchActive = true),
                   decoration: InputDecoration(
-                    hintText: '장소 검색',
+                    hintText: '장소, 주소, 도로명 검색',
                     hintStyle: TextStyle(
                       color: Colors.black.withOpacity(0.3),
                       fontSize: 16,
@@ -148,9 +215,7 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 15.0),
                   ),
-                  onSubmitted: (value) {
-                    _searchPlace(value);
-                  },
+                  onSubmitted: _searchPlace,
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 16,
@@ -160,75 +225,67 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
             ),
             Expanded(
               child: _isSearchActive
-                  ? (_places.isNotEmpty
-                      ? ListView.builder(
-                          itemCount: _places.length,
-                          itemBuilder: (context, index) {
-                            final place = _places[index];
-                            return InkWell(
-                              onTap: () {
-                                Navigator.pop(context, place);
-                              },
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: Color(0xFFEFEFEF),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0, vertical: 12.0),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.location_on,
-                                      color: Color(0xFF4C87F4),
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            place['place_name'],
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF282727),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            place['address_name'],
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              color: Color(0xFF6F6F6F),
-                                            ),
-                                          ),
-                                        ],
+                  ? (_isSearching
+                      ? const Center(child: CircularProgressIndicator())
+                      : (_places.isNotEmpty
+                          ? ListView.builder(
+                              itemCount: _places.length,
+                              itemBuilder: (context, index) {
+                                final place = _places[index];
+                                return InkWell(
+                                  onTap: () => Navigator.pop(context, place),
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: Color(0xFFEFEFEF),
+                                          width: 1.0,
+                                        ),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                      : Center(
-                          child: Text(
-                            _searchController.text.isNotEmpty
-                                ? '검색 결과가 없습니다.'
-                                : '장소, 주소, 도로명을 검색해주세요.',
-                            style: TextStyle(
-                              color: Colors.black.withOpacity(0.5),
-                              fontSize: 16,
-                            ),
-                          ),
-                        ))
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0,
+                                      vertical: 12.0,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on,
+                                          color: Color(0xFF4C87F4),
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                place['place_name'],
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Color(0xFF282727),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                place['address_name'],
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  color: Color(0xFF6F6F6F),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                          : _buildDirectSelectActions(query)))
                   : KakaoMap(
                       currentLevel: 5,
                       onMapCreated: _onMapCreated,

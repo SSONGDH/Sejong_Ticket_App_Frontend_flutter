@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import '../place_search_screen.dart';
+import 'package:passtime/map_picker_screen.dart';
 import 'package:passtime/cookiejar_singleton.dart';
 
 class TicketProduceScreen extends StatefulWidget {
@@ -244,8 +245,9 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
   }
 
   Widget _buildKakaoMap() {
+    Widget mapContent;
     if (_selectedPlace == null) {
-      return Container(
+      mapContent = Container(
         height: 200,
         decoration: BoxDecoration(
           color: const Color(0xFF334D61).withOpacity(0.05),
@@ -267,7 +269,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         final double lng = double.parse(_selectedPlace!['x']);
         final LatLng position = LatLng(latitude: lat, longitude: lng);
 
-        return SizedBox(
+        mapContent = SizedBox(
           height: 200,
           child: Stack(
             children: [
@@ -298,7 +300,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
           ),
         );
       } catch (e) {
-        return Container(
+        mapContent = Container(
           height: 200,
           decoration: BoxDecoration(
             color: Colors.red.withOpacity(0.1),
@@ -311,6 +313,66 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
             ),
           ),
         );
+      }
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _openMapPicker,
+      child: mapContent,
+    );
+  }
+
+  Future<void> _openMapPicker() async {
+    LatLng? initialPosition;
+    String? initialPlaceName;
+    String? initialAddress;
+
+    if (_selectedPlace != null) {
+      try {
+        initialPosition = LatLng(
+          latitude: double.parse(_selectedPlace!['y']),
+          longitude: double.parse(_selectedPlace!['x']),
+        );
+        initialPlaceName = _selectedPlace!['place_name']?.toString();
+        initialAddress = _selectedPlace!['address_name']?.toString();
+      } catch (e) {
+        debugPrint('초기 지도 위치 파싱 실패: $e');
+      }
+    }
+
+    final selected = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          initialPosition: initialPosition,
+          initialPlaceName: initialPlaceName,
+          initialAddress: initialAddress,
+        ),
+      ),
+    );
+
+    if (selected != null) {
+      _applySelectedPlace(selected);
+    }
+  }
+
+  void _applySelectedPlace(Map<String, dynamic> selected) {
+    setState(() {
+      _selectedPlace = selected;
+      _updateButtonState();
+    });
+
+    if (_mapController != null) {
+      try {
+        final double lat = double.parse(selected['y']);
+        final double lng = double.parse(selected['x']);
+        final newPosition = LatLng(latitude: lat, longitude: lng);
+        _mapController!.moveCamera(
+          cameraUpdate: CameraUpdate.fromLatLng(newPosition),
+        );
+      } catch (e) {
+        debugPrint('카메라 이동 실패: $e');
       }
     }
   }
@@ -410,24 +472,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         );
 
         if (selected != null) {
-          setState(() {
-            _selectedPlace = selected;
-            _updateButtonState();
-          });
-
-          if (_mapController != null) {
-            try {
-              final double lat = double.parse(selected['y']);
-              final double lng = double.parse(selected['x']);
-              final newPosition = LatLng(latitude: lat, longitude: lng);
-
-              _mapController!.moveCamera(
-                cameraUpdate: CameraUpdate.fromLatLng(newPosition),
-              );
-            } catch (e) {
-              debugPrint('좌표 파싱 또는 카메라 이동 실패: $e');
-            }
-          }
+          _applySelectedPlace(selected);
         }
       },
       child: _buildDisplayField(
