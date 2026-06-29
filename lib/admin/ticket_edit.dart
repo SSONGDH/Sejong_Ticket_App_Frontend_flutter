@@ -515,7 +515,26 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _openMapPicker,
-      child: mapContent,
+      child: Stack(
+        children: [
+          mapContent,
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                '탭하여 직접 위치 조정',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
