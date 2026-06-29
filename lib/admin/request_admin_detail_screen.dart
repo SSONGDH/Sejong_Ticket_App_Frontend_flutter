@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:passtime/cookiejar_singleton.dart';
 
 class AffiliationRequest {
   final String id;
@@ -15,6 +16,7 @@ class AffiliationRequest {
   final String introduction;
   final String status;
   final String statusLabel;
+  final String adminComment;
 
   AffiliationRequest({
     required this.id,
@@ -27,6 +29,7 @@ class AffiliationRequest {
     required this.introduction,
     required this.status,
     required this.statusLabel,
+    required this.adminComment,
   });
 
   factory AffiliationRequest.fromJson(Map<String, dynamic> json) {
@@ -45,11 +48,13 @@ class AffiliationRequest {
       introduction: json['introduction']?.toString() ?? '',
       status: json['status']?.toString() ?? 'pending',
       statusLabel: json['statusLabel']?.toString() ?? '',
+      adminComment: json['adminComment']?.toString() ?? '',
     );
   }
 
   bool get isApproved => status == 'approved';
   bool get isRejected => status == 'rejected';
+  bool get isPending => status == 'pending';
 }
 
 class RequestAdminDetailScreen extends StatefulWidget {
@@ -67,12 +72,27 @@ class RequestAdminDetailScreen extends StatefulWidget {
 
 class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
   Future<AffiliationRequest>? _requestDetailFuture;
-  bool _isApproving = false;
+  bool _isSubmitting = false;
+  bool _isApproveSelected = true;
+  bool _initializedFromDetail = false;
+  final TextEditingController _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
     _requestDetailFuture = _fetchRequestDetails();
+  }
+
+  Future<String> _getCookieHeader(Uri uri) async {
+    final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+    if (cookies.isEmpty) return '';
+    return cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
   }
 
   Future<AffiliationRequest> _fetchRequestDetails() async {
@@ -97,22 +117,38 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
     }
   }
 
-  void _showApprovalConfirmationDialog() {
+  void _syncFromDetail(AffiliationRequest detail) {
+    if (_initializedFromDetail) return;
+    if (detail.isApproved) {
+      _isApproveSelected = true;
+    } else if (detail.isRejected) {
+      _isApproveSelected = false;
+      _commentController.text = detail.adminComment;
+    }
+    _initializedFromDetail = true;
+  }
+
+  void _showSubmitConfirmationDialog(AffiliationRequest detail) {
+    final isApprove = _isApproveSelected;
     showCupertinoDialog(
       context: context,
       builder: (context) => CupertinoAlertDialog(
-        title: const Text("승인 확인"),
-        content: const Text("이 신청을 승인하시겠습니까?"),
+        title: Text(isApprove ? '승인 확인' : '미승인 확인'),
+        content: Text(
+          isApprove
+              ? '이 신청을 승인하시겠습니까?'
+              : '이 신청을 미승인 처리하시겠습니까?',
+        ),
         actions: [
           CupertinoDialogAction(
-            child: const Text("취소"),
+            child: const Text('취소'),
             onPressed: () => Navigator.pop(context),
           ),
           CupertinoDialogAction(
-            child: const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
+            child: const Text('확인', style: TextStyle(color: Color(0xFFC10230))),
             onPressed: () {
               Navigator.pop(context);
-              _approveRequest();
+              _submitRequest(detail);
             },
           ),
         ],
@@ -120,11 +156,28 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
     );
   }
 
-  Future<void> _approveRequest() async {
-    if (_isApproving) return;
+  Future<void> _submitRequest(AffiliationRequest detail) async {
+    if (_isSubmitting) return;
     setState(() {
-      _isApproving = true;
+      _isSubmitting = true;
     });
+
+    try {
+      if (_isApproveSelected) {
+        await _approveRequest();
+      } else {
+        await _denyRequest(detail);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _approveRequest() async {
     final url = Uri.parse(
         '${dotenv.env['API_BASE_URL']}/affiliation/approve?requestId=${widget.requestId}');
     final headers = {
@@ -136,65 +189,92 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
       if (!mounted) return;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        showCupertinoDialog(
-          context: context,
-          builder: (dialogContext) => CupertinoAlertDialog(
-            title: const Text('승인 완료'),
-            content: const Text('성공적으로 승인되었습니다.'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('확인',
-                    style: TextStyle(color: Color(0xFFC10230))),
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  Navigator.pop(context, true);
-                },
-              ),
-            ],
-          ),
+        _showResultDialog(
+          title: '승인 완료',
+          message: '성공적으로 승인되었습니다.',
+          shouldPop: true,
         );
       } else {
         final errorData = json.decode(utf8.decode(response.bodyBytes));
-        showCupertinoDialog(
-          context: context,
-          builder: (dialogContext) => CupertinoAlertDialog(
-            title: const Text('승인 실패'),
-            content: Text(errorData['message'] ?? '알 수 없는 오류가 발생했습니다.'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('확인',
-                    style: TextStyle(color: Color(0xFFC10230))),
-                onPressed: () => Navigator.pop(dialogContext),
-              ),
-            ],
-          ),
+        _showResultDialog(
+          title: '승인 실패',
+          message: errorData['message']?.toString() ?? '알 수 없는 오류가 발생했습니다.',
         );
       }
     } catch (e) {
       if (!mounted) return;
-      showCupertinoDialog(
-        context: context,
-        builder: (dialogContext) => CupertinoAlertDialog(
-          title: const Text('오류 발생'),
-          content: Text('요청 중 오류가 발생했습니다: $e'),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child:
-                  const Text('확인', style: TextStyle(color: Color(0xFFC10230))),
-              onPressed: () => Navigator.pop(dialogContext),
-            ),
-          ],
-        ),
+      _showResultDialog(
+        title: '오류 발생',
+        message: '요청 중 오류가 발생했습니다: $e',
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isApproving = false;
-        });
-      }
     }
+  }
+
+  Future<void> _denyRequest(AffiliationRequest detail) async {
+    final endpoint = detail.requestType == 'create'
+        ? '/affiliation/deny/create'
+        : '/affiliation/deny/admin';
+    final url = Uri.parse(
+        '${dotenv.env['API_BASE_URL']}$endpoint?requestId=${widget.requestId}');
+    final cookieHeader = await _getCookieHeader(url);
+    final headers = {
+      'Content-Type': 'application/json',
+      if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
+    };
+    final body = json.encode({
+      'comment': _commentController.text.trim(),
+    });
+
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        _showResultDialog(
+          title: '미승인 완료',
+          message: data['message']?.toString() ?? '신청이 미승인 처리되었습니다.',
+          shouldPop: true,
+        );
+      } else {
+        final errorData = json.decode(utf8.decode(response.bodyBytes));
+        _showResultDialog(
+          title: '미승인 실패',
+          message: errorData['message']?.toString() ?? '알 수 없는 오류가 발생했습니다.',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showResultDialog(
+        title: '오류 발생',
+        message: '요청 중 오류가 발생했습니다: $e',
+      );
+    }
+  }
+
+  void _showResultDialog({
+    required String title,
+    required String message,
+    bool shouldPop = false,
+  }) {
+    showCupertinoDialog(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('확인', style: TextStyle(color: Color(0xFFC10230))),
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              if (shouldPop) {
+                Navigator.pop(context, true);
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -250,6 +330,10 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
                     ));
                   } else if (snapshot.hasData) {
                     final detail = snapshot.data!;
+                    _syncFromDetail(detail);
+                    final bool isProcessed =
+                        detail.isApproved || detail.isRejected;
+
                     return Column(
                       children: [
                         Expanded(
@@ -289,11 +373,17 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
                                       ? detail.statusLabel
                                       : detail.status,
                                 ),
+                                const SizedBox(height: 16),
+                                _buildApprovalToggle(isProcessed: isProcessed),
+                                if (!_isApproveSelected) ...[
+                                  const SizedBox(height: 12),
+                                  _buildCommentField(isProcessed: isProcessed),
+                                ],
                               ],
                             ),
                           ),
                         ),
-                        _buildBottomButton(detail),
+                        _buildBottomSection(detail, isProcessed),
                       ],
                     );
                   } else {
@@ -308,49 +398,145 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
     );
   }
 
-  Widget _buildBottomButton(AffiliationRequest detail) {
+  Widget _buildBottomSection(AffiliationRequest detail, bool isProcessed) {
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
-    final String buttonText = detail.isApproved
-        ? '승인됨'
-        : detail.isRejected
-            ? '거절됨'
-            : '승인';
 
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset > 0 ? 16 : 0),
       child: SafeArea(
-        child: ElevatedButton(
-          onPressed: detail.isApproved ||
-                  detail.isRejected ||
-                  _isApproving
-              ? null
-              : _showApprovalConfirmationDialog,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF334D61),
-            disabledBackgroundColor: const Color(0xFF334D61).withOpacity(0.3),
-            minimumSize: const Size(double.infinity, 55),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            foregroundColor: Colors.white,
-            disabledForegroundColor: Colors.white.withOpacity(0.7),
-          ),
-          child: _isApproving
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 3,
-                  ),
-                )
-              : Text(
-                  buttonText,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton(
+              onPressed: isProcessed || _isSubmitting
+                  ? null
+                  : () => _showSubmitConfirmationDialog(detail),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF334D61),
+                disabledBackgroundColor:
+                    const Color(0xFF334D61).withOpacity(0.3),
+                minimumSize: const Size(double.infinity, 55),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
                 ),
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                foregroundColor: Colors.white,
+                disabledForegroundColor: Colors.white.withOpacity(0.7),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 3,
+                      ),
+                    )
+                  : Text(
+                      isProcessed
+                          ? (detail.isApproved ? '승인됨' : '미승인됨')
+                          : '제출',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildApprovalToggle({required bool isProcessed}) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildToggleButton(
+            label: '미승인',
+            isSelected: !_isApproveSelected,
+            selectedColor: const Color(0xFF334D61),
+            onPressed: isProcessed
+                ? null
+                : () {
+                    setState(() {
+                      _isApproveSelected = false;
+                    });
+                  },
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildToggleButton(
+            label: '승인',
+            isSelected: _isApproveSelected,
+            selectedColor: const Color(0xFFC10230),
+            onPressed: isProcessed
+                ? null
+                : () {
+                    setState(() {
+                      _isApproveSelected = true;
+                    });
+                  },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToggleButton({
+    required String label,
+    required bool isSelected,
+    required Color selectedColor,
+    required VoidCallback? onPressed,
+  }) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected ? selectedColor : Colors.white,
+        disabledBackgroundColor:
+            isSelected ? selectedColor.withOpacity(0.3) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(
+            color: isSelected ? selectedColor : const Color(0xFFE2E2E2),
+          ),
+        ),
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        foregroundColor: isSelected ? Colors.white : const Color(0xFF868686),
+        disabledForegroundColor:
+            isSelected ? Colors.white.withOpacity(0.7) : const Color(0xFF868686),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommentField({required bool isProcessed}) {
+    return TextField(
+      controller: _commentController,
+      enabled: !isProcessed,
+      maxLines: 4,
+      decoration: InputDecoration(
+        hintText: '미승인 사유 입력',
+        hintStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
+        filled: true,
+        fillColor: const Color(0xFF334D61).withOpacity(0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(4),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
+      style: TextStyle(
+        fontSize: 16,
+        color: Colors.black.withOpacity(0.7),
       ),
     );
   }
