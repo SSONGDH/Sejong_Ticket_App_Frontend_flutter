@@ -10,9 +10,11 @@ class AffiliationRequest {
   final String studentId;
   final String phone;
   final String affiliationName;
-  final bool requestAdmin;
-  final bool createAffiliation;
+  final String requestType;
+  final String requestTypeLabel;
+  final String introduction;
   final String status;
+  final String statusLabel;
 
   AffiliationRequest({
     required this.id,
@@ -20,23 +22,34 @@ class AffiliationRequest {
     required this.studentId,
     required this.phone,
     required this.affiliationName,
-    required this.requestAdmin,
-    required this.createAffiliation,
+    required this.requestType,
+    required this.requestTypeLabel,
+    required this.introduction,
     required this.status,
+    required this.statusLabel,
   });
 
   factory AffiliationRequest.fromJson(Map<String, dynamic> json) {
+    final requestType = json['requestType']?.toString() ??
+        (json['createAffiliation'] == true ? 'create' : 'admin');
+
     return AffiliationRequest(
-      id: json['_id'],
-      name: json['name'],
-      studentId: json['studentId'],
-      phone: json['phone'],
-      affiliationName: json['affiliationName'],
-      requestAdmin: json['requestAdmin'],
-      createAffiliation: json['createAffiliation'],
-      status: json['status'],
+      id: (json['requestId'] ?? json['_id']).toString(),
+      name: json['name']?.toString() ?? '',
+      studentId: json['studentId']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      affiliationName: json['affiliationName']?.toString() ?? '',
+      requestType: requestType,
+      requestTypeLabel: json['requestTypeLabel']?.toString() ??
+          (requestType == 'create' ? '소속 생성' : '주최자 권한'),
+      introduction: json['introduction']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'pending',
+      statusLabel: json['statusLabel']?.toString() ?? '',
     );
   }
+
+  bool get isApproved => status == 'approved';
+  bool get isRejected => status == 'rejected';
 }
 
 class RequestAdminDetailScreen extends StatefulWidget {
@@ -68,24 +81,22 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
     final headers = {
       'Content-Type': 'application/json',
     };
-    print('[GET] Requesting URL: $url');
+
     try {
       final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
         final data = json.decode(utf8.decode(response.bodyBytes));
-        return AffiliationRequest.fromJson(data['result']);
+        return AffiliationRequest.fromJson(
+          Map<String, dynamic>.from(data['result'] as Map),
+        );
       } else {
-        print('[GET] Error Status Code: ${response.statusCode}');
-        print('[GET] Error Response Body: ${utf8.decode(response.bodyBytes)}');
         throw Exception('상세 정보를 불러오는데 실패했습니다. (상태 코드: ${response.statusCode})');
       }
     } catch (e) {
-      print('[GET] Exception: $e');
       throw Exception('오류가 발생했습니다: $e');
     }
   }
 
-  // [수정 1] 승인 요청 전 확인 팝업을 띄우는 함수
   void _showApprovalConfirmationDialog() {
     showCupertinoDialog(
       context: context,
@@ -100,8 +111,8 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
           CupertinoDialogAction(
             child: const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
             onPressed: () {
-              Navigator.pop(context); // 확인 팝업 닫기
-              _approveRequest(); // 승인 함수 호출
+              Navigator.pop(context);
+              _approveRequest();
             },
           ),
         ],
@@ -109,7 +120,6 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
     );
   }
 
-  // [수정 2] SnackBar를 CupertinoAlertDialog로 변경
   Future<void> _approveRequest() async {
     if (_isApproving) return;
     setState(() {
@@ -120,14 +130,12 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
     final headers = {
       'Content-Type': 'application/json',
     };
-    print('[POST] Requesting URL: $url');
 
     try {
       final response = await http.post(url, headers: headers);
       if (!mounted) return;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // 성공 팝업
         showCupertinoDialog(
           context: context,
           builder: (dialogContext) => CupertinoAlertDialog(
@@ -138,17 +146,14 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
                 child: const Text('확인',
                     style: TextStyle(color: Color(0xFFC10230))),
                 onPressed: () {
-                  Navigator.pop(dialogContext); // 팝업 닫기
-                  Navigator.pop(context, true); // 이전 화면으로 이동
+                  Navigator.pop(dialogContext);
+                  Navigator.pop(context, true);
                 },
               ),
             ],
           ),
         );
       } else {
-        // 실패 팝업
-        print('[POST] Error Status Code: ${response.statusCode}');
-        print('[POST] Error Response Body: ${utf8.decode(response.bodyBytes)}');
         final errorData = json.decode(utf8.decode(response.bodyBytes));
         showCupertinoDialog(
           context: context,
@@ -167,9 +172,7 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
         );
       }
     } catch (e) {
-      print('[POST] Exception: $e');
       if (!mounted) return;
-      // 네트워크 오류 등 예외 팝업
       showCupertinoDialog(
         context: context,
         builder: (dialogContext) => CupertinoAlertDialog(
@@ -258,6 +261,10 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _buildInfoContainer(
+                                    label: "신청 유형",
+                                    value: detail.requestTypeLabel),
+                                const SizedBox(height: 16),
+                                _buildInfoContainer(
                                     label: "이름", value: detail.name),
                                 const SizedBox(height: 16),
                                 _buildInfoContainer(
@@ -268,15 +275,20 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
                                 const SizedBox(height: 16),
                                 _buildInfoContainer(
                                     label: "소속", value: detail.affiliationName),
+                                if (detail.introduction.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  _buildInfoContainer(
+                                    label: "소속 소개",
+                                    value: detail.introduction,
+                                  ),
+                                ],
                                 const SizedBox(height: 16),
                                 _buildInfoContainer(
-                                    label: "생성 요청",
-                                    value:
-                                        detail.createAffiliation ? "예" : "아니오"),
-                                const SizedBox(height: 16),
-                                _buildInfoContainer(
-                                    label: "권한 요청",
-                                    value: detail.requestAdmin ? "예" : "아니오"),
+                                  label: "상태",
+                                  value: detail.statusLabel.isNotEmpty
+                                      ? detail.statusLabel
+                                      : detail.status,
+                                ),
                               ],
                             ),
                           ),
@@ -297,15 +309,20 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
   }
 
   Widget _buildBottomButton(AffiliationRequest detail) {
-    final bool isApproved = detail.status == 'approved';
-
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+    final String buttonText = detail.isApproved
+        ? '승인됨'
+        : detail.isRejected
+            ? '거절됨'
+            : '승인';
 
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset > 0 ? 16 : 0),
       child: SafeArea(
         child: ElevatedButton(
-          onPressed: isApproved || _isApproving
+          onPressed: detail.isApproved ||
+                  detail.isRejected ||
+                  _isApproving
               ? null
               : _showApprovalConfirmationDialog,
           style: ElevatedButton.styleFrom(
@@ -329,7 +346,7 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
                   ),
                 )
               : Text(
-                  isApproved ? "승인됨" : "승인",
+                  buttonText,
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold),
                 ),

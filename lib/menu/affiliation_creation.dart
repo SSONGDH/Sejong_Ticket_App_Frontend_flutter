@@ -49,14 +49,12 @@ class AffiliationCreationScreen extends StatefulWidget {
 class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
   final TextEditingController _affiliationNameController =
       TextEditingController();
+  final TextEditingController _introductionController = TextEditingController();
   late final TextEditingController _hostNameController;
   late final TextEditingController _studentIdController;
   final MaskedInputController _phoneNumberController = MaskedInputController();
 
   final Dio _dio = Dio();
-
-  bool _canCreate = false;
-  bool _hasPermission = false;
 
   @override
   void initState() {
@@ -106,6 +104,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
     _phoneNumberController.removeListener(_updateButtonState);
 
     _affiliationNameController.dispose();
+    _introductionController.dispose();
     _hostNameController.dispose();
     _studentIdController.dispose();
     _phoneNumberController.dispose();
@@ -116,13 +115,11 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
     final apiUrl = '${dotenv.env['API_BASE_URL']}/affiliation/request';
 
     final requestBody = {
-      "phone": _phoneNumberController.text.trim(),
-      "affiliationName": _affiliationNameController.text.trim(),
-      "createAffiliation": _canCreate,
-      "requestAdmin": _hasPermission,
+      'phone': _phoneNumberController.text.trim(),
+      'affiliationName': _affiliationNameController.text.trim(),
+      'requestType': 'create',
+      'introduction': _introductionController.text.trim(),
     };
-
-    print('API 호출 시작: $requestBody');
 
     try {
       final response = await _dio.post(
@@ -133,41 +130,35 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
         ),
       );
 
-      print('API 호출 완료 - Status Code: ${response.statusCode}');
-      print('Response Body: ${response.data}');
-
       if (response.data['code'] == 'SUCCESS-0000') {
-        print('소속 신청이 성공적으로 완료되었습니다.');
-        _showSuccessDialog();
+        final message = response.data['message']?.toString() ??
+            '소속 생성 신청이 완료되었습니다.';
+        _showSuccessDialog(message);
       } else {
-        print(
-            '소속 생성 신청 실패 - Code: ${response.data['code']}, Message: ${response.data['message']}');
-        _showFailureDialog('소속 생성 신청 실패', response.data['message']);
+        _showFailureDialog(
+          '소속 생성 신청 실패',
+          response.data['message']?.toString() ?? '신청에 실패했습니다.',
+        );
       }
     } on DioException catch (e) {
       if (e.response != null) {
-        print('### [DioException] 서버 응답 데이터: ${e.response?.data}');
-        print('### [DioException] 상태 코드: ${e.response?.statusCode}');
-
         final String errorMessage =
             e.response?.data?['message'] ?? '서버에서 오류가 발생했습니다.';
         _showFailureDialog('신청 실패', errorMessage);
       } else {
-        print('### [DioException] 요청 오류: ${e.message}');
         _showFailureDialog('네트워크 오류', '서버에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.');
       }
     } catch (e) {
-      print('### [Unknown Exception] 알 수 없는 오류: $e');
       _showFailureDialog('오류', '알 수 없는 오류가 발생했습니다.');
     }
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog(String message) {
     showCupertinoDialog(
       context: context,
       builder: (context) => CupertinoAlertDialog(
         title: const Text('신청 완료'),
-        content: const Text('소속 신청이 성공적으로 완료되었습니다.'),
+        content: Text(message),
         actions: [
           CupertinoDialogAction(
             onPressed: () {
@@ -211,15 +202,14 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isFormValid = _affiliationNameController.text.isNotEmpty &&
-        _phoneNumberController.text.isNotEmpty;
+    final bool isFormValid = _affiliationNameController.text.trim().isNotEmpty &&
+        _phoneNumberController.text.trim().isNotEmpty;
 
     return PopScope(
       canPop: false,
       onPopInvoked: (bool didPop) {
         if (didPop) return;
 
-        // 사용자에게 확인 다이얼로그를 표시합니다.
         showCupertinoDialog(
           context: context,
           builder: (BuildContext context) {
@@ -230,7 +220,6 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                 CupertinoDialogAction(
                   child: const Text('취소'),
                   onPressed: () {
-                    // 다이얼로그만 닫습니다.
                     Navigator.of(context).pop();
                   },
                 ),
@@ -238,9 +227,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                   isDestructiveAction: true,
                   child: const Text('나가기'),
                   onPressed: () {
-                    // 다이얼로그를 닫습니다.
                     Navigator.of(context).pop();
-                    // 현재 화면을 닫습니다.
                     Navigator.of(context).pop();
                   },
                 ),
@@ -266,7 +253,6 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                 color: Color(0xFF334D61),
                 size: 30,
               ),
-              // AppBar의 닫기 버튼은 기존처럼 동작하도록 pop을 직접 호출합니다.
               onPressed: () => Navigator.of(context).pop(),
             ),
             centerTitle: true,
@@ -321,26 +307,19 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildFormGroup(
-                          label: '생성 요청',
-                          child: _buildToggleButtons(
-                            value: _canCreate,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _canCreate = newValue;
-                              });
-                            },
+                          label: '소속 소개',
+                          child: _buildInputField(
+                            controller: _introductionController,
+                            hintText: '소속 소개 입력 (선택)',
+                            maxLines: 4,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        _buildFormGroup(
-                          label: '권한 요청',
-                          child: _buildToggleButtons(
-                            value: _hasPermission,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _hasPermission = newValue;
-                              });
-                            },
+                        const SizedBox(height: 8),
+                        Text(
+                          '새 소속을 생성하면 주최자 권한 신청도 함께 접수됩니다.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.black.withOpacity(0.5),
                           ),
                         ),
                         const SizedBox(height: 50),
@@ -367,7 +346,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                       disabledForegroundColor: Colors.white.withOpacity(0.7),
                     ),
                     child: const Text(
-                      '신청',
+                      '소속 생성 신청',
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
@@ -409,6 +388,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
     required String hintText,
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
+    int maxLines = 1,
   }) {
     return TextField(
       controller: controller,
@@ -418,6 +398,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
       ),
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
+      maxLines: maxLines,
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
@@ -438,67 +419,6 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
         color: Colors.black,
         fontWeight: FontWeight.w600,
       ),
-    );
-  }
-
-  Widget _buildToggleButtons({
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () => onChanged(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: value ? const Color(0xFFC10230) : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-                side: BorderSide(
-                  color:
-                      value ? const Color(0xFFC10230) : const Color(0xFFE2E2E2),
-                ),
-              ),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-            child: Text(
-              '예',
-              style: TextStyle(
-                color: value ? Colors.white : const Color(0xFF868686),
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () => onChanged(false),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: value ? Colors.white : const Color(0xFF334D61),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-                side: BorderSide(
-                  color:
-                      value ? const Color(0xFFE2E2E2) : const Color(0xFF334D61),
-                ),
-              ),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-            child: Text(
-              '아니오',
-              style: TextStyle(
-                color: value ? const Color(0xFF868686) : Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

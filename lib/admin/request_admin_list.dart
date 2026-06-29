@@ -30,18 +30,28 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
 
       if (response.statusCode == 200) {
         final body = json.decode(utf8.decode(response.bodyBytes));
-        final List<dynamic> results = body['result'];
+        final List<dynamic> results = body['result'] ?? [];
 
         return results.map((request) {
-          final bool isApproved = request['status'] == 'approved';
+          final String status = request['status']?.toString() ?? 'pending';
+          final bool isApproved = status == 'approved';
+          final bool isRejected = status == 'rejected';
+          final String statusLabel = request['statusLabel']?.toString() ??
+              (isApproved
+                  ? '승인됨'
+                  : isRejected
+                      ? '거절됨'
+                      : '승인 대기');
+
           return {
-            // [수정 1] 상세 페이지로 넘겨줄 id 값을 추가합니다.
-            'id': request['_id'] as String,
-            'studentId': request['studentId'] as String,
-            'department': request['affiliationName'] as String,
-            'name': request['name'] as String,
-            'status': isApproved ? '승인됨' : '미승인',
+            'id': (request['requestId'] ?? request['_id']).toString(),
+            'studentId': request['studentId']?.toString() ?? '',
+            'department': request['affiliationName']?.toString() ?? '',
+            'name': request['name']?.toString() ?? '',
+            'requestTypeLabel': request['requestTypeLabel']?.toString() ?? '',
+            'status': statusLabel,
             'isApproved': isApproved,
+            'isRejected': isRejected,
           };
         }).toList();
       } else {
@@ -105,10 +115,13 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
                   itemBuilder: (context, index) {
                     final request = adminRequests[index];
                     final isApproved = request['isApproved'] as bool;
+                    final isRejected = request['isRejected'] as bool;
                     final status = request['status'] as String;
-                    final statusColor = isApproved
+                    final Color statusColor = isApproved
                         ? const Color(0xFF334D61)
-                        : const Color(0xFFC10230);
+                        : isRejected
+                            ? const Color(0xFFC10230)
+                            : const Color(0xFF9E9E9E);
 
                     return GestureDetector(
                       // [수정 2] onTap 이벤트를 수정합니다.
