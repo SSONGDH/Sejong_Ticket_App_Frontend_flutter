@@ -187,9 +187,9 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                         const SizedBox(height: 14),
                         _buildEndTimePickerField(),
                         const SizedBox(height: 14),
-                        _buildKakaoMap(),
-                        const SizedBox(height: 14),
                         _buildPlaceSearchField(),
+                        const SizedBox(height: 14),
+                        _buildKakaoMap(),
                         const SizedBox(height: 14),
                         _buildInputField(
                             controller: _placeCommentController,
