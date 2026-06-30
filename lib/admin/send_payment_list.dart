@@ -7,7 +7,7 @@ import 'package:passtime/widgets/admin_menu_button.dart';
 import 'package:passtime/cookiejar_singleton.dart';
 import 'package:passtime/admin/admin_ticket_screen.dart';
 import 'package:passtime/admin/send_payment_ticket_list_screen.dart';
-import 'package:passtime/widgets/admin_ticket_card.dart';
+import 'package:passtime/widgets/payment_event_card.dart';
 
 class SendPaymentListScreen extends StatefulWidget {
   const SendPaymentListScreen({super.key});
@@ -265,15 +265,12 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
           final event = events[index];
           return Padding(
             padding: EdgeInsets.only(bottom: index < events.length - 1 ? 5 : 0),
-            child: AdminTicketCard(
-              ticketId: event['ticketId'] as String,
+            child: PaymentEventCard(
               title: event['title'] as String,
               dateTime: event['dateTime'] as String,
               location: event['location'] as String,
-              affiliation: event['affiliation'] as String,
               totalCount: event['totalCount'] as int,
               pendingCount: event['pendingCount'] as int,
-              showActions: false,
               onTap: () {
                 Navigator.push(
                   context,
@@ -287,8 +284,6 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
                   ),
                 );
               },
-              onEdit: () {},
-              onDelete: () {},
             ),
           );
         },

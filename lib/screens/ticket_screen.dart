@@ -189,6 +189,7 @@ class _TicketScreenState extends State<TicketScreen> {
                               dateTime:
                                   '${ticket['eventDay']} • ${ticket['eventStartTime']}',
                               location: ticket['eventPlace'],
+                              affiliation: ticket['affiliation']?.toString() ?? '',
                               status: '${ticket['status']}',
                               statusColor: _getStatusColor(ticket['status']),
                             ),

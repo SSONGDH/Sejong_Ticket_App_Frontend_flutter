@@ -8,7 +8,8 @@ import 'package:passtime/admin/ticket_edit.dart';
 import 'package:passtime/widgets/admin_menu_button.dart';
 import 'package:passtime/cookiejar_singleton.dart';
 import 'package:passtime/widgets/admin_ticket_card.dart';
-import 'package:passtime/screens/ticket_screen.dart'; // Import the TicketScreen
+import 'package:passtime/admin/send_payment_ticket_list_screen.dart';
+import 'package:passtime/screens/ticket_screen.dart';
 
 class AdminTicketScreen extends StatefulWidget {
   const AdminTicketScreen({super.key});
@@ -19,6 +20,7 @@ class AdminTicketScreen extends StatefulWidget {
 
 class _AdminTicketScreenState extends State<AdminTicketScreen> {
   late Future<List<Map<String, dynamic>>> _ticketsFuture = fetchTickets();
+  List<Map<String, dynamic>> _affiliations = [];
 
   int _parseCount(dynamic value) {
     if (value == null) return 0;
@@ -30,6 +32,68 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchAffiliations();
+  }
+
+  Future<void> _fetchAffiliations() async {
+    final url =
+        Uri.parse('${dotenv.env['API_BASE_URL']}/user/adminAffilliation/list');
+    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+
+    try {
+      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+      final cookieHeader = cookies.isNotEmpty
+          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
+          : '';
+
+      final response = await http.get(url, headers: {'Cookie': cookieHeader});
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['affiliations'] != null && mounted) {
+          setState(() {
+            _affiliations = List<Map<String, dynamic>>.from(data['affiliations']);
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  String? _findAffiliationId(String affiliationName) {
+    for (final affiliation in _affiliations) {
+      if (affiliation['name']?.toString() == affiliationName) {
+        return affiliation['_id']?.toString();
+      }
+    }
+    return null;
+  }
+
+  Future<void> _navigateToPaymentList(Map<String, dynamic> ticket) async {
+    if (_affiliations.isEmpty) {
+      await _fetchAffiliations();
+    }
+
+    final affiliationName = ticket['affiliation']?.toString() ?? '';
+    final affiliationId = _findAffiliationId(affiliationName);
+
+    if (affiliationId == null || affiliationId.isEmpty) {
+      showCupertinoErrorDialog('소속 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SendPaymentTicketListScreen(
+          ticketId: ticket['ticketId']!.toString(),
+          affiliationId: affiliationId,
+          eventTitle: ticket['title']!.toString(),
+          affiliationName: affiliationName,
+        ),
+      ),
+    );
   }
 
   Future<List<Map<String, dynamic>>> fetchTickets() async {
@@ -232,6 +296,7 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
                                 affiliation: ticket['affiliation']!,
                                 totalCount: _parseCount(ticket['totalCount']),
                                 pendingCount: _parseCount(ticket['pendingCount']),
+                                onPaymentTap: () => _navigateToPaymentList(ticket),
                                 onEdit: () async {
                                   final result = await Navigator.push(
                                     context,
