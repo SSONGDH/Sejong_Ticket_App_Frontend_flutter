@@ -20,6 +20,13 @@ class AdminTicketScreen extends StatefulWidget {
 class _AdminTicketScreenState extends State<AdminTicketScreen> {
   late Future<List<Map<String, dynamic>>> _ticketsFuture = fetchTickets();
 
+  int _parseCount(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +61,9 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
               'dateTime':
                   '${item['eventDay']} • ${item['eventStartTime'].toString().substring(0, 5)}',
               'location': item['eventPlace'],
+              'affiliation': item['affiliation']?.toString() ?? '',
+              'totalCount': _parseCount(item['totalCount']),
+              'pendingCount': _parseCount(item['pendingCount']),
             };
           }).toList();
         } else {
@@ -219,6 +229,9 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
                                 title: ticket['title']!,
                                 dateTime: ticket['dateTime']!,
                                 location: ticket['location']!,
+                                affiliation: ticket['affiliation']!,
+                                totalCount: _parseCount(ticket['totalCount']),
+                                pendingCount: _parseCount(ticket['pendingCount']),
                                 onEdit: () async {
                                   final result = await Navigator.push(
                                     context,
