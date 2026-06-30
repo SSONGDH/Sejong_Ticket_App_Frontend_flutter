@@ -204,7 +204,7 @@ class _MenuButtonState extends State<MenuButton> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
+                              CupertinoPageRoute(
                                   builder: (_) => const SendPaymentScreen()),
                             );
                           },

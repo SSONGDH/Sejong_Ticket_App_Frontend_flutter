@@ -408,7 +408,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
         context: context,
         builder: (context) => CupertinoAlertDialog(
           title: const Text('안내'),
-          content: const Text('소속장은 소속장 위임 후 소속을 나갈 수 있습니다.'),
+          content: const Text(
+            '소속을 나가려면\n소속장 위임을 먼저 진행해 주세요.',
+            textAlign: TextAlign.center,
+          ),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.pop(context),
@@ -447,16 +450,58 @@ class _MyPageScreenState extends State<MyPageScreen> {
     );
   }
 
-  Color _authorizedBadgeColor(AuthorizedAffiliation affiliation) {
-    if (affiliation.isRootBadge) return const Color(0xFFC10230);
-    switch (affiliation.role) {
+  Color _roleBadgeColor(String role) {
+    switch (role) {
       case 'leader':
-        return const Color(0xFF334D61);
+        return const Color(0xFFC10230);
       case 'executive':
         return const Color(0xFF7E929F);
       default:
         return const Color(0xFF9E9E9E);
     }
+  }
+
+  Widget _buildAuthorizedRoleBadge(AuthorizedAffiliation affiliation) {
+    if (affiliation.isRootBadge) {
+      const color = Color(0xFFC10230);
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Text(
+          'ROOT',
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+
+    final role = affiliation.role;
+    if (role == 'member') return const SizedBox.shrink();
+
+    final color = _roleBadgeColor(role);
+    final isExecutive = role == 'executive';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isExecutive ? color : color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        affiliation.roleLabel,
+        style: TextStyle(
+          color: isExecutive ? Colors.white : color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
   Future<void> _openAffiliationMembers(AuthorizedAffiliation affiliation) async {
@@ -480,8 +525,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 
   Widget _buildAuthorizedAffiliationItem(AuthorizedAffiliation affiliation) {
-    final badgeColor = _authorizedBadgeColor(affiliation);
-
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(4),
@@ -498,22 +541,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   style: const TextStyle(fontSize: 16, color: Colors.black),
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: badgeColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  affiliation.roleLabel,
-                  style: TextStyle(
-                    color: badgeColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              _buildAuthorizedRoleBadge(affiliation),
               const SizedBox(width: 4),
               Icon(
                 Icons.chevron_right_rounded,
@@ -914,11 +942,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                     ],
                   ),
         ),
-        floatingActionButton: const Padding(
-          padding: EdgeInsets.only(bottom: 60.0),
-          child: MenuButton(),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        floatingActionButton: const MenuButton(),
       ),
     );
   }

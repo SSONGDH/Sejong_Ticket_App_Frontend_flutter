@@ -449,7 +449,7 @@ class _TicketScreenState extends State<TicketScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
+                    CupertinoPageRoute(
                       builder: (_) => const SendPaymentScreen(),
                     ),
                   );
