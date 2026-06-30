@@ -6,6 +6,7 @@ import 'package:passtime/cookiejar_singleton.dart';
 import 'package:passtime/widgets/custom_app_bar.dart';
 import 'package:passtime/widgets/menu_button.dart';
 import 'package:passtime/menu/my_request_detail_screen.dart';
+import 'package:passtime/utils/affiliation_api_parser.dart';
 
 class MyRequestHistoryScreen extends StatefulWidget {
   const MyRequestHistoryScreen({super.key});
@@ -116,7 +117,7 @@ class _MyRequestHistoryScreenState extends State<MyRequestHistoryScreen> {
     final statusLabel =
         request['statusLabel']?.toString() ?? '승인 대기';
     final requestTypeLabel =
-        request['requestTypeLabel']?.toString() ?? '신청';
+        AffiliationApiParser.resolveRequestTypeLabel(request);
 
     return Material(
       color: Colors.white,
@@ -270,11 +271,7 @@ class _MyRequestHistoryScreenState extends State<MyRequestHistoryScreen> {
           },
         ),
       ),
-      floatingActionButton: const Padding(
-        padding: EdgeInsets.only(bottom: 60.0),
-        child: MenuButton(),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: const MenuButton(),
     );
   }
 }

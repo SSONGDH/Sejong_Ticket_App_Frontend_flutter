@@ -44,7 +44,7 @@ class AffiliationRequest {
       affiliationName: json['affiliationName']?.toString() ?? '',
       requestType: requestType,
       requestTypeLabel: json['requestTypeLabel']?.toString() ??
-          (requestType == 'create' ? '소속 생성' : '주최자 권한'),
+          (requestType == 'create' ? '소속 생성' : '임원 권한'),
       introduction: json['introduction']?.toString() ?? '',
       status: json['status']?.toString() ?? 'pending',
       statusLabel: json['statusLabel']?.toString() ?? '',
@@ -300,7 +300,7 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
             },
           ),
           title: const Text(
-            "주최자 신청 상세",
+            "권한 신청 상세",
             style: TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,

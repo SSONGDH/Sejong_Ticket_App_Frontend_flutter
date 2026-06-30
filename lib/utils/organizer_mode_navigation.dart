@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:passtime/admin/admin_ticket_screen.dart';
 import 'package:passtime/cookiejar_singleton.dart';
+import 'package:passtime/utils/affiliation_api_parser.dart';
 
 Future<void> navigateToOrganizerMode(BuildContext context, Dio dio) async {
   try {
@@ -26,10 +27,10 @@ Future<void> navigateToOrganizerMode(BuildContext context, Dio dio) async {
         '$baseUrl/user/affiliation/authorized',
         options: Options(headers: headers),
       );
-      final result = authResponse.data['result'];
       final hasAuthorized = authResponse.data['isSuccess'] == true &&
-          result is List &&
-          result.isNotEmpty;
+          AffiliationApiParser.hasAuthorizedAffiliations(
+            authResponse.data['result'],
+          );
 
       if (!hasAuthorized) {
         if (!context.mounted) return;
@@ -94,7 +95,7 @@ void _showOrganizerDeniedDialog(BuildContext context) {
     context: context,
     builder: (context) => CupertinoAlertDialog(
       title: const Text('알림'),
-      content: const Text('지정된 주최자가 아닙니다.'),
+      content: const Text('주최자 모드 접근 권한이 없습니다.'),
       actions: [
         CupertinoDialogAction(
           onPressed: () => Navigator.pop(context),

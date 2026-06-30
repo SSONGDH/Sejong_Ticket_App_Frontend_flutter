@@ -334,7 +334,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     final bool canSubmit = _isFormValid();
 
     return PopScope(
-      canPop: false,
+      canPop: true,
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(

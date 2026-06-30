@@ -9,8 +9,15 @@ import 'package:passtime/map_view_screen.dart';
 
 class TicketDetailScreen extends StatefulWidget {
   final String ticketId;
+  final bool readOnly;
+  final String? eventStatus;
 
-  const TicketDetailScreen({super.key, required this.ticketId});
+  const TicketDetailScreen({
+    super.key,
+    required this.ticketId,
+    this.readOnly = false,
+    this.eventStatus,
+  });
 
   @override
   _TicketDetailScreenState createState() => _TicketDetailScreenState();
@@ -91,6 +98,8 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   }
 
   void _openMapView() {
+    if (widget.readOnly) return;
+
     final kakaoPlace = ticketData?['kakaoPlace'] as Map<String, dynamic>?;
     if (kakaoPlace == null ||
         kakaoPlace['y'] == null ||
@@ -185,9 +194,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         centerTitle: true,
-        title: const Text(
-          '입장권',
-          style: TextStyle(
+        title: Text(
+          widget.readOnly ? '참여 기록' : '입장권',
+          style: const TextStyle(
             color: Colors.black,
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -212,16 +221,68 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        Container(
-                          margin: const EdgeInsets.all(40),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(20),
-                              topRight: Radius.circular(20),
-                              bottomLeft: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
+                        if (widget.readOnly) ...[
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 40),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF334D61).withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color:
+                                      const Color(0xFF334D61).withOpacity(0.12),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.history_rounded,
+                                    size: 18,
+                                    color: const Color(0xFF334D61)
+                                        .withOpacity(0.55),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '조회 전용 · 환불 및 지도 확대는 이용할 수 없습니다',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF334D61)
+                                            .withOpacity(0.7),
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                          ),
+                        ],
+                        Container(
+                          margin: EdgeInsets.fromLTRB(
+                            40,
+                            widget.readOnly ? 12 : 40,
+                            40,
+                            40,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(20),
+                            ),
+                            border: widget.readOnly
+                                ? Border.all(
+                                    color: const Color(0xFF334D61)
+                                        .withOpacity(0.12),
+                                  )
+                                : null,
                           ),
                           child: Stack(
                             children: [
@@ -234,13 +295,53 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          "입장권",
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color:
-                                                  Colors.black.withOpacity(0.2),
-                                              fontWeight: FontWeight.w600),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              widget.readOnly
+                                                  ? "참여 행사"
+                                                  : "입장권",
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: widget.readOnly
+                                                    ? const Color(0xFF9E9E9E)
+                                                    : Colors.black
+                                                        .withOpacity(0.2),
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            if (widget.readOnly &&
+                                                widget.eventStatus != null &&
+                                                widget.eventStatus!.isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    left: 8),
+                                                child: Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 3,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                            0xFF9E9E9E)
+                                                        .withOpacity(0.15),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
+                                                  ),
+                                                  child: Text(
+                                                    widget.eventStatus!,
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Color(0xFF9E9E9E),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                         const SizedBox(height: 5),
                                         Text(
@@ -375,40 +476,41 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                             ),
                                           ),
                                         ),
-                                        // 취소/환불 버튼
-                                        TextButton(
-                                          onPressed: () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  RequestRefundScreen(
-                                                initialTicketId:
-                                                    widget.ticketId,
+                                        if (!widget.readOnly)
+                                          TextButton(
+                                            onPressed: () => Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    RequestRefundScreen(
+                                                  initialTicketId:
+                                                      widget.ticketId,
+                                                ),
+                                              ),
+                                            ),
+                                            style: TextButton.styleFrom(
+                                              backgroundColor:
+                                                  const Color(0xFF334D61)
+                                                      .withOpacity(0.05),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 10),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              minimumSize: const Size(
+                                                  double.infinity, 0),
+                                            ),
+                                            child: const Center(
+                                              child: Text(
+                                                "취소/환불요청",
+                                                style: TextStyle(
+                                                    color: Color(0xFF334D61),
+                                                    fontSize: 14),
                                               ),
                                             ),
                                           ),
-                                          style: TextButton.styleFrom(
-                                            backgroundColor:
-                                                const Color(0xFF334D61)
-                                                    .withOpacity(0.05),
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 10),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            minimumSize:
-                                                const Size(double.infinity, 0),
-                                          ),
-                                          child: const Center(
-                                            child: Text(
-                                              "취소/환불요청",
-                                              style: TextStyle(
-                                                  color: Color(0xFF334D61),
-                                                  fontSize: 14),
-                                            ),
-                                          ),
-                                        ),
                                       ],
                                     ),
                                   ),
@@ -427,81 +529,125 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                       bottomLeft: Radius.circular(20),
                                       bottomRight: Radius.circular(20),
                                     ),
-                                    child: GestureDetector(
-                                      behavior: HitTestBehavior.opaque,
-                                      onTap: _openMapView,
-                                      child: Stack(
-                                        children: [
-                                          SizedBox(
-                                            height: 200,
-                                            width: double.infinity,
-                                            child: IgnorePointer(
-                                              ignoring: true,
-                                              child: _buildKakaoMap(),
-                                            ),
-                                          ),
-                                          Positioned(
-                                            top: 8,
-                                            right: 8,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 4,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black
-                                                    .withOpacity(0.55),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: const Text(
-                                                '탭하여 확대',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
+                                    child: widget.readOnly
+                                        ? Stack(
+                                            children: [
+                                              SizedBox(
+                                                height: 200,
+                                                width: double.infinity,
+                                                child: ColorFiltered(
+                                                  colorFilter:
+                                                      ColorFilter.mode(
+                                                    Colors.grey
+                                                        .withOpacity(0.35),
+                                                    BlendMode.saturation,
+                                                  ),
+                                                  child: IgnorePointer(
+                                                    child: _buildKakaoMap(),
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ),
-                                          Positioned(
-                                            bottom: 0,
-                                            left: 0,
-                                            right: 0,
-                                            child: Container(
-                                              width: double.infinity,
-                                              height: 23,
-                                              color: const Color(0xFFC10230),
-                                              child: Marquee(
-                                                text:
-                                                    "캡쳐하신 입장권은 사용할 수 없습니다.",
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
+                                              Positioned(
+                                                bottom: 0,
+                                                left: 0,
+                                                right: 0,
+                                                child: Container(
+                                                  width: double.infinity,
+                                                  height: 28,
+                                                  color: const Color(0xFF9E9E9E),
+                                                  alignment: Alignment.center,
+                                                  child: const Text(
+                                                    '참여 기록은 조회만 가능합니다',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
                                                 ),
-                                                scrollAxis: Axis.horizontal,
-                                                blankSpace: 50.0,
-                                                velocity: 50.0,
                                               ),
+                                            ],
+                                          )
+                                        : GestureDetector(
+                                            behavior: HitTestBehavior.opaque,
+                                            onTap: _openMapView,
+                                            child: Stack(
+                                              children: [
+                                                SizedBox(
+                                                  height: 200,
+                                                  width: double.infinity,
+                                                  child: IgnorePointer(
+                                                    ignoring: true,
+                                                    child: _buildKakaoMap(),
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  top: 8,
+                                                  right: 8,
+                                                  child: Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black
+                                                          .withOpacity(0.55),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
+                                                    ),
+                                                    child: const Text(
+                                                      '탭하여 확대',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  bottom: 0,
+                                                  left: 0,
+                                                  right: 0,
+                                                  child: Container(
+                                                    width: double.infinity,
+                                                    height: 23,
+                                                    color: const Color(
+                                                        0xFFC10230),
+                                                    child: Marquee(
+                                                      text:
+                                                          "캡쳐하신 입장권은 사용할 수 없습니다.",
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 12,
+                                                      ),
+                                                      scrollAxis:
+                                                          Axis.horizontal,
+                                                      blankSpace: 50.0,
+                                                      velocity: 50.0,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  top: 65,
+                                                  left: 0,
+                                                  right: 0,
+                                                  child: Align(
+                                                    alignment: Alignment.center,
+                                                    child: Image.asset(
+                                                      'assets/images/marker.png',
+                                                      width: 40,
+                                                      height: 40,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          Positioned(
-                                            top: 65,
-                                            left: 0,
-                                            right: 0,
-                                            child: Align(
-                                              alignment: Alignment.center,
-                                              child: Image.asset(
-                                                'assets/images/marker.png',
-                                                width: 40,
-                                                height: 40,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
                                   ),
                                 ],
                               ),

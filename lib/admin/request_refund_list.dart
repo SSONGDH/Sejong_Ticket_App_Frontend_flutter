@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:passtime/widgets/admin_menu_button.dart';
 import 'package:passtime/cookiejar_singleton.dart';
+import 'package:passtime/utils/affiliation_api_parser.dart';
 import 'package:passtime/widgets/refund_ticket_card.dart';
 import 'package:passtime/admin/admin_ticket_screen.dart'; // AdminTicketScreen을 import합니다.
 
@@ -43,8 +44,10 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
   void _handleTabSelection() {
     if (_tabController != null && !_tabController!.indexIsChanging) {
       final selectedAffiliationId =
-          _affiliations[_tabController!.index]['_id'] as String;
-      _fetchRefundData(affiliationId: selectedAffiliationId);
+          AffiliationApiParser.affiliationId(_affiliations[_tabController!.index]);
+      if (selectedAffiliationId != null) {
+        _fetchRefundData(affiliationId: selectedAffiliationId);
+      }
     }
   }
 
@@ -63,11 +66,10 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final fetchedAffiliations =
+            AffiliationApiParser.parseHostAffiliations(data);
 
-        if (data['success'] == true && data['affiliations'] != null) {
-          List<Map<String, dynamic>> fetchedAffiliations =
-              List<Map<String, dynamic>>.from(data['affiliations']);
-
+        if (fetchedAffiliations.isNotEmpty) {
           setState(() {
             _affiliations = fetchedAffiliations;
             _isAffiliationLoading = false;
@@ -77,14 +79,19 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
                   TabController(length: _affiliations.length, vsync: this);
               _tabController!.addListener(_handleTabSelection);
 
-              final firstAffiliationId = _affiliations.first['_id'] as String;
-              _fetchRefundData(affiliationId: firstAffiliationId);
+              final firstAffiliationId =
+                  AffiliationApiParser.affiliationId(_affiliations.first);
+              if (firstAffiliationId != null) {
+                _fetchRefundData(affiliationId: firstAffiliationId);
+              }
             }
           });
         } else {
           setState(() {
             _isAffiliationLoading = false;
-            _errorMessage = data['message'] ?? "소속 목록을 불러오는데 실패했습니다.";
+            _errorMessage = data is Map
+                ? (data['message']?.toString() ?? '소속 목록을 불러오는데 실패했습니다.')
+                : '소속 목록을 불러오는데 실패했습니다.';
           });
         }
       } else {
@@ -194,7 +201,9 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
                               controller: _tabController,
                               tabAlignment: TabAlignment.start,
                               tabs: _affiliations.map((affiliation) {
-                                return Tab(text: affiliation['name']);
+                                return Tab(
+                                    text: AffiliationApiParser.affiliationName(
+                                        affiliation));
                               }).toList(),
                               labelColor: const Color(0xFFC10230),
                               unselectedLabelColor: Colors.grey,
@@ -239,9 +248,11 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
       backgroundColor: Colors.white,
       onRefresh: () async {
         if (_tabController != null) {
-          final selectedAffiliationId =
-              _affiliations[_tabController!.index]['_id'] as String;
-          await _fetchRefundData(affiliationId: selectedAffiliationId);
+          final selectedAffiliationId = AffiliationApiParser.affiliationId(
+              _affiliations[_tabController!.index]);
+          if (selectedAffiliationId != null) {
+            await _fetchRefundData(affiliationId: selectedAffiliationId);
+          }
         }
       },
       child: Padding(

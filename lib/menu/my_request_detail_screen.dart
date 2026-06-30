@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:passtime/widgets/custom_app_bar.dart';
 import 'package:passtime/widgets/menu_button.dart';
+import 'package:passtime/utils/affiliation_api_parser.dart';
 
 class MyRequestDetailScreen extends StatelessWidget {
   final Map<String, dynamic> request;
@@ -72,7 +73,7 @@ class MyRequestDetailScreen extends StatelessWidget {
     final status = request['status']?.toString() ?? 'pending';
     final statusLabel = request['statusLabel']?.toString() ?? '승인 대기';
     final requestTypeLabel =
-        request['requestTypeLabel']?.toString() ?? '신청';
+        AffiliationApiParser.resolveRequestTypeLabel(request);
     final adminComment = request['adminComment']?.toString() ?? '';
     final introduction = request['introduction']?.toString() ?? '';
 
@@ -160,11 +161,7 @@ class MyRequestDetailScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: const Padding(
-        padding: EdgeInsets.only(bottom: 60.0),
-        child: MenuButton(),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: const MenuButton(),
     );
   }
 }

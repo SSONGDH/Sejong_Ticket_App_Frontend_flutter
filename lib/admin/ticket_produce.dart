@@ -10,6 +10,7 @@ import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import '../place_search_screen.dart';
 import 'package:passtime/map_picker_screen.dart';
 import 'package:passtime/cookiejar_singleton.dart';
+import 'package:passtime/utils/affiliation_api_parser.dart';
 
 class TicketProduceScreen extends StatefulWidget {
   const TicketProduceScreen({super.key});
@@ -89,13 +90,14 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
 
       if (response.statusCode == 200) {
         final decodedResponse = json.decode(utf8.decode(response.bodyBytes));
+        final affiliationList =
+            AffiliationApiParser.parseHostAffiliations(decodedResponse);
 
-        // 3. JSON 파싱 로직 변경 (isSuccess -> success, result -> affiliations)
-        if (decodedResponse['success'] == true) {
-          final List<dynamic> affiliationList = decodedResponse['affiliations'];
+        if (affiliationList.isNotEmpty) {
           setState(() {
             affiliations = affiliationList
-                .map<String>((item) => item['name'] as String)
+                .map<String>(
+                    (item) => AffiliationApiParser.affiliationName(item))
                 .toList();
           });
         }

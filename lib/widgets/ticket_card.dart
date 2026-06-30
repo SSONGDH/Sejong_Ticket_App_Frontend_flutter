@@ -11,6 +11,8 @@ class TicketCard extends StatelessWidget {
   final String affiliation;
   final String status;
   final Color statusColor;
+  final bool isParticipatedEvent;
+  final int? participantCount;
 
   const TicketCard({
     super.key,
@@ -21,15 +23,34 @@ class TicketCard extends StatelessWidget {
     this.affiliation = '',
     required this.status,
     required this.statusColor,
+    this.isParticipatedEvent = false,
+    this.participantCount,
   });
 
-  bool get _isClickable => status != '사용 불가';
+  bool get _isClickable =>
+      isParticipatedEvent ? ticketId.isNotEmpty : status != '사용 불가';
 
-  Color get _accentColor =>
-      status == '사용 가능' ? const Color(0xFFC10230) : statusColor;
+  Color get _accentColor {
+    if (isParticipatedEvent) return const Color(0xFF9E9E9E);
+    return status == '사용 가능' ? const Color(0xFFC10230) : statusColor;
+  }
 
   void _handleTap(BuildContext context) {
     if (!_isClickable) return;
+
+    if (isParticipatedEvent) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TicketDetailScreen(
+            ticketId: ticketId,
+            readOnly: true,
+            eventStatus: status,
+          ),
+        ),
+      );
+      return;
+    }
 
     if (status == '환불중' || status == '환불됨') {
       Navigator.push(
@@ -74,6 +95,17 @@ class TicketCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (isParticipatedEvent) ...[
+                Text(
+                  '참여 기록',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF334D61).withOpacity(0.45),
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -90,7 +122,10 @@ class TicketCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _buildStatusBox(),
+                  if (isParticipatedEvent && participantCount != null)
+                    _buildParticipantCountBox()
+                  else
+                    _buildStatusBox(),
                 ],
               ),
               const SizedBox(height: 8),
@@ -161,6 +196,24 @@ class TicketCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParticipantCountBox() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF334D61).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        '${participantCount ?? 0}명 참여',
+        style: const TextStyle(
+          color: Color(0xFF334D61),
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

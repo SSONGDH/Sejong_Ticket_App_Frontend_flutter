@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:passtime/widgets/admin_menu_button.dart';
 import 'package:passtime/cookiejar_singleton.dart';
+import 'package:passtime/utils/affiliation_api_parser.dart';
 import 'package:passtime/admin/admin_ticket_screen.dart';
 import 'package:passtime/admin/send_payment_ticket_list_screen.dart';
 import 'package:passtime/widgets/payment_event_card.dart';
@@ -69,11 +70,10 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final fetchedAffiliations =
+            AffiliationApiParser.parseHostAffiliations(data);
 
-        if (data['success'] == true && data['affiliations'] != null) {
-          final fetchedAffiliations =
-              List<Map<String, dynamic>>.from(data['affiliations']);
-
+        if (fetchedAffiliations.isNotEmpty) {
           setState(() {
             _affiliations = fetchedAffiliations;
             _isAffiliationLoading = false;
@@ -85,18 +85,14 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
             }
           });
 
-          if (_affiliations.isNotEmpty) {
-            await _fetchEvents();
-          } else {
-            setState(() {
-              _isEventsLoading = false;
-            });
-          }
+          await _fetchEvents();
         } else {
           setState(() {
             _isAffiliationLoading = false;
             _isEventsLoading = false;
-            _errorMessage = data['message'] ?? "소속 목록을 불러오는데 실패했습니다.";
+            _errorMessage = data is Map
+                ? (data['message']?.toString() ?? '소속 목록을 불러오는데 실패했습니다.')
+                : '소속 목록을 불러오는데 실패했습니다.';
           });
         }
       } else {
@@ -146,8 +142,10 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
 
           final grouped = <String, List<Map<String, dynamic>>>{};
           for (final affiliation in _affiliations) {
-            final affiliationId = affiliation['_id']?.toString() ?? '';
-            final affiliationName = affiliation['name']?.toString() ?? '';
+            final affiliationId =
+                AffiliationApiParser.affiliationId(affiliation) ?? '';
+            final affiliationName =
+                AffiliationApiParser.affiliationName(affiliation);
             grouped[affiliationId] = events
                 .where((event) => event['affiliation'] == affiliationName)
                 .cast<Map<String, dynamic>>()
@@ -208,7 +206,9 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
                               controller: _tabController,
                               tabAlignment: TabAlignment.start,
                               tabs: _affiliations.map((affiliation) {
-                                return Tab(text: affiliation['name']);
+                                return Tab(
+                                    text: AffiliationApiParser.affiliationName(
+                                        affiliation));
                               }).toList(),
                               labelColor: const Color(0xFFC10230),
                               unselectedLabelColor: Colors.grey,
@@ -220,7 +220,9 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
                               controller: _tabController,
                               children: _affiliations.map((affiliation) {
                                 final affiliationId =
-                                    affiliation['_id']?.toString() ?? '';
+                                    AffiliationApiParser.affiliationId(
+                                            affiliation) ??
+                                        '';
                                 return _buildEventList(affiliationId);
                               }).toList(),
                             ),

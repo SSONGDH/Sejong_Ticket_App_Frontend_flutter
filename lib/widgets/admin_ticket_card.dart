@@ -7,6 +7,7 @@ class AdminTicketCard extends StatelessWidget {
   final String dateTime;
   final String location;
   final String affiliation;
+  final String eventCode;
   final int totalCount;
   final int pendingCount;
   final VoidCallback onEdit;
@@ -20,6 +21,7 @@ class AdminTicketCard extends StatelessWidget {
     required this.dateTime,
     required this.location,
     required this.affiliation,
+    required this.eventCode,
     required this.totalCount,
     required this.pendingCount,
     required this.onEdit,
@@ -78,7 +80,32 @@ class AdminTicketCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
+            Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(
+                    text: '행사 코드  ',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  TextSpan(
+                    text: eventCode.isNotEmpty ? eventCode : '-',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black.withOpacity(0.5),
+                    ),
+                  ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
             Row(
               children: [
                 Expanded(

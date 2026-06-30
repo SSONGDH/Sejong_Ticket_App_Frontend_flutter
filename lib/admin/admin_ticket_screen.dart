@@ -7,6 +7,7 @@ import 'package:passtime/widgets/custom_app_bar.dart';
 import 'package:passtime/admin/ticket_edit.dart';
 import 'package:passtime/widgets/admin_menu_button.dart';
 import 'package:passtime/cookiejar_singleton.dart';
+import 'package:passtime/utils/affiliation_api_parser.dart';
 import 'package:passtime/widgets/admin_ticket_card.dart';
 import 'package:passtime/admin/send_payment_ticket_list_screen.dart';
 import 'package:passtime/screens/ticket_screen.dart';
@@ -50,9 +51,10 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['success'] == true && data['affiliations'] != null && mounted) {
+        final affiliations = AffiliationApiParser.parseHostAffiliations(data);
+        if (affiliations.isNotEmpty && mounted) {
           setState(() {
-            _affiliations = List<Map<String, dynamic>>.from(data['affiliations']);
+            _affiliations = affiliations;
           });
         }
       }
@@ -61,8 +63,8 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
 
   String? _findAffiliationId(String affiliationName) {
     for (final affiliation in _affiliations) {
-      if (affiliation['name']?.toString() == affiliationName) {
-        return affiliation['_id']?.toString();
+      if (AffiliationApiParser.affiliationName(affiliation) == affiliationName) {
+        return AffiliationApiParser.affiliationId(affiliation);
       }
     }
     return null;
@@ -126,6 +128,7 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
                   '${item['eventDay']} • ${item['eventStartTime'].toString().substring(0, 5)}',
               'location': item['eventPlace'],
               'affiliation': item['affiliation']?.toString() ?? '',
+              'eventCode': item['eventCode']?.toString() ?? '',
               'totalCount': _parseCount(item['totalCount']),
               'pendingCount': _parseCount(item['pendingCount']),
             };
@@ -294,13 +297,14 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
                                 dateTime: ticket['dateTime']!,
                                 location: ticket['location']!,
                                 affiliation: ticket['affiliation']!,
+                                eventCode: ticket['eventCode']?.toString() ?? '',
                                 totalCount: _parseCount(ticket['totalCount']),
                                 pendingCount: _parseCount(ticket['pendingCount']),
                                 onPaymentTap: () => _navigateToPaymentList(ticket),
                                 onEdit: () async {
                                   final result = await Navigator.push(
                                     context,
-                                    MaterialPageRoute(
+                                    CupertinoPageRoute(
                                       builder: (_) => TicketEditScreen(
                                         ticketId: ticket['ticketId'],
                                       ),

@@ -4,6 +4,7 @@ import 'package:passtime/admin/request_admin_detail_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:passtime/utils/affiliation_api_parser.dart';
 
 class RequestAdminListScreen extends StatefulWidget {
   const RequestAdminListScreen({super.key});
@@ -48,7 +49,9 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
             'studentId': request['studentId']?.toString() ?? '',
             'department': request['affiliationName']?.toString() ?? '',
             'name': request['name']?.toString() ?? '',
-            'requestTypeLabel': request['requestTypeLabel']?.toString() ?? '',
+            'requestTypeLabel':
+                AffiliationApiParser.resolveRequestTypeLabel(
+                    Map<String, dynamic>.from(request as Map)),
             'status': statusLabel,
             'isApproved': isApproved,
             'isRejected': isRejected,
@@ -68,7 +71,7 @@ class _RequestAdminListScreenState extends State<RequestAdminListScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const CustomAppBar(
-        title: "주최자 신청 목록",
+        title: "권한 신청 목록",
         isOrganizerMode: true,
         logoNavigatesToParticipantHome: true,
       ),
