@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:passtime/widgets/custom_app_bar.dart';
-import 'package:passtime/admin/request_refund_detail_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:passtime/widgets/admin_menu_button.dart';
 import 'package:passtime/cookiejar_singleton.dart';
 import 'package:passtime/utils/affiliation_api_parser.dart';
-import 'package:passtime/widgets/refund_ticket_card.dart';
-import 'package:passtime/admin/admin_ticket_screen.dart'; // AdminTicketScreen을 import합니다.
+import 'package:passtime/admin/admin_ticket_screen.dart';
+import 'package:passtime/admin/request_refund_ticket_list_screen.dart';
+import 'package:passtime/widgets/refund_event_card.dart';
 
 class RequestRefundListScreen extends StatefulWidget {
   const RequestRefundListScreen({super.key});
 
   @override
-  _RequestRefundListScreenState createState() =>
+  State<RequestRefundListScreen> createState() =>
       _RequestRefundListScreenState();
 }
 
@@ -23,10 +23,16 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
   TabController? _tabController;
 
   List<Map<String, dynamic>> _affiliations = [];
-  List<Map<String, dynamic>> _refundRequests = [];
+  final Map<String, List<Map<String, dynamic>>> _eventsByAffiliationId = {};
   bool _isAffiliationLoading = true;
-  bool _isRefundDataLoading = true;
+  bool _isEventsLoading = true;
   String? _errorMessage;
+
+  bool _readApproved(dynamic status) {
+    if (status == true || status == 'TRUE') return true;
+    if (status is String && status.toUpperCase() == 'TRUE') return true;
+    return false;
+  }
 
   @override
   void initState() {
@@ -43,25 +49,23 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
 
   void _handleTabSelection() {
     if (_tabController != null && !_tabController!.indexIsChanging) {
-      final selectedAffiliationId =
-          AffiliationApiParser.affiliationId(_affiliations[_tabController!.index]);
-      if (selectedAffiliationId != null) {
-        _fetchRefundData(affiliationId: selectedAffiliationId);
-      }
+      setState(() {});
     }
+  }
+
+  Future<String> _getCookieHeader() async {
+    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+    final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+    if (cookies.isEmpty) return '';
+    return cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
   }
 
   Future<void> _fetchAffiliations() async {
     final url =
         Uri.parse('${dotenv.env['API_BASE_URL']}/user/adminAffilliation/list');
-    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
     try {
-      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
-      final cookieHeader = cookies.isNotEmpty
-          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
-          : '';
-
+      final cookieHeader = await _getCookieHeader();
       final response = await http.get(url, headers: {'Cookie': cookieHeader});
 
       if (response.statusCode == 200) {
@@ -78,17 +82,14 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
               _tabController =
                   TabController(length: _affiliations.length, vsync: this);
               _tabController!.addListener(_handleTabSelection);
-
-              final firstAffiliationId =
-                  AffiliationApiParser.affiliationId(_affiliations.first);
-              if (firstAffiliationId != null) {
-                _fetchRefundData(affiliationId: firstAffiliationId);
-              }
             }
           });
+
+          await _fetchEvents();
         } else {
           setState(() {
             _isAffiliationLoading = false;
+            _isEventsLoading = false;
             _errorMessage = data is Map
                 ? (data['message']?.toString() ?? '소속 목록을 불러오는데 실패했습니다.')
                 : '소속 목록을 불러오는데 실패했습니다.';
@@ -97,82 +98,141 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
       } else {
         setState(() {
           _isAffiliationLoading = false;
+          _isEventsLoading = false;
           _errorMessage = "서버 오류: ${response.statusCode}";
         });
       }
     } catch (e) {
       setState(() {
         _isAffiliationLoading = false;
+        _isEventsLoading = false;
         _errorMessage = "네트워크 오류: $e";
       });
     }
   }
 
-  Future<void> _fetchRefundData({required String affiliationId}) async {
-    setState(() {
-      _isRefundDataLoading = true;
-      _refundRequests = [];
-    });
-
-    String urlString =
-        '${dotenv.env['API_BASE_URL']}/refund/list?affiliationId=$affiliationId';
-    final url = Uri.parse(urlString);
-    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+  Future<Map<String, Map<String, int>>> _fetchRefundCounts(
+      String affiliationId) async {
+    final counts = <String, Map<String, int>>{};
+    final url = Uri.parse(
+        '${dotenv.env['API_BASE_URL']}/refund/list?affiliationId=$affiliationId');
 
     try {
-      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
-      final cookieHeader = cookies.isNotEmpty
-          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
-          : '';
-
+      final cookieHeader = await _getCookieHeader();
       final response = await http.get(url, headers: {'Cookie': cookieHeader});
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['isSuccess'] == true && data['result'] != null) {
-          final List<dynamic> result = data['result'];
-          final List<Map<String, dynamic>> newRefundRequests =
-              result.map((refund) {
+        if (data['isSuccess'] == true && data['result'] is List) {
+          for (final refund in data['result']) {
+            if (refund is! Map) continue;
+
+            final ticketId = refund['ticketId']?.toString();
+            final eventName = refund['eventName']?.toString() ?? '';
+            final key = (ticketId != null && ticketId.isNotEmpty)
+                ? ticketId
+                : eventName;
+            if (key.isEmpty) continue;
+
+            counts.putIfAbsent(key, () => {'total': 0, 'pending': 0});
+            counts[key]!['total'] = counts[key]!['total']! + 1;
+            if (!_readApproved(refund['refundPermissionStatus'])) {
+              counts[key]!['pending'] = counts[key]!['pending']! + 1;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    return counts;
+  }
+
+  Future<void> _fetchEvents() async {
+    setState(() {
+      _isEventsLoading = true;
+    });
+
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/manageList');
+
+    try {
+      final cookieHeader = await _getCookieHeader();
+      final response = await http.get(url, headers: {'Cookie': cookieHeader});
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['isSuccess'] == true) {
+          final List<dynamic> result = data['result'] ?? [];
+          final events = result.map((item) {
             return {
-              '_id': refund['_id'],
-              'title': refund['eventName'],
-              'studentInfo': '${refund['studentId']} • ${refund['name']}',
-              'visitTime': '${refund['visitDate']} • ${refund['visitTime']}',
-              'status':
-                  refund['refundPermissionStatus'] == 'TRUE' ? '승인됨' : '미승인',
-              'statusColor': refund['refundPermissionStatus'] == 'TRUE'
-                  ? const Color(0xFF334D61)
-                  : const Color(0xFFC10230),
-              'refundReason': refund['refundReason'],
+              'ticketId': item['_id']?.toString() ?? '',
+              'title': item['eventTitle']?.toString() ?? '',
+              'dateTime':
+                  '${item['eventDay']} • ${item['eventStartTime'].toString().substring(0, 5)}',
+              'location': item['eventPlace']?.toString() ?? '',
+              'affiliation': item['affiliation']?.toString() ?? '',
             };
           }).toList();
+
+          final grouped = <String, List<Map<String, dynamic>>>{};
+          for (final affiliation in _affiliations) {
+            final affiliationId =
+                AffiliationApiParser.affiliationId(affiliation) ?? '';
+            final affiliationName =
+                AffiliationApiParser.affiliationName(affiliation);
+
+            final refundCounts = await _fetchRefundCounts(affiliationId);
+            final affiliationEvents = events
+                .where((event) => event['affiliation'] == affiliationName)
+                .cast<Map<String, dynamic>>()
+                .map((event) {
+              final ticketId = event['ticketId'] as String;
+              final title = event['title'] as String;
+              final countByTicket = refundCounts[ticketId];
+              final countByTitle = refundCounts[title];
+              final total = countByTicket?['total'] ??
+                  countByTitle?['total'] ??
+                  0;
+              final pending = countByTicket?['pending'] ??
+                  countByTitle?['pending'] ??
+                  0;
+
+              return {
+                ...event,
+                'totalCount': total,
+                'pendingCount': pending,
+              };
+            }).toList();
+
+            grouped[affiliationId] = affiliationEvents;
+          }
+
           setState(() {
-            _refundRequests = newRefundRequests;
-          });
-        } else {
-          setState(() {
-            _refundRequests = [];
+            _eventsByAffiliationId
+              ..clear()
+              ..addAll(grouped);
           });
         }
       }
-    } catch (error) {
-      print("Error fetching refund data: $error");
     } finally {
-      setState(() {
-        _isRefundDataLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isEventsLoading = false;
+        });
+      }
     }
+  }
+
+  List<Map<String, dynamic>> _eventsForAffiliation(String affiliationId) {
+    return _eventsByAffiliationId[affiliationId] ?? [];
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // 뒤로가기 동작을 가로챕니다.
+      canPop: false,
       onPopInvoked: (didPop) {
-        if (didPop) {
-          return;
-        }
-        // 뒤로가기 제스처가 발생하면 AdminTicketScreen으로 돌아갑니다.
+        if (didPop) return;
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const AdminTicketScreen()),
@@ -213,8 +273,12 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
                           Expanded(
                             child: TabBarView(
                               controller: _tabController,
-                              children: _affiliations.map((_) {
-                                return _buildRefundList();
+                              children: _affiliations.map((affiliation) {
+                                final affiliationId =
+                                    AffiliationApiParser.affiliationId(
+                                            affiliation) ??
+                                        '';
+                                return _buildEventList(affiliationId);
                               }).toList(),
                             ),
                           ),
@@ -224,20 +288,24 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
     );
   }
 
-  Widget _buildRefundList() {
-    if (_isRefundDataLoading) {
+  Widget _buildEventList(String affiliationId) {
+    final events = _eventsForAffiliation(affiliationId);
+
+    if (_isEventsLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_refundRequests.isEmpty) {
-      return Align(
-        alignment: const Alignment(0.0, -0.15),
-        child: Text(
-          '환불 신청 목록이 없습니다',
-          style: TextStyle(
-            fontSize: 16,
-            color: const Color(0xFF334D61).withOpacity(0.5),
-            fontWeight: FontWeight.bold,
+    if (events.isEmpty) {
+      return Center(
+        child: Align(
+          alignment: const Alignment(0.0, -0.15),
+          child: Text(
+            '진행 중인 행사가 없습니다',
+            style: TextStyle(
+              fontSize: 16,
+              color: const Color(0xFF334D61).withOpacity(0.5),
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       );
@@ -246,48 +314,36 @@ class _RequestRefundListScreenState extends State<RequestRefundListScreen>
     return RefreshIndicator(
       color: Colors.black,
       backgroundColor: Colors.white,
-      onRefresh: () async {
-        if (_tabController != null) {
-          final selectedAffiliationId = AffiliationApiParser.affiliationId(
-              _affiliations[_tabController!.index]);
-          if (selectedAffiliationId != null) {
-            await _fetchRefundData(affiliationId: selectedAffiliationId);
-          }
-        }
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10.0),
-        child: ListView.builder(
-          itemCount: _refundRequests.length,
-          itemBuilder: (context, index) {
-            final refund = _refundRequests[index];
-            return Padding(
-              padding: EdgeInsets.only(top: index == 0 ? 10.0 : 5.0),
-              child: RefundTicketCard(
-                title: refund['title']!,
-                studentInfo: refund['studentInfo']!,
-                visitTime: refund['visitTime']!,
-                refundReason: refund['refundReason']!,
-                status: refund['status']!,
-                statusColor: refund['statusColor']!,
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          RequestRefundDetailScreen(refundId: refund['_id']),
+      onRefresh: _fetchEvents,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        itemCount: events.length,
+        itemBuilder: (context, index) {
+          final event = events[index];
+          return Padding(
+            padding: EdgeInsets.only(bottom: index < events.length - 1 ? 5 : 0),
+            child: RefundEventCard(
+              title: event['title'] as String,
+              dateTime: event['dateTime'] as String,
+              location: event['location'] as String,
+              totalCount: event['totalCount'] as int,
+              pendingCount: event['pendingCount'] as int,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RequestRefundTicketListScreen(
+                      ticketId: event['ticketId'] as String,
+                      affiliationId: affiliationId,
+                      eventTitle: event['title'] as String,
+                      affiliationName: event['affiliation'] as String? ?? '',
                     ),
-                  );
-                  if (result == true && _tabController != null) {
-                    final selectedAffiliationId =
-                        _affiliations[_tabController!.index]['_id'] as String;
-                    _fetchRefundData(affiliationId: selectedAffiliationId);
-                  }
-                },
-              ),
-            );
-          },
-        ),
+                  ),
+                ).then((_) => _fetchEvents());
+              },
+            ),
+          );
+        },
       ),
     );
   }

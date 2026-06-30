@@ -254,7 +254,14 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
       context: context,
       builder: (_) => CupertinoAlertDialog(
         title: const Text('제출하시겠습니까?'),
-        content: const Text('입력한 정보가 맞는지 확인하고 제출을 진행하세요.'),
+        content: const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text(
+            '입력한 정보가 맞는지 확인해 주세요.\n확인 후 제출을 진행합니다.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, height: 1.45),
+          ),
+        ),
         actions: [
           CupertinoDialogAction(
             child: const Text('취소'),
@@ -466,6 +473,16 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
               color: Colors.black.withOpacity(0.6),
               fontSize: 14,
               fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '날짜, 받는 사람 이름, 금액이\n'
+            '모두 보이는 송금·이체 화면 사진을 첨부해 주세요.',
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.45),
+              fontSize: 13,
+              height: 1.45,
             ),
           ),
           const SizedBox(height: 10),

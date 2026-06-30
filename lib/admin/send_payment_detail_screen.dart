@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
+import 'package:passtime/cookiejar_singleton.dart';
 
 class SendPaymentDetailScreen extends StatefulWidget {
   final String paymentId;
@@ -27,8 +28,9 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
   Future<Map<String, dynamic>> fetchPaymentDetail() async {
     final String apiUrl = "${dotenv.env['API_BASE_URL']}/payment/detail";
     final uri = Uri.parse("$apiUrl?paymentId=${widget.paymentId}");
+    final cookieHeader = await _getCookieHeader();
 
-    final response = await http.get(uri);
+    final response = await http.get(uri, headers: {'Cookie': cookieHeader});
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseBody = json.decode(response.body);
@@ -42,6 +44,14 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
     }
   }
 
+  Future<String> _getCookieHeader() async {
+    final baseUri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+    final cookies =
+        await CookieJarSingleton().cookieJar.loadForRequest(baseUri);
+    if (cookies.isEmpty) return '';
+    return cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
+  }
+
   Future<void> approvePayment(String paymentId) async {
     if (isApproving) return;
 
@@ -53,7 +63,11 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
     final uri = Uri.parse("$apiUrl?paymentId=$paymentId");
 
     try {
-      final response = await http.put(uri);
+      final cookieHeader = await _getCookieHeader();
+      final response = await http.put(
+        uri,
+        headers: {'Cookie': cookieHeader},
+      );
       final Map<String, dynamic> responseBody = json.decode(response.body);
 
       if (response.statusCode == 200 &&
@@ -153,6 +167,9 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
 
             final data = snapshot.data!;
             final isApproved = data["paymentPermissionStatus"] == true;
+            final aiReviewStatus =
+                data["aiReviewStatus"]?.toString() ?? 'none';
+            final aiReview = data["aiReview"] as Map<String, dynamic>?;
 
             return Column(
               children: [
@@ -163,6 +180,8 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        if (aiReviewStatus != 'none')
+                          _buildAiReviewSection(aiReviewStatus, aiReview),
                         _buildPaymentImage(data["paymentPicture"]),
                         const SizedBox(height: 32),
                         _buildInfoTile("이름", data["name"]),
@@ -217,6 +236,142 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildAiReviewSection(
+    String status,
+    Map<String, dynamic>? aiReview,
+  ) {
+    late final String title;
+    late final Color backgroundColor;
+    late final Color textColor;
+
+    switch (status) {
+      case 'auto_approved':
+        title = 'AI 자동 승인';
+        backgroundColor = const Color(0xFF334D61);
+        textColor = Colors.white;
+        break;
+      case 'suspicious':
+        title = 'AI 의심 — 관리자 확인 필요';
+        backgroundColor = const Color(0xFFFFE082);
+        textColor = const Color(0xFF8D6E00);
+        break;
+      case 'failed':
+        title = 'AI 검토 실패';
+        backgroundColor = const Color(0xFFC10230).withOpacity(0.15);
+        textColor = const Color(0xFFC10230);
+        break;
+      case 'reviewing':
+        title = 'AI 검토 중';
+        backgroundColor = const Color(0xFF334D61).withOpacity(0.1);
+        textColor = const Color(0xFF334D61);
+        break;
+      default:
+        return const SizedBox.shrink();
+    }
+
+    final reasons = aiReview?['reasons'] as List<dynamic>? ?? [];
+    final extractedAmount = aiReview?['extractedAmount'];
+    final extractedDate = aiReview?['extractedDate'];
+    final extractedSender = aiReview?['extractedSenderName'];
+    final extractedAccount = aiReview?['extractedAccountHolderName'];
+    final confidence = aiReview?['combinedConfidence'];
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          if (aiReview != null) ...[
+            const SizedBox(height: 10),
+            if (extractedAmount != null)
+              _buildAiInfoRow('추출 금액', '$extractedAmount원', textColor),
+            if (extractedDate != null)
+              _buildAiInfoRow('추출 날짜', extractedDate.toString(), textColor),
+            if (extractedSender != null)
+              _buildAiInfoRow('보낸 사람', extractedSender.toString(), textColor),
+            if (extractedAccount != null)
+              _buildAiInfoRow(
+                '받는 사람',
+                extractedAccount.toString(),
+                textColor,
+              ),
+            if (confidence != null)
+              _buildAiInfoRow(
+                '신뢰도',
+                '${(confidence is num ? confidence * 100 : double.tryParse(confidence.toString()) ?? 0).toStringAsFixed(1)}%',
+                textColor,
+              ),
+          ],
+          if (reasons.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '사유',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            ...reasons.map(
+              (reason) => Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  '· $reason',
+                  style: TextStyle(fontSize: 12, color: textColor),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiInfoRow(String label, String value, Color textColor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 72,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: textColor.withOpacity(0.85),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

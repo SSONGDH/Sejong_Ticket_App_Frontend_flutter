@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:passtime/admin/payment_ai_criteria_dialog.dart';
 import 'package:passtime/admin/send_payment_detail_screen.dart';
+import 'package:passtime/widgets/admin_menu_button.dart';
 import 'package:passtime/cookiejar_singleton.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -41,10 +43,14 @@ class _SendPaymentTicketListScreenState
 
   Map<String, bool> _switchValues = {};
   Map<String, Map<String, String>> _paymentData = {};
+  Map<String, String> _aiReviewStatus = {};
+  Map<String, List<String>> _aiReviewReasons = {};
   final Set<String> _selectedPaymentIds = {};
   bool _isLoading = true;
   bool _isBatchProcessing = false;
+  bool _isAiReviewing = false;
   bool _isSelectionMode = false;
+  PaymentAiCriteria? _aiCriteria;
   _PaymentSortOption _sortOption = _PaymentSortOption.nameAsc;
 
   int get _totalCount => _paymentData.length;
@@ -78,6 +84,8 @@ class _SendPaymentTicketListScreenState
       _isLoading = true;
       _paymentData = {};
       _switchValues = {};
+      _aiReviewStatus = {};
+      _aiReviewReasons = {};
       _selectedPaymentIds.clear();
       _isSelectionMode = false;
     });
@@ -94,6 +102,8 @@ class _SendPaymentTicketListScreenState
         if (data['isSuccess'] == true && data['result'] != null) {
           final newPaymentData = <String, Map<String, String>>{};
           final newSwitchValues = <String, bool>{};
+          final newAiReviewStatus = <String, String>{};
+          final newAiReviewReasons = <String, List<String>>{};
 
           for (var payment in data['result']) {
             final paymentTicketId = payment['ticketId']?.toString();
@@ -108,13 +118,23 @@ class _SendPaymentTicketListScreenState
               'major': payment['major']?.toString() ?? '-',
             };
             newSwitchValues[paymentId] =
-                payment['paymentPermissionStatus'] as bool? ?? false;
+                _readBool(payment['paymentPermissionStatus']);
+
+            final aiStatus = payment['aiReviewStatus']?.toString() ?? 'none';
+            newAiReviewStatus[paymentId] = aiStatus;
+            if (aiStatus == 'suspicious' && payment['aiReviewReasons'] is List) {
+              newAiReviewReasons[paymentId] = (payment['aiReviewReasons'] as List)
+                  .map((e) => e.toString())
+                  .toList();
+            }
           }
 
           if (mounted) {
             setState(() {
               _paymentData = newPaymentData;
               _switchValues = newSwitchValues;
+              _aiReviewStatus = newAiReviewStatus;
+              _aiReviewReasons = newAiReviewReasons;
             });
           }
         }
@@ -363,6 +383,357 @@ class _SendPaymentTicketListScreenState
     );
   }
 
+  bool _readBool(dynamic value) {
+    if (value == true) return true;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final lower = value.toLowerCase();
+      return lower == 'true' || lower == '1';
+    }
+    return false;
+  }
+
+  void _applyAiReviewResult(Map<String, dynamic> result) {
+    final paymentId = result['paymentId']?.toString();
+    if (paymentId == null || !_paymentData.containsKey(paymentId)) return;
+
+    final status = result['aiReviewStatus']?.toString() ?? 'none';
+    _aiReviewStatus[paymentId] = status;
+
+    final isApproved = _readBool(result['paymentPermissionStatus']) ||
+        _readBool(result['autoApproved']) ||
+        status == 'auto_approved';
+    if (isApproved) {
+      _switchValues[paymentId] = true;
+    }
+
+    if (status == 'suspicious') {
+      final reasons = result['evaluation']?['reasons'] ??
+          result['aiReview']?['reasons'];
+      if (reasons is List) {
+        _aiReviewReasons[paymentId] =
+            reasons.map((e) => e.toString()).toList();
+      }
+    } else {
+      _aiReviewReasons.remove(paymentId);
+    }
+  }
+
+  Future<void> _refreshPaymentStates() async {
+    final url = Uri.parse(
+        '${dotenv.env['API_BASE_URL']}/payment/list?affiliationId=${widget.affiliationId}');
+
+    try {
+      final cookieHeader = await _getCookieHeader();
+      final response = await http.get(url, headers: {'Cookie': cookieHeader});
+
+      if (response.statusCode != 200 || !mounted) return;
+
+      final data = json.decode(response.body);
+      if (data['isSuccess'] != true || data['result'] == null) return;
+
+      setState(() {
+        for (final payment in data['result']) {
+          if (payment is! Map) continue;
+
+          final paymentTicketId = payment['ticketId']?.toString();
+          if (paymentTicketId != widget.ticketId) continue;
+
+          final paymentId = payment['paymentId']?.toString();
+          if (paymentId == null || !_paymentData.containsKey(paymentId)) {
+            continue;
+          }
+
+          _switchValues[paymentId] =
+              _readBool(payment['paymentPermissionStatus']);
+
+          final aiStatus = payment['aiReviewStatus']?.toString() ?? 'none';
+          _aiReviewStatus[paymentId] = aiStatus;
+
+          if (aiStatus == 'suspicious' && payment['aiReviewReasons'] is List) {
+            _aiReviewReasons[paymentId] =
+                (payment['aiReviewReasons'] as List)
+                    .map((e) => e.toString())
+                    .toList();
+          } else {
+            _aiReviewReasons.remove(paymentId);
+          }
+        }
+      });
+    } catch (_) {
+      // 배치 응답 반영이 우선이므로 조용히 무시
+    }
+  }
+
+  Future<void> _runAiBatchReview() async {
+    if (_isAiReviewing || _isBatchProcessing) return;
+
+    final criteria = await showPaymentAiCriteriaDialog(
+      context,
+      initial: _aiCriteria,
+    );
+    if (criteria == null || !mounted) return;
+
+    setState(() {
+      _aiCriteria = criteria;
+      _isAiReviewing = true;
+    });
+
+    final url =
+        Uri.parse('${dotenv.env['API_BASE_URL']}/payment/ai-review/batch');
+
+    try {
+      final cookieHeader = await _getCookieHeader();
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieHeader,
+        },
+        body: json.encode({
+          'affiliationId': widget.affiliationId,
+          'ticketId': widget.ticketId,
+          'criteria': criteria.toJson(),
+          'autoApprove': true,
+        }),
+      );
+
+      if (!mounted) return;
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200 && data['isSuccess'] == true) {
+        final result = data['result'] as Map<String, dynamic>? ?? {};
+        final results = result['results'] as List<dynamic>? ?? [];
+
+        setState(() {
+          for (final item in results) {
+            if (item is Map) {
+              _applyAiReviewResult(Map<String, dynamic>.from(item));
+            }
+          }
+        });
+
+        await _refreshPaymentStates();
+
+        if (!mounted) return;
+
+        final totalTargets = result['totalTargets'] ?? 0;
+        final reviewedCount = result['reviewedCount'] ?? 0;
+        final autoApprovedCount = result['autoApprovedCount'] ?? 0;
+        final suspiciousCount = result['suspiciousCount'] ?? 0;
+        final failedCount = result['failedCount'] ?? 0;
+
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (_) => CupertinoAlertDialog(
+              title: const Text('BETA AI 판별 완료'),
+              content: Text(
+                '검토 대상 $totalTargets건\n'
+                '검토 완료 $reviewedCount건 · 실패 $failedCount건\n'
+                '자동 승인 $autoApprovedCount건 · 의심 $suspiciousCount건',
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    '확인',
+                    style: TextStyle(color: Color(0xFFC10230)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        _showErrorDialog(
+          data['message']?.toString() ?? 'AI 판별 요청에 실패했습니다.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        _showErrorDialog('AI 판별 중 오류가 발생했습니다.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAiReviewing = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildAiReviewBadge(String paymentId) {
+    final status = _aiReviewStatus[paymentId] ?? 'none';
+
+    if (status == 'none') {
+      return const SizedBox.shrink();
+    }
+
+    if (status == 'reviewing') {
+      return const SizedBox(
+        width: 14,
+        height: 14,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+
+    late final String label;
+    late final Color backgroundColor;
+    late final Color textColor;
+    late final double fontSize;
+    late final EdgeInsets padding;
+
+    switch (status) {
+      case 'auto_approved':
+        label = '자동승인';
+        backgroundColor = const Color(0xFF334D61);
+        textColor = Colors.white;
+        fontSize = 10;
+        padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 2);
+        break;
+      case 'suspicious':
+        label = '의심';
+        backgroundColor = const Color(0xFFFFE082);
+        textColor = const Color(0xFF8D6E00);
+        fontSize = 11;
+        padding = const EdgeInsets.symmetric(horizontal: 7, vertical: 3);
+        break;
+      case 'failed':
+        label = '검토실패';
+        backgroundColor = const Color(0xFFC10230).withOpacity(0.15);
+        textColor = const Color(0xFFC10230);
+        fontSize = 10;
+        padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 2);
+        break;
+      default:
+        return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+          height: 1.1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAiReviewButton() {
+    return Material(
+      color: const Color(0xFF334D61).withOpacity(0.08),
+      borderRadius: BorderRadius.circular(4),
+      child: InkWell(
+        onTap:
+            _isAiReviewing || _isBatchProcessing ? null : _runAiBatchReview,
+        borderRadius: BorderRadius.circular(4),
+        child: SizedBox(
+          height: 20,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_isAiReviewing)
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC10230),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: const Text(
+                    'BETA',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 4),
+              Text(
+                _isAiReviewing ? '판별 중' : 'AI 판별',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF334D61),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMultiSelectAndSortButtons(bool hasData) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: _isSelectionMode
+              ? const Color(0xFF334D61).withOpacity(0.15)
+              : const Color(0xFF334D61).withOpacity(0.05),
+          borderRadius: BorderRadius.circular(4),
+          child: InkWell(
+            onTap: hasData ? _toggleSelectionMode : null,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: SizedBox(
+                height: 40,
+                child: Center(
+                  child: Text(
+                    _isSelectionMode ? '취소' : '다중 선택',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: _isSelectionMode
+                          ? const Color(0xFFC10230)
+                          : const Color(0xFF334D61),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Material(
+          color: const Color(0xFF334D61).withOpacity(0.05),
+          borderRadius: BorderRadius.circular(4),
+          child: InkWell(
+            onTap: _showSortSheet,
+            borderRadius: BorderRadius.circular(4),
+            child: const SizedBox(
+              height: 40,
+              width: 40,
+              child: Icon(
+                Icons.sort_rounded,
+                color: Color(0xFF334D61),
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   void _showSortSheet() {
     showModalBottomSheet(
       context: context,
@@ -528,134 +899,105 @@ class _SendPaymentTicketListScreenState
               ],
             ),
           ),
-          if (hasData)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '총 $_totalCount명',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black.withOpacity(0.45),
-                      ),
-                    ),
-                    TextSpan(
-                      text: '  ·  ',
-                      style: TextStyle(
-                        color: Colors.black.withOpacity(0.25),
-                      ),
-                    ),
-                    TextSpan(
-                      text: '승인 대기 $_pendingCount명',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _pendingCount > 0
-                            ? const Color(0xFFC10230)
-                            : Colors.black.withOpacity(0.45),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+            child: Table(
+              columnWidths: const {
+                0: FlexColumnWidth(),
+                1: IntrinsicColumnWidth(),
+              },
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
               children: [
-                Expanded(
-                  child: Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF334D61).withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      style: const TextStyle(fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: '이름, 학번, 전공 검색',
-                        hintStyle: TextStyle(
-                          color: Colors.black.withOpacity(0.3),
-                          fontSize: 14,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Colors.black.withOpacity(0.35),
-                          size: 20,
-                        ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(
-                                  Icons.close,
-                                  size: 16,
-                                  color: Colors.black.withOpacity(0.35),
+                if (hasData)
+                  TableRow(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8, right: 8),
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '총 $_totalCount명',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black.withOpacity(0.45),
                                 ),
-                                onPressed: _searchController.clear,
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 10),
-                        isDense: true,
+                              ),
+                              TextSpan(
+                                text: '  ·  ',
+                                style: TextStyle(
+                                  color: Colors.black.withOpacity(0.25),
+                                ),
+                              ),
+                              TextSpan(
+                                text: '승인 대기 $_pendingCount명',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _pendingCount > 0
+                                      ? const Color(0xFFC10230)
+                                      : Colors.black.withOpacity(0.45),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildAiReviewButton(),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                Material(
-                  color: _isSelectionMode
-                      ? const Color(0xFF334D61).withOpacity(0.15)
-                      : const Color(0xFF334D61).withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(4),
-                  child: InkWell(
-                    onTap: hasData ? _toggleSelectionMode : null,
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: SizedBox(
+                TableRow(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Container(
                         height: 40,
-                        child: Center(
-                          child: Text(
-                            _isSelectionMode ? '취소' : '다중 선택',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: _isSelectionMode
-                                  ? const Color(0xFFC10230)
-                                  : const Color(0xFF334D61),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF334D61).withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          style: const TextStyle(fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: '이름, 학번, 전공 검색',
+                            hintStyle: TextStyle(
+                              color: Colors.black.withOpacity(0.3),
+                              fontSize: 14,
                             ),
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: Colors.black.withOpacity(0.35),
+                              size: 20,
+                            ),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.black.withOpacity(0.35),
+                                    ),
+                                    onPressed: _searchController.clear,
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                            isDense: true,
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Material(
-                  color: const Color(0xFF334D61).withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(4),
-                  child: InkWell(
-                    onTap: _showSortSheet,
-                    borderRadius: BorderRadius.circular(4),
-                    child: const SizedBox(
-                      height: 40,
-                      width: 40,
-                      child: Icon(
-                        Icons.sort_rounded,
-                        color: Color(0xFF334D61),
-                        size: 22,
-                      ),
-                    ),
-                  ),
+                    _buildMultiSelectAndSortButtons(hasData),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -775,6 +1117,9 @@ class _SendPaymentTicketListScreenState
                 ),
               ),
             ),
+      floatingActionButton: _isSelectionMode
+          ? null
+          : const AdminMenuButton(),
     );
   }
 
@@ -818,7 +1163,11 @@ class _SendPaymentTicketListScreenState
                     builder: (context) =>
                         SendPaymentDetailScreen(paymentId: paymentId),
                   ),
-                );
+                ).then((changed) {
+                  if (changed == true && mounted) {
+                    _fetchPayments();
+                  }
+                });
               },
               behavior: HitTestBehavior.opaque,
               child: Column(
@@ -850,33 +1199,42 @@ class _SendPaymentTicketListScreenState
             ),
           ),
           const SizedBox(width: 8),
-          Column(
+          Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Transform.scale(
-                scale: 0.72,
-                child: CupertinoSwitch(
-                  value: isApproved,
-                  activeTrackColor: const Color(0xFF334D61),
-                  onChanged: _isBatchProcessing
-                      ? null
-                      : (bool value) {
-                          _toggleApproval(
-                            paymentId: paymentId,
-                            newValue: value,
-                          );
-                        },
-                ),
-              ),
-              Text(
-                isApproved ? '승인' : '대기',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isApproved
-                      ? const Color(0xFF334D61)
-                      : const Color(0xFFC10230),
-                ),
+              _buildAiReviewBadge(paymentId),
+              if ((_aiReviewStatus[paymentId] ?? 'none') != 'none')
+                const SizedBox(width: 6),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Transform.scale(
+                    scale: 0.72,
+                    child: CupertinoSwitch(
+                      value: isApproved,
+                      activeTrackColor: const Color(0xFF334D61),
+                      onChanged: _isBatchProcessing
+                          ? null
+                          : (bool value) {
+                              _toggleApproval(
+                                paymentId: paymentId,
+                                newValue: value,
+                              );
+                            },
+                    ),
+                  ),
+                  Text(
+                    isApproved ? '승인' : '대기',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isApproved
+                          ? const Color(0xFF334D61)
+                          : const Color(0xFFC10230),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
