@@ -4,6 +4,7 @@ import 'package:passtime/admin/ticket_produce.dart';
 import 'package:passtime/admin/send_payment_list.dart';
 import 'package:passtime/admin/request_refund_list.dart';
 import 'package:passtime/screens/ticket_screen.dart';
+import 'package:passtime/widgets/menu_sheet_padding.dart';
 
 class AdminMenuButton extends StatefulWidget {
   const AdminMenuButton({super.key});
@@ -50,6 +51,21 @@ class _AdminMenuButtonState extends State<AdminMenuButton> {
     );
   }
 
+  Widget _buildMenuSheet(BuildContext context, List<Widget> children) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.only(
+          top: 8,
+          bottom: menuSheetBottomPadding(context),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
@@ -67,13 +83,9 @@ class _AdminMenuButtonState extends State<AdminMenuButton> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
             builder: (context) {
-              return SafeArea(
-                child: SingleChildScrollView(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+              return _buildMenuSheet(
+                context,
+                [
                         // '행사 관리' 메뉴
                         _buildMenuItem(
                           context,
@@ -143,11 +155,7 @@ class _AdminMenuButtonState extends State<AdminMenuButton> {
                             );
                           },
                         ),
-                        const SizedBox(height: 15),
-                      ],
-                    ),
-                  ),
-                ),
+                ],
               );
             },
           ).then((_) {

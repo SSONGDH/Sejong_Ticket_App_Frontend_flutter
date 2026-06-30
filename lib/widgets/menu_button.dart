@@ -12,6 +12,7 @@ import 'package:passtime/menu/request_refund.dart';
 import 'package:passtime/menu/my_page_screen.dart';
 import 'package:passtime/menu/settings.dart';
 import 'package:passtime/admin/admin_ticket_screen.dart';
+import 'package:passtime/widgets/menu_sheet_padding.dart';
 
 class MenuButton extends StatefulWidget {
   const MenuButton({super.key});
@@ -90,6 +91,21 @@ class _MenuButtonState extends State<MenuButton> {
     );
   }
 
+  Widget _buildMenuSheet(BuildContext context, List<Widget> children) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.only(
+          top: 8,
+          bottom: menuSheetBottomPadding(context),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
@@ -106,14 +122,9 @@ class _MenuButtonState extends State<MenuButton> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
             builder: (context) {
-              return SafeArea(
-                bottom: true, // ✅ 내비게이션 영역 반영
-                child: SingleChildScrollView(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+              return _buildMenuSheet(
+                context,
+                [
                         // '입장권' 메뉴
                         _buildMenuItem(
                           context,
@@ -142,11 +153,9 @@ class _MenuButtonState extends State<MenuButton> {
                                     top: Radius.circular(16)),
                               ),
                               builder: (context) {
-                                return SafeArea(
-                                  bottom: true,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
+                                return _buildMenuSheet(
+                                  context,
+                                  [
                                       _buildMenuItem(
                                         context,
                                         imagePath:
@@ -175,9 +184,7 @@ class _MenuButtonState extends State<MenuButton> {
                                           );
                                         },
                                       ),
-                                      const SizedBox(height: 15),
                                     ],
-                                  ),
                                 );
                               },
                             ).then((_) {
@@ -328,11 +335,7 @@ class _MenuButtonState extends State<MenuButton> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 15),
-                      ],
-                    ),
-                  ),
-                ),
+                ],
               );
             },
           ).then((_) {
