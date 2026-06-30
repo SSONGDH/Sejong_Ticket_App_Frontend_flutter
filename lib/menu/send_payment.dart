@@ -129,7 +129,7 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
-          resizeToAvoidBottomInset: true,
+          resizeToAvoidBottomInset: false,
           backgroundColor: const Color(0xFFF5F6F7),
           appBar: AppBar(
             toolbarHeight: 70,
@@ -159,8 +159,12 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    16 + MediaQuery.of(context).viewInsets.bottom,
+                  ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -195,7 +199,6 @@ class _SendPaymentScreenState extends State<SendPaymentScreen> {
                         _buildImagePickerField(),
                       ],
                     ),
-                  ),
                 ),
               ),
               Padding(

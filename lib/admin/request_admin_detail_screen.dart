@@ -282,6 +282,7 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: Colors.white,
         appBar: AppBar(
           toolbarHeight: 70,
@@ -339,8 +340,12 @@ class _RequestAdminDetailScreenState extends State<RequestAdminDetailScreen> {
                         Expanded(
                           child: SingleChildScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 16),
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              16,
+                              16,
+                              16 + MediaQuery.of(context).viewInsets.bottom,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [

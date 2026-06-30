@@ -177,7 +177,7 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
         backgroundColor: const Color(0xFFF5F6F7),
         appBar: AppBar(
           toolbarHeight: 70,
@@ -201,7 +201,12 @@ class _RequestRefundScreenState extends State<RequestRefundScreen> {
             Expanded(
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  16,
+                  16,
+                  16 + MediaQuery.of(context).viewInsets.bottom,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

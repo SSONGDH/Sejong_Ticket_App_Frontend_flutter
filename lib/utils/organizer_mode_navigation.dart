@@ -64,8 +64,21 @@ void _showNoAuthorizedAffiliationDialog(BuildContext context) {
   showCupertinoDialog(
     context: context,
     builder: (context) => CupertinoAlertDialog(
-      title: const Text('권한이 있는 소속이 없습니다!'),
-      content: const Text('소속 권한자한테 권한을 부여 받거나 위임 받으세요'),
+      title: const Text(
+        '권한이 있는 소속이 없습니다!',
+        textAlign: TextAlign.center,
+      ),
+      content: const Padding(
+        padding: EdgeInsets.only(top: 4),
+        child: Text(
+          '소속 권한자에게 권한을 부여받거나\n위임받으세요.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.45,
+          ),
+        ),
+      ),
       actions: [
         CupertinoDialogAction(
           onPressed: () => Navigator.pop(context),

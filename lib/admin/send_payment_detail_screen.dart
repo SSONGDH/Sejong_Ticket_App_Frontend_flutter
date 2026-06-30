@@ -115,6 +115,7 @@ class _SendPaymentDetailScreenState extends State<SendPaymentDetailScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: Colors.white,
         appBar: AppBar(
           toolbarHeight: 70,

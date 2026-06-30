@@ -338,6 +338,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
+          resizeToAvoidBottomInset: false,
           backgroundColor: Colors.white,
           appBar: AppBar(
             toolbarHeight: 70,
@@ -366,7 +367,12 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    16 + MediaQuery.of(context).viewInsets.bottom,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

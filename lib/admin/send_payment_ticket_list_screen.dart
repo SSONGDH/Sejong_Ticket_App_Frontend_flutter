@@ -430,6 +430,7 @@ class _SendPaymentTicketListScreenState
         filteredIds.every(_selectedPaymentIds.contains);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       appBar: AppBar(
         toolbarHeight: 56,

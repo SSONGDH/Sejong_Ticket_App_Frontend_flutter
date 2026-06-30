@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:passtime/widgets/custom_app_bar.dart';
 import 'package:passtime/widgets/menu_button.dart';
 import 'package:passtime/menu/affiliation_creation.dart';
+import 'package:passtime/menu/my_request_history_screen.dart';
 import '../cookiejar_singleton.dart';
 import 'package:passtime/screens/ticket_screen.dart';
 
@@ -340,6 +341,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
         );
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: const CustomAppBar(title: '마이페이지'),
         backgroundColor: const Color(0xFFF5F6F7),
         body: Column(
@@ -347,19 +349,63 @@ class _MyPageScreenState extends State<MyPageScreen> {
             Expanded(
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 10),
-                      Text(
-                        '안녕하세요 $_userName님 :)',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF334D61),
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '안녕하세요 $_userName님 :)',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF334D61),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const MyRequestHistoryScreen(),
+                                ),
+                              );
+                            },
+                            label: const Text(
+                              '신청내역',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.assignment_outlined,
+                              color: Colors.white,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7E929F),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 10),
                       Container(
@@ -459,12 +505,15 @@ class _MyPageScreenState extends State<MyPageScreen> {
                             label: const Text(
                               '소속 생성',
                               style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            icon: const Icon(Icons.add_rounded,
-                                color: Colors.white),
+                            icon: const Icon(
+                              Icons.add_rounded,
+                              color: Colors.white,
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF7E929F),
                               shape: RoundedRectangleBorder(
@@ -576,13 +625,32 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         ),
                       ),
                       const SizedBox(height: 40),
-                      const Text(
-                        '권한이 있는 소속',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF334D61),
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Text(
+                            '권한이 있는 소속',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF334D61),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '소속장에게 권한을 부여받거나 소속을 생성하세요',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    const Color(0xFF334D61).withOpacity(0.45),
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 10),
                       _authorizedAffiliations.isEmpty

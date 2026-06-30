@@ -241,7 +241,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
           FocusScope.of(context).unfocus();
         },
         child: Scaffold(
-          resizeToAvoidBottomInset: true,
+          resizeToAvoidBottomInset: false,
           appBar: AppBar(
             toolbarHeight: 70,
             backgroundColor: Colors.white,
@@ -270,6 +270,9 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(

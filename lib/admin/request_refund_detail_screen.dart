@@ -114,6 +114,7 @@ class _RequestRefundDetailScreenState extends State<RequestRefundDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       appBar: AppBar(
         toolbarHeight: 70,

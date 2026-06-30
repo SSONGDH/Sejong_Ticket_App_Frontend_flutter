@@ -130,6 +130,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
+          resizeToAvoidBottomInset: false,
           backgroundColor: Colors.white,
           appBar: AppBar(
             toolbarHeight: 70,
@@ -170,7 +171,9 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                       16,
                       16,
                       16,
-                      16 + MediaQuery.of(context).padding.bottom, // 하단 여백 추가
+                      16 +
+                          MediaQuery.of(context).padding.bottom +
+                          MediaQuery.of(context).viewInsets.bottom,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
