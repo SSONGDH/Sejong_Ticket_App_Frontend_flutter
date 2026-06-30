@@ -11,7 +11,7 @@ import 'package:passtime/menu/send_payment.dart';
 import 'package:passtime/menu/request_refund.dart';
 import 'package:passtime/menu/my_page_screen.dart';
 import 'package:passtime/menu/settings.dart';
-import 'package:passtime/admin/admin_ticket_screen.dart';
+import 'package:passtime/utils/organizer_mode_navigation.dart';
 import 'package:passtime/widgets/menu_sheet_padding.dart';
 
 class MenuButton extends StatefulWidget {
@@ -160,7 +160,7 @@ class _MenuButtonState extends State<MenuButton> {
                                         context,
                                         imagePath:
                                             'assets/images/ticket-plus.png',
-                                        text: 'CODE',
+                                        text: 'CODE로 추가',
                                         onTap: () {
                                           Navigator.push(
                                             context,
@@ -174,7 +174,7 @@ class _MenuButtonState extends State<MenuButton> {
                                         context,
                                         imagePath:
                                             'assets/images/ticket-plus.png',
-                                        text: 'NFC',
+                                        text: 'NFC로 추가',
                                         onTap: () {
                                           Navigator.push(
                                             context,
@@ -236,80 +236,11 @@ class _MenuButtonState extends State<MenuButton> {
                             );
                           },
                         ),
-                        // '설정' 메뉴
-                        _buildMenuItem(
-                          context,
-                          imagePath: 'assets/images/settings.png',
-                          text: '설정',
-                          onTap: () {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const SettingsScreen()),
-                              (Route<dynamic> route) => false,
-                            );
-                          },
-                        ),
                         // '주최자 모드' 메뉴
                         InkWell(
-                          onTap: () async {
-                            try {
-                              final apiUrl =
-                                  '${dotenv.env['API_BASE_URL']}/admin/connection';
-                              final uri =
-                                  Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
-                              final cookies = await CookieJarSingleton()
-                                  .cookieJar
-                                  .loadForRequest(uri);
-
-                              final response = await dio.get(
-                                apiUrl,
-                                options: Options(headers: {'Cookie': cookies}),
-                              );
-
-                              if (response.statusCode == 200 &&
-                                  response.data['isSuccess'] == true) {
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          const AdminTicketScreen()),
-                                  (Route<dynamic> route) => false,
-                                );
-                              } else {
-                                showCupertinoDialog(
-                                  context: context,
-                                  builder: (context) => CupertinoAlertDialog(
-                                    title: const Text("알림"),
-                                    content: const Text("지정된 주최자가 아닙니다."),
-                                    actions: [
-                                      CupertinoDialogAction(
-                                        child: const Text("확인",
-                                            style: TextStyle(
-                                                color: Color(0xFFC10230))),
-                                        onPressed: () => Navigator.pop(context),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              showCupertinoDialog(
-                                context: context,
-                                builder: (context) => CupertinoAlertDialog(
-                                  title: const Text("알림"),
-                                  content: const Text("지정된 주최자가 아닙니다."),
-                                  actions: [
-                                    CupertinoDialogAction(
-                                      child: const Text("확인",
-                                          style: TextStyle(
-                                              color: Color(0xFFC10230))),
-                                      onPressed: () => Navigator.pop(context),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
+                          onTap: () {
+                            Navigator.pop(context);
+                            navigateToOrganizerMode(context, dio);
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -334,6 +265,20 @@ class _MenuButtonState extends State<MenuButton> {
                               ],
                             ),
                           ),
+                        ),
+                        // '설정' 메뉴
+                        _buildMenuItem(
+                          context,
+                          imagePath: 'assets/images/settings.png',
+                          text: '설정',
+                          onTap: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SettingsScreen()),
+                              (Route<dynamic> route) => false,
+                            );
+                          },
                         ),
                 ],
               );

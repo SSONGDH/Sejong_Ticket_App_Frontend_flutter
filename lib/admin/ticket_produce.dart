@@ -430,7 +430,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "소속",
+            "주최 소속",
             style: TextStyle(
               color: Colors.black.withOpacity(0.6),
               fontSize: 14,
@@ -444,7 +444,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
               child: DropdownButton<String>(
                 value: selectedAffiliation,
                 hint: Text(
-                  '소속 선택',
+                  '주최 소속 선택',
                   style: TextStyle(
                     color: Colors.black.withOpacity(0.3),
                     fontSize: 16,

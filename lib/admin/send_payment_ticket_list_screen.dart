@@ -500,14 +500,28 @@ class _SendPaymentTicketListScreenState
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  widget.affiliationName.isNotEmpty
-                      ? widget.affiliationName
-                      : '-',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black.withOpacity(0.45),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(
+                        text: '주최 소속  ',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      TextSpan(
+                        text: widget.affiliationName.isNotEmpty
+                            ? widget.affiliationName
+                            : '-',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black.withOpacity(0.45),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

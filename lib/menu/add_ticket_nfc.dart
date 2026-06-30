@@ -234,7 +234,7 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
         ),
         centerTitle: true,
         title: const Text(
-          'NFC',
+          'NFC로 추가',
           style: TextStyle(
             color: Colors.black,
             fontSize: 22,

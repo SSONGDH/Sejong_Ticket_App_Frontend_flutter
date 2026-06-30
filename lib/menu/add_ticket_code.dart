@@ -148,7 +148,7 @@ class _AddTicketCodeScreenState extends State<AddTicketCodeScreen> {
             ),
             centerTitle: true,
             title: const Text(
-              'CODE',
+              'CODE로 추가',
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 22,

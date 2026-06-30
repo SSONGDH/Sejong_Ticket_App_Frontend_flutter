@@ -86,7 +86,7 @@ class AdminTicketCard extends StatelessWidget {
                     TextSpan(
                       children: [
                         const TextSpan(
-                          text: '소속 ',
+                          text: '주최 소속  ',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,

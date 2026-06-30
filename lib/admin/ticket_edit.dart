@@ -607,7 +607,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "소속",
+            "주최 소속",
             style: TextStyle(
               color: Colors.black.withOpacity(0.6),
               fontSize: 14,
@@ -621,7 +621,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
               child: DropdownButton<String>(
                 value: dropdownValue,
                 hint: Text(
-                  selectedAffiliation ?? '소속 선택',
+                  selectedAffiliation ?? '주최 소속 선택',
                   style: TextStyle(
                     color: dropdownValue != null
                         ? Colors.black
