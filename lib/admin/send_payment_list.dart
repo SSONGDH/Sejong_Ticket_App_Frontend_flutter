@@ -1,19 +1,19 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'send_payment_detail_screen.dart';
 import 'package:passtime/widgets/custom_app_bar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:passtime/widgets/admin_menu_button.dart';
 import 'package:passtime/cookiejar_singleton.dart';
-import 'package:passtime/admin/admin_ticket_screen.dart'; // AdminTicketScreen을 import합니다.
+import 'package:passtime/admin/admin_ticket_screen.dart';
+import 'package:passtime/admin/send_payment_ticket_list_screen.dart';
+import 'package:passtime/widgets/admin_ticket_card.dart';
 
 class SendPaymentListScreen extends StatefulWidget {
   const SendPaymentListScreen({super.key});
 
   @override
-  _SendPaymentListScreenState createState() => _SendPaymentListScreenState();
+  State<SendPaymentListScreen> createState() => _SendPaymentListScreenState();
 }
 
 class _SendPaymentListScreenState extends State<SendPaymentListScreen>
@@ -21,11 +21,17 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
   TabController? _tabController;
 
   List<Map<String, dynamic>> _affiliations = [];
-  Map<String, bool> _switchValues = {};
-  Map<String, Map<String, String>> _paymentData = {};
+  final Map<String, List<Map<String, dynamic>>> _eventsByAffiliationId = {};
   bool _isAffiliationLoading = true;
-  bool _isPaymentLoading = true;
+  bool _isEventsLoading = true;
   String? _errorMessage;
+
+  int _parseCount(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
+  }
 
   @override
   void initState() {
@@ -42,30 +48,30 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
 
   void _handleTabSelection() {
     if (_tabController != null && !_tabController!.indexIsChanging) {
-      final selectedAffiliationId =
-          _affiliations[_tabController!.index]['_id'] as String;
-      _fetchPaymentData(affiliationId: selectedAffiliationId);
+      setState(() {});
     }
+  }
+
+  Future<String> _getCookieHeader() async {
+    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+    final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+    if (cookies.isEmpty) return '';
+    return cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
   }
 
   Future<void> _fetchAffiliations() async {
     final url =
         Uri.parse('${dotenv.env['API_BASE_URL']}/user/adminAffilliation/list');
-    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
 
     try {
-      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
-      final cookieHeader = cookies.isNotEmpty
-          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
-          : '';
-
+      final cookieHeader = await _getCookieHeader();
       final response = await http.get(url, headers: {'Cookie': cookieHeader});
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
         if (data['success'] == true && data['affiliations'] != null) {
-          List<Map<String, dynamic>> fetchedAffiliations =
+          final fetchedAffiliations =
               List<Map<String, dynamic>>.from(data['affiliations']);
 
           setState(() {
@@ -76,177 +82,104 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
               _tabController =
                   TabController(length: _affiliations.length, vsync: this);
               _tabController!.addListener(_handleTabSelection);
-
-              final firstAffiliationId = _affiliations.first['_id'] as String;
-              _fetchPaymentData(affiliationId: firstAffiliationId);
             }
           });
+
+          if (_affiliations.isNotEmpty) {
+            await _fetchEvents();
+          } else {
+            setState(() {
+              _isEventsLoading = false;
+            });
+          }
         } else {
           setState(() {
             _isAffiliationLoading = false;
+            _isEventsLoading = false;
             _errorMessage = data['message'] ?? "소속 목록을 불러오는데 실패했습니다.";
           });
         }
       } else {
         setState(() {
           _isAffiliationLoading = false;
+          _isEventsLoading = false;
           _errorMessage = "서버 오류: ${response.statusCode}";
         });
       }
     } catch (e) {
       setState(() {
         _isAffiliationLoading = false;
+        _isEventsLoading = false;
         _errorMessage = "네트워크 오류: $e";
       });
     }
   }
 
-  Future<void> _fetchPaymentData({required String affiliationId}) async {
+  Future<void> _fetchEvents() async {
     setState(() {
-      _isPaymentLoading = true;
-      _paymentData = {};
-      _switchValues = {};
+      _isEventsLoading = true;
     });
 
-    String urlString =
-        '${dotenv.env['API_BASE_URL']}/payment/list?affiliationId=$affiliationId';
-
-    print("Request URL: $urlString");
-
-    final url = Uri.parse(urlString);
-    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+    final url = Uri.parse('${dotenv.env['API_BASE_URL']}/ticket/manageList');
 
     try {
-      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
-      final cookieHeader = cookies.isNotEmpty
-          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
-          : '';
-
+      final cookieHeader = await _getCookieHeader();
       final response = await http.get(url, headers: {'Cookie': cookieHeader});
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['isSuccess'] == true && data['result'] != null) {
-          final newPaymentData = <String, Map<String, String>>{};
-          final newSwitchValues = <String, bool>{};
 
-          for (var payment in data['result']) {
-            final studentId = payment['studentId']?.toString() ?? 'ID 없음';
-            final name = payment['name']?.toString() ?? '이름 없음';
-            final paymentId = payment['paymentId']?.toString();
+        if (data['isSuccess'] == true) {
+          final List<dynamic> result = data['result'] ?? [];
+          final events = result.map((item) {
+            return {
+              'ticketId': item['_id']?.toString() ?? '',
+              'title': item['eventTitle']?.toString() ?? '',
+              'dateTime':
+                  '${item['eventDay']} • ${item['eventStartTime'].toString().substring(0, 5)}',
+              'location': item['eventPlace']?.toString() ?? '',
+              'affiliation': item['affiliation']?.toString() ?? '',
+              'totalCount': _parseCount(item['totalCount']),
+              'pendingCount': _parseCount(item['pendingCount']),
+            };
+          }).toList();
 
-            if (paymentId != null) {
-              newPaymentData[paymentId] = {
-                'name': name,
-                'studentId': studentId,
-              };
-              newSwitchValues[paymentId] =
-                  payment['paymentPermissionStatus'] as bool? ?? false;
-            }
+          final grouped = <String, List<Map<String, dynamic>>>{};
+          for (final affiliation in _affiliations) {
+            final affiliationId = affiliation['_id']?.toString() ?? '';
+            final affiliationName = affiliation['name']?.toString() ?? '';
+            grouped[affiliationId] = events
+                .where((event) => event['affiliation'] == affiliationName)
+                .cast<Map<String, dynamic>>()
+                .toList();
           }
+
           setState(() {
-            _paymentData = newPaymentData;
-            _switchValues = newSwitchValues;
+            _eventsByAffiliationId
+              ..clear()
+              ..addAll(grouped);
           });
         }
       }
-    } catch (error) {
-      // 에러 처리
     } finally {
-      setState(() {
-        _isPaymentLoading = false;
-      });
-    }
-  }
-
-  Future<void> _toggleApproval({
-    required String paymentId,
-    required bool newValue,
-  }) async {
-    final String baseUrl = dotenv.env['API_BASE_URL']!;
-    final String apiUrl =
-        newValue ? "$baseUrl/payment/permission" : "$baseUrl/payment/deny";
-    final uri = Uri.parse("$apiUrl?paymentId=$paymentId");
-    final baseUri = Uri.parse(baseUrl);
-
-    try {
-      final cookies =
-          await CookieJarSingleton().cookieJar.loadForRequest(baseUri);
-      final cookieHeader = cookies.isNotEmpty
-          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
-          : '';
-
-      final response = await http.put(
-        uri,
-        headers: {
-          'Cookie': cookieHeader,
-        },
-      );
-      final data = json.decode(response.body);
-
-      if (response.statusCode == 200 && data["isSuccess"] == true) {
+      if (mounted) {
         setState(() {
-          _switchValues[paymentId] = newValue;
+          _isEventsLoading = false;
         });
-
-        if (context.mounted) {
-          showCupertinoDialog(
-            context: context,
-            builder: (_) => CupertinoAlertDialog(
-              title: Text(newValue ? "승인 완료" : "미승인 완료"),
-              content:
-                  Text(newValue ? "납부 요청이 승인되었습니다." : "납부 요청이 미승인 처리되었습니다."),
-              actions: [
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("확인",
-                      style: TextStyle(color: Color(0xFFC10230))),
-                ),
-              ],
-            ),
-          );
-        }
-      } else {
-        _revertSwitch(paymentId);
-        _showErrorDialog(data["message"] ?? "처리에 실패했습니다.");
       }
-    } catch (e) {
-      _revertSwitch(paymentId);
-      _showErrorDialog("상태 변경 중 오류 발생: $e");
     }
   }
 
-  void _revertSwitch(String paymentId) {
-    setState(() {
-      _switchValues[paymentId] = !_switchValues[paymentId]!;
-    });
-  }
-
-  void _showErrorDialog(String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (_) => CupertinoAlertDialog(
-        title: const Text("오류"),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("확인", style: TextStyle(color: Color(0xFFC10230))),
-          ),
-        ],
-      ),
-    );
+  List<Map<String, dynamic>> _eventsForAffiliation(String affiliationId) {
+    return _eventsByAffiliationId[affiliationId] ?? [];
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // 뒤로가기 동작을 가로챕니다.
+      canPop: false,
       onPopInvoked: (didPop) {
-        if (didPop) {
-          return;
-        }
-        // 뒤로가기 제스처가 발생하면 AdminTicketScreen으로 돌아갑니다.
+        if (didPop) return;
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const AdminTicketScreen()),
@@ -285,8 +218,10 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
                           Expanded(
                             child: TabBarView(
                               controller: _tabController,
-                              children: _affiliations.map((_) {
-                                return _buildPaymentList();
+                              children: _affiliations.map((affiliation) {
+                                final affiliationId =
+                                    affiliation['_id']?.toString() ?? '';
+                                return _buildEventList(affiliationId);
                               }).toList(),
                             ),
                           ),
@@ -296,84 +231,67 @@ class _SendPaymentListScreenState extends State<SendPaymentListScreen>
     );
   }
 
-  Widget _buildPaymentList() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: _isPaymentLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _paymentData.isEmpty
-              ? Center(
-                  child: Align(
-                    alignment: const Alignment(0.0, -0.15),
-                    child: Text(
-                      '납부 내역 목록이 없습니다',
-                      style: TextStyle(
-                          fontSize: 16,
-                          color: const Color(0xFF334D61).withOpacity(0.5),
-                          fontWeight: FontWeight.bold),
+  Widget _buildEventList(String affiliationId) {
+    final events = _eventsForAffiliation(affiliationId);
+
+    if (_isEventsLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (events.isEmpty) {
+      return Center(
+        child: Align(
+          alignment: const Alignment(0.0, -0.15),
+          child: Text(
+            '진행 중인 행사가 없습니다',
+            style: TextStyle(
+              fontSize: 16,
+              color: const Color(0xFF334D61).withOpacity(0.5),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: Colors.black,
+      backgroundColor: Colors.white,
+      onRefresh: _fetchEvents,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        itemCount: events.length,
+        itemBuilder: (context, index) {
+          final event = events[index];
+          return Padding(
+            padding: EdgeInsets.only(bottom: index < events.length - 1 ? 5 : 0),
+            child: AdminTicketCard(
+              ticketId: event['ticketId'] as String,
+              title: event['title'] as String,
+              dateTime: event['dateTime'] as String,
+              location: event['location'] as String,
+              affiliation: event['affiliation'] as String,
+              totalCount: event['totalCount'] as int,
+              pendingCount: event['pendingCount'] as int,
+              showActions: false,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SendPaymentTicketListScreen(
+                      ticketId: event['ticketId'] as String,
+                      affiliationId: affiliationId,
+                      eventTitle: event['title'] as String,
+                      affiliationName: event['affiliation'] as String? ?? '',
                     ),
                   ),
-                )
-              : ListView(
-                  children: _paymentData.keys
-                      .map((paymentId) => _buildListItem(paymentId))
-                      .toList(),
-                ),
-    );
-  }
-
-  Widget _buildListItem(String paymentId) {
-    final name = _paymentData[paymentId]?['name'] ?? "이름 없음";
-    final studentId = _paymentData[paymentId]?['studentId'] ?? "ID 없음";
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SendPaymentDetailScreen(paymentId: paymentId),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(top: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF334D61).withOpacity(0.05),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 4,
-              child: Text(
-                studentId,
-                style: TextStyle(
-                    color: Colors.black.withOpacity(0.5),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16),
-              ),
-            ),
-            Expanded(
-              flex: 5,
-              child: Text(
-                name,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-              ),
-            ),
-            CupertinoSwitch(
-              value: _switchValues[paymentId] ?? false,
-              activeTrackColor: const Color(0xFF334D61),
-              onChanged: (bool value) {
-                _toggleApproval(
-                  paymentId: paymentId,
-                  newValue: value,
                 );
               },
+              onEdit: () {},
+              onDelete: () {},
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

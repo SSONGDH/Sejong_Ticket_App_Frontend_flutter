@@ -8,6 +8,8 @@ class AdminTicketCard extends StatelessWidget {
   final String affiliation;
   final int totalCount;
   final int pendingCount;
+  final bool showActions;
+  final VoidCallback? onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -20,6 +22,8 @@ class AdminTicketCard extends StatelessWidget {
     required this.affiliation,
     required this.totalCount,
     required this.pendingCount,
+    this.showActions = true,
+    this.onTap,
     required this.onEdit,
     required this.onDelete,
   });
@@ -32,10 +36,22 @@ class AdminTicketCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(4),
       ),
-      child: InkWell(
-        onTap: onEdit,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
+      child: showActions
+          ? InkWell(
+              onTap: onEdit,
+              borderRadius: BorderRadius.circular(4),
+              child: _buildCardContent(),
+            )
+          : GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: _buildCardContent(),
+            ),
+    );
+  }
+
+  Widget _buildCardContent() {
+    return Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,18 +70,20 @@ class AdminTicketCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  _buildActionButton(
-                    label: '수정',
-                    color: const Color(0xFF7E929F),
-                    onPressed: onEdit,
-                  ),
-                  const SizedBox(width: 4),
-                  _buildActionButton(
-                    label: '삭제',
-                    color: const Color(0xFFC10230),
-                    onPressed: onDelete,
-                  ),
+                  if (showActions) ...[
+                    const SizedBox(width: 8),
+                    _buildActionButton(
+                      label: '수정',
+                      color: const Color(0xFF7E929F),
+                      onPressed: onEdit,
+                    ),
+                    const SizedBox(width: 4),
+                    _buildActionButton(
+                      label: '삭제',
+                      color: const Color(0xFFC10230),
+                      onPressed: onDelete,
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 8),
@@ -175,9 +193,7 @@ class AdminTicketCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildActionButton({
