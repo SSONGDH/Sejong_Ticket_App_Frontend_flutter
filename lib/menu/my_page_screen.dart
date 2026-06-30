@@ -18,9 +18,9 @@ class Affiliation {
 
   factory Affiliation.fromJson(Map<String, dynamic> json) {
     return Affiliation(
-      id: json['_id'],
-      name: json['name'],
-      admin: json['admin'] ?? false,
+      id: (json['_id'] ?? json['affiliationId'])?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      admin: json['admin'] as bool? ?? false,
     );
   }
 
@@ -51,13 +51,18 @@ class MyPageScreen extends StatefulWidget {
 }
 
 class _MyPageScreenState extends State<MyPageScreen> {
+  static const double _dropdownItemHeight = 48.0;
+  static const int _maxDropdownVisibleItems = 4;
+
   final Dio _dio = Dio();
   Affiliation? _selectedAffiliation;
   List<Affiliation> _currentAffiliations = [];
   late List<Affiliation> _initialAffiliations;
   List<Affiliation> _availableAffiliations = [];
+  List<Affiliation> _authorizedAffiliations = [];
 
   bool _isSaveButtonEnabled = false;
+  bool _isRoot = false;
   String _fixedStudentId = '';
   String _userName = '';
 
@@ -128,6 +133,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
         final String studentId = result['studentId']?.toString() ?? '';
         final String name = result['name'] ?? '';
+        final bool isRoot = result['root'] == true;
 
         final List<Affiliation> totalAffiliations = (result['totalAffiliation']
                     as List<dynamic>? ??
@@ -135,11 +141,24 @@ class _MyPageScreenState extends State<MyPageScreen> {
             .map((item) => Affiliation.fromJson(item as Map<String, dynamic>))
             .toList();
 
+        final List<Affiliation> authorizedAffiliations = isRoot
+            ? (totalAffiliations
+                .map((aff) => Affiliation(
+                      id: aff.id,
+                      name: aff.name,
+                      admin: true,
+                    ))
+                .toList()
+              ..sort((a, b) => a.name.compareTo(b.name)))
+            : await _fetchAuthorizedAffiliations();
+
         setState(() {
           _currentAffiliations = affiliations;
           _initialAffiliations = List.from(_currentAffiliations);
           _fixedStudentId = studentId;
           _userName = name;
+          _isRoot = isRoot;
+          _authorizedAffiliations = authorizedAffiliations;
 
           _availableAffiliations = totalAffiliations
               .where((totalAff) => !_currentAffiliations.contains(totalAff))
@@ -157,6 +176,40 @@ class _MyPageScreenState extends State<MyPageScreen> {
     }
   }
 
+  Future<List<Affiliation>> _fetchAuthorizedAffiliations() async {
+    final apiUrl =
+        '${dotenv.env['API_BASE_URL']}/user/affiliation/authorized';
+    final uri = Uri.parse(dotenv.env['API_BASE_URL'] ?? '');
+
+    try {
+      final cookies = await CookieJarSingleton().cookieJar.loadForRequest(uri);
+      final cookieHeader = cookies.isNotEmpty
+          ? cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ')
+          : '';
+
+      final response = await _dio.get(
+        apiUrl,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieHeader,
+          },
+        ),
+      );
+
+      if (response.data['isSuccess'] == true &&
+          response.data['result'] is List) {
+        return (response.data['result'] as List<dynamic>)
+            .map((item) => Affiliation.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      print('권한 소속 목록 조회 실패: $e');
+    }
+
+    return [];
+  }
+
   bool _areListsEqual(List<Affiliation> list1, List<Affiliation> list2) {
     if (list1.length != list2.length) return false;
     final set1 = list1.map((e) => e.id).toSet();
@@ -169,6 +222,46 @@ class _MyPageScreenState extends State<MyPageScreen> {
       _isSaveButtonEnabled =
           !_areListsEqual(_currentAffiliations, _initialAffiliations);
     });
+  }
+
+  Widget _buildAuthorizedAffiliationItem(Affiliation affiliation) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              affiliation.name,
+              style: const TextStyle(fontSize: 16, color: Colors.black),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: (_isRoot
+                      ? const Color(0xFFC10230)
+                      : const Color(0xFF334D61))
+                  .withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              _isRoot ? 'ROOT' : '주최자',
+              style: TextStyle(
+                color: _isRoot
+                    ? const Color(0xFFC10230)
+                    : const Color(0xFF334D61),
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAffiliationItem(Affiliation affiliation,
@@ -298,7 +391,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       ),
                       const SizedBox(height: 40),
                       const Text(
-                        '현재 소속',
+                        '내가 현재 속한 소속',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -414,62 +507,132 @@ class _MyPageScreenState extends State<MyPageScreen> {
                                 color: Color(0xFF868686)),
                             children: [
                               SizedBox(
-                                height: _availableAffiliations.length > 5
-                                    ? (5 * 48.0)
-                                    : _availableAffiliations.length * 48.0,
-                                child: ListView.builder(
-                                  itemCount: _availableAffiliations.length,
-                                  itemBuilder: (context, index) {
-                                    final affiliation =
-                                        _availableAffiliations[index];
-                                    return InkWell(
-                                      onTap: () {
-                                        setState(() {
-                                          if (!_currentAffiliations
-                                              .contains(affiliation)) {
-                                            _currentAffiliations
-                                                .add(affiliation);
-                                            _availableAffiliations
-                                                .remove(affiliation);
-                                            _selectedAffiliation = null;
-                                          }
-                                          _updateSaveButtonState();
-                                        });
-                                      },
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 15, vertical: 12),
+                                height: _availableAffiliations.isEmpty
+                                    ? _dropdownItemHeight
+                                    : (_availableAffiliations.length >
+                                                _maxDropdownVisibleItems
+                                            ? _maxDropdownVisibleItems
+                                            : _availableAffiliations.length) *
+                                        _dropdownItemHeight,
+                                child: _availableAffiliations.isEmpty
+                                    ? const Center(
                                         child: Text(
-                                          affiliation.name,
-                                          style: const TextStyle(
-                                              fontSize: 16,
-                                              color: Color(0xFF282727)),
+                                          '추가할 소속이 없습니다',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Color(0xFF868686),
+                                          ),
                                         ),
+                                      )
+                                    : ListView.builder(
+                                        physics:
+                                            const ClampingScrollPhysics(),
+                                        itemCount:
+                                            _availableAffiliations.length,
+                                        itemBuilder: (context, index) {
+                                          final affiliation =
+                                              _availableAffiliations[index];
+                                          return InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                if (!_currentAffiliations
+                                                    .contains(affiliation)) {
+                                                  _currentAffiliations
+                                                      .add(affiliation);
+                                                  _availableAffiliations
+                                                      .remove(affiliation);
+                                                  _selectedAffiliation = null;
+                                                }
+                                                _updateSaveButtonState();
+                                              });
+                                            },
+                                            child: SizedBox(
+                                              height: _dropdownItemHeight,
+                                              child: Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Padding(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 15),
+                                                  child: Text(
+                                                    affiliation.name,
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      color: Color(0xFF282727),
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
-                                    );
-                                  },
-                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
+                      const SizedBox(height: 40),
+                      const Text(
+                        '권한이 있는 소속',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF334D61),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _authorizedAffiliations.isEmpty
+                          ? Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 15, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '권한이 있는 소속이 없습니다',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Color(0xFF868686),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Column(
+                              children: [
+                                for (int i = 0;
+                                    i < _authorizedAffiliations.length;
+                                    i++) ...[
+                                  _buildAuthorizedAffiliationItem(
+                                      _authorizedAffiliations[i]),
+                                  if (i < _authorizedAffiliations.length - 1)
+                                    const SizedBox(height: 10),
+                                ],
+                              ],
+                            ),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
               ),
             ),
-            Padding(
+            Container(
+              width: double.infinity,
+              color: const Color(0xFFF5F6F7),
               padding: EdgeInsets.fromLTRB(
                 16.0,
-                0,
+                8.0,
                 16.0,
-                MediaQuery.of(context).viewPadding.bottom > 0
-                    ? 16.0
-                    : 0.0, // 👈 조건부 여백
+                MediaQuery.of(context).viewPadding.bottom > 0 ? 16.0 : 8.0,
               ),
               child: SafeArea(
+                top: false,
                 child: ElevatedButton(
                   onPressed: _isSaveButtonEnabled
                       ? () async {
