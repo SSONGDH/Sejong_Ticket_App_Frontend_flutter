@@ -573,9 +573,15 @@ class _TicketScreenState extends State<TicketScreen> {
     );
   }
 
+  ScrollPhysics _scrollPhysicsForTicketCount(int ticketCount) {
+    return ticketCount <= 1
+        ? const NeverScrollableScrollPhysics()
+        : const AlwaysScrollableScrollPhysics();
+  }
+
   Widget _buildEmptyState() {
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
+      physics: _scrollPhysicsForTicketCount(0),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
         const SizedBox(height: 12),
@@ -623,7 +629,7 @@ class _TicketScreenState extends State<TicketScreen> {
     final isHeroLayout = tickets.length <= 2;
 
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
+      physics: _scrollPhysicsForTicketCount(tickets.length),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
         const SizedBox(height: 12),
