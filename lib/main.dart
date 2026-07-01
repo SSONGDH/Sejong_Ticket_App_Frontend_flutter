@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
+import 'dart:async';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'package:logger/logger.dart';
@@ -10,6 +11,8 @@ import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:passtime/services/mobile_ads_service.dart';
+import 'package:passtime/services/donate_purchase_service.dart';
 
 final logger = Logger();
 
@@ -72,18 +75,34 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
+
+  final kakaoKey = dotenv.env['KAKAO_NATIVE_APP_KEY'];
+  if (kakaoKey != null && kakaoKey.isNotEmpty) {
+    KakaoSdk.init(nativeAppKey: kakaoKey);
+  }
+
+  runApp(const MyApp());
+
+  unawaited(_bootstrapServices());
+}
+
+Future<void> _bootstrapServices() async {
   await _initLocalNotifications();
 
-  // Kakao SDK & Kakao Maps 초기화
   final kakaoKey = dotenv.env['KAKAO_NATIVE_APP_KEY'];
   final kakaoJsKey = dotenv.env['KAKAO_MAP_JS_KEY'] ??
       dotenv.env['KAKAO_JAVASCRIPT_KEY'] ??
       dotenv.env['KAKAO_NATIVE_APP_KEY'];
+
   if (kakaoKey != null && kakaoKey.isNotEmpty) {
     logger.i("[KakaoSDK] 🔑 KAKAO_NATIVE_APP_KEY: $kakaoKey");
-    KakaoSdk.init(nativeAppKey: kakaoKey);
-    await KakaoMapsFlutter.init(kakaoKey);
-    logger.i("[KakaoMap] ✅ 초기화 완료");
+    try {
+      await KakaoMapsFlutter.init(kakaoKey);
+      logger.i("[KakaoMap] ✅ 초기화 완료");
+    } catch (e) {
+      logger.e("[KakaoMap] ❌ 초기화 실패: $e");
+    }
   } else {
     logger.e("[KakaoSDK] ❌ KAKAO_NATIVE_APP_KEY가 비어있습니다!");
   }
@@ -96,8 +115,14 @@ void main() async {
     logger.i("[KakaoMapPlugin] ✅ JavaScript 키 초기화 완료");
   }
 
-  // iOS: 알림 권한 요청
-  NotificationSettings settings =
+  try {
+    await MobileAdsService.ensureInitialized();
+    await DonatePurchaseService.instance.initialize();
+  } catch (e) {
+    logger.e("[Monetization] ❌ 초기화 실패: $e");
+  }
+
+  final NotificationSettings settings =
       await FirebaseMessaging.instance.requestPermission(
     alert: true,
     badge: true,
@@ -105,14 +130,12 @@ void main() async {
   );
   logger.i("🔐 알림 권한 상태: ${settings.authorizationStatus}");
 
-  // 포그라운드 알림 표시 옵션
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: true,
     badge: true,
     sound: true,
   );
 
-  // Foreground 메시지 핸들러
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     logger.i("🔔 [Foreground] 메시지 수신");
     logger.i("Title: ${message.notification?.title}");
@@ -140,10 +163,6 @@ void main() async {
     }
   });
 
-  // 백그라운드 메시지 핸들러 등록
-  FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
-
-  // 앱 종료 상태에서 알림 클릭 처리
   FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
     if (message != null && message.notification != null) {
       logger.i("📩 앱 종료 상태에서 알림 클릭됨");
@@ -153,7 +172,6 @@ void main() async {
     }
   });
 
-  // 백그라운드 상태에서 알림 클릭 처리
   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage? message) {
     if (message != null && message.notification != null) {
       logger.i("📩 백그라운드 상태에서 알림 클릭됨");
@@ -162,8 +180,6 @@ void main() async {
       logger.i("click_action: ${message.data["click_action"]}");
     }
   });
-
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

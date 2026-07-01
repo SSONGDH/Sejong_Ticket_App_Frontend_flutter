@@ -61,6 +61,9 @@ dependencies:
   nfc_manager: ^3.5.0
   flutter_nfc_kit: ^3.6.0
   ndef: ^0.3.4
+  google_mobile_ads: ^5.3.0
+  in_app_purchase: ^3.2.1
+  package_info_plus: ^8.3.0
 
 flutter_native_splash:
   color: "#ffffff" # 배경색

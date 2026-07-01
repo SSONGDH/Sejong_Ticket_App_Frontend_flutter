@@ -4,9 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:passtime/widgets/custom_app_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:passtime/widgets/menu_button.dart';
+import 'package:passtime/widgets/settings_banner_ad.dart';
+import 'package:passtime/services/donate_purchase_service.dart';
 import '../cookiejar_singleton.dart';
 import 'package:passtime/screens/login_screen.dart';
 import 'package:passtime/screens/ticket_screen.dart'; // TicketScreen import 추가
@@ -20,6 +23,10 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool isNotificationOn = false; // 초기 상태를 false로 설정
+  bool _isRoot = false;
+  bool _isRootLoading = true;
+  bool _isDonating = false;
+  String _appVersion = '';
   final Dio _dio = Dio();
 
   @override
@@ -27,6 +34,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _setupDio();
     _fetchNotificationStatus(); // ✅ 앱 시작 시 알림 상태를 불러오는 함수 호출
+    _fetchRootStatus();
+    _loadAppVersion();
+    if (DonatePurchaseService.instance.isSupported) {
+      DonatePurchaseService.instance.initialize();
+    }
+    DonatePurchaseService.instance.onFeedback = _showPurchaseFeedback;
+  }
+
+  @override
+  void dispose() {
+    if (DonatePurchaseService.instance.onFeedback == _showPurchaseFeedback) {
+      DonatePurchaseService.instance.onFeedback = null;
+    }
+    super.dispose();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    setState(() {
+      _appVersion = info.version;
+    });
+  }
+
+  Future<void> _fetchRootStatus() async {
+    final String? apiBaseUrl = dotenv.env['API_BASE_URL'];
+    if (apiBaseUrl == null) {
+      if (mounted) {
+        setState(() => _isRootLoading = false);
+      }
+      return;
+    }
+
+    try {
+      final response = await _dio.get('$apiBaseUrl/user/mypage');
+      if (!mounted) return;
+
+      if (response.data['code'] == 'SUCCESS-0000') {
+        setState(() {
+          _isRoot = response.data['result']?['root'] == true;
+          _isRootLoading = false;
+        });
+      } else {
+        setState(() => _isRootLoading = false);
+      }
+    } on DioException {
+      if (mounted) {
+        setState(() => _isRootLoading = false);
+      }
+    }
+  }
+
+  void _showPurchaseFeedback(String message, {bool isError = false}) {
+    if (!mounted) return;
+    setState(() => _isDonating = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _handleDonateTap() async {
+    if (_isDonating) return;
+    setState(() => _isDonating = true);
+    await DonatePurchaseService.instance.buyDonate();
+    if (mounted && _isDonating) {
+      setState(() => _isDonating = false);
+    }
   }
 
   void _setupDio() {
@@ -204,55 +278,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Scaffold(
         appBar: const CustomAppBar(title: "설정"),
         backgroundColor: const Color(0xFFF5F6F7),
-        body: Stack(
+        body: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCustomTile(
-                    title: '알림',
-                    isSwitch: true,
-                    switchValue: isNotificationOn,
-                    onSwitchChanged: (value) {
-                      setState(() {
-                        isNotificationOn = value;
-                      });
-                      _toggleNotification(value);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: _showInquiryDialog,
-                    child: _buildCustomTile(title: '문의사항', showMoreIcon: true),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCustomTile(title: '패치버전', infoText: '1.2.1'),
-                  const SizedBox(height: 48),
-                  GestureDetector(
-                    onTap: _showLogoutDialog,
-                    child: Container(
-                      width: double.infinity,
-                      height: 56,
-                      alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4.0),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCustomTile(
+                      title: '알림',
+                      isSwitch: true,
+                      switchValue: isNotificationOn,
+                      onSwitchChanged: (value) {
+                        setState(() {
+                          isNotificationOn = value;
+                        });
+                        _toggleNotification(value);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: _showInquiryDialog,
+                      child:
+                          _buildCustomTile(title: '문의사항', showMoreIcon: true),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCustomTile(
+                      title: '패치버전',
+                      infoText: _appVersion.isEmpty ? '-' : _appVersion,
+                    ),
+                    if (_isRoot && !_isRootLoading) ...[
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: _isDonating ? null : _handleDonateTap,
+                        child: _buildCustomTile(
+                          title: '후원하기',
+                          showMoreIcon: true,
+                          trailing: _isDonating
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CupertinoActivityIndicator(
+                                    radius: 10,
+                                  ),
+                                )
+                              : null,
+                        ),
                       ),
-                      child: const Text(
-                        '로그아웃',
-                        style: TextStyle(
-                          fontSize: 16.0,
-                          color: Color(0xFFC10230),
+                    ],
+                    const SizedBox(height: 48),
+                    GestureDetector(
+                      onTap: _showLogoutDialog,
+                      child: Container(
+                        width: double.infinity,
+                        height: 56,
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                        child: const Text(
+                          '로그아웃',
+                          style: TextStyle(
+                            fontSize: 16.0,
+                            color: Color(0xFFC10230),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+            const SettingsBannerAd(),
           ],
         ),
         floatingActionButton: const MenuButton(),
@@ -268,6 +368,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool showMoreIcon = false,
     bool switchValue = false,
     Function(bool)? onSwitchChanged,
+    Widget? trailing,
   }) {
     return Container(
       width: double.infinity,
@@ -291,10 +392,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               activeTrackColor: const Color(0xFFC10230),
             )
           else if (showMoreIcon)
-            Icon(
-              Icons.more_horiz_rounded,
-              color: const Color(0xFF334D61).withOpacity(0.6),
-            )
+            trailing ??
+                Icon(
+                  Icons.more_horiz_rounded,
+                  color: const Color(0xFF334D61).withOpacity(0.6),
+                )
           else if (infoText != null)
             Text(
               infoText,
