@@ -228,7 +228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: _buildCustomTile(title: '문의사항', showMoreIcon: true),
                   ),
                   const SizedBox(height: 16),
-                  _buildCustomTile(title: '패치버전', infoText: '1.2.0'),
+                  _buildCustomTile(title: '패치버전', infoText: '1.2.1'),
                   const SizedBox(height: 48),
                   GestureDetector(
                     onTap: _showLogoutDialog,

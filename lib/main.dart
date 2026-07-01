@@ -27,27 +27,8 @@ Future<void> _onBackgroundMessage(RemoteMessage message) async {
   logger.i("Title: ${message.notification?.title}");
   logger.i("Body: ${message.notification?.body}");
   logger.i("Data: ${message.data}");
-
-  // Android 알림 표시 (백그라운드/종료 시 시스템 알림)
-  if (message.notification != null && message.notification!.android != null) {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'high_importance_channel',
-      'High Importance Notifications',
-      channelDescription: 'This channel is used for important notifications.',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-    );
-    const NotificationDetails platformDetails =
-        NotificationDetails(android: androidDetails);
-    await flutterLocalNotificationsPlugin.show(
-      message.hashCode,
-      message.notification!.title,
-      message.notification!.body,
-      platformDetails,
-    );
-  }
+  // notification 페이로드가 있으면 Android가 FCM 알림을 자동 표시하므로
+  // 로컬 알림을 추가로 띄우면 동일 알림이 2개 보입니다.
 }
 
 // FlutterLocalNotifications 초기화
