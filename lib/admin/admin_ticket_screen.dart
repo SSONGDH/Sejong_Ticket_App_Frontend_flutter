@@ -173,7 +173,14 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
         context: context,
         builder: (context) => CupertinoAlertDialog(
           title: const Text("성공"),
-          content: Text(message),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, height: 1.45),
+            ),
+          ),
           actions: [
             CupertinoDialogAction(
               onPressed: () {
@@ -209,7 +216,7 @@ class _AdminTicketScreenState extends State<AdminTicketScreen> {
 
       final data = json.decode(response.body);
       if (data['isSuccess'] == true) {
-        showCupertinoSuccessDialog(data['message'] ?? '삭제되었습니다.');
+        showCupertinoSuccessDialog('티켓이 성공적으로 삭제되었습니다.');
         setState(() {
           _ticketsFuture = fetchTickets();
         });

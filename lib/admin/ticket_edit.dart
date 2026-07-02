@@ -23,7 +23,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
   String? selectedAffiliation;
   String? selectedDate;
   String? selectedStartTime;
-  String? selectedEndTime;
   List<String> affiliations = [];
 
   final _titleController = TextEditingController();
@@ -103,9 +102,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
         selectedStartTime = result['eventStartTime'] != null
             ? _formatTimeForDisplay(result['eventStartTime'])
             : null;
-        selectedEndTime = result['eventEndTime'] != null
-            ? _formatTimeForDisplay(result['eventEndTime'])
-            : null;
         _selectedPlace = result['kakaoPlace'] != null
             ? {
                 'place_name': result['kakaoPlace']['place_name'] ?? '',
@@ -166,16 +162,11 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
       eventStartTime = '$selectedStartTime:00';
     }
 
-    String? eventEndTime;
-    if (selectedEndTime != null) {
-      eventEndTime = '$selectedEndTime:00';
-    }
-
     final body = {
       "eventTitle": _titleController.text,
       "eventDay": eventDay,
       "eventStartTime": eventStartTime,
-      "eventEndTime": eventEndTime,
+      "eventEndTime": "",
       "eventPlace": _selectedPlace?['place_name'],
       "eventPlaceComment": _placeCommentController.text,
       "eventComment": _commentController.text,
@@ -273,7 +264,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
       'eventTitle': _titleController.text,
       'eventDay': selectedDate,
       'eventStartTime': selectedStartTime,
-      'eventEndTime': selectedEndTime,
       'eventPlace': _selectedPlace?['place_name'],
       'eventPlaceComment': _placeCommentController.text,
       'eventComment': _commentController.text,
@@ -294,10 +284,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
     if (_initialTicketData!['eventStartTime'] != null &&
         currentData['eventStartTime'] !=
             _formatTimeForDisplay(_initialTicketData!['eventStartTime']))
-      return true;
-    if (_initialTicketData!['eventEndTime'] != null &&
-        currentData['eventEndTime'] !=
-            _formatTimeForDisplay(_initialTicketData!['eventEndTime']))
       return true;
     if (currentData['eventPlace'] != _initialTicketData!['eventPlace'])
       return true;
@@ -387,8 +373,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                       const SizedBox(height: 14),
                       _buildStartTimePickerField(),
                       const SizedBox(height: 14),
-                      _buildEndTimePickerField(),
-                      const SizedBox(height: 14),
                       _buildPlaceSearchField(),
                       const SizedBox(height: 14),
                       _buildKakaoMap(),
@@ -400,8 +384,8 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                       const SizedBox(height: 14),
                       _buildInputField(
                           controller: _commentController,
-                          label: "관리자 멘트",
-                          hintText: "관리자 멘트 입력"),
+                          label: "관리자 행사 멘트",
+                          hintText: "관리자 행사 멘트 입력"),
                       const SizedBox(height: 14),
                       _buildInputField(
                           controller: _codeController,
@@ -636,6 +620,7 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
                   ),
                 ),
                 isExpanded: true,
+                isDense: true,
                 items: affiliations.map((affiliation) {
                   return DropdownMenuItem<String>(
                     value: affiliation,
@@ -770,35 +755,6 @@ class _TicketEditScreenState extends State<TicketEditScreen> {
       child: _buildDisplayField(
         label: "시작 시간",
         displayText: selectedStartTime ?? "시작 시간 선택",
-        icon: Icons.access_time_outlined,
-        hasValue: hasValue,
-      ),
-    );
-  }
-
-  Widget _buildEndTimePickerField() {
-    final bool hasValue =
-        selectedEndTime != null && selectedEndTime!.isNotEmpty;
-    return GestureDetector(
-      onTap: () {
-        DatePicker.showTimePicker(
-          context,
-          showTitleActions: true,
-          showSecondsColumn: false,
-          onConfirm: (date) {
-            setState(() {
-              selectedEndTime =
-                  "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
-              _updateButtonState();
-            });
-          },
-          currentTime: DateTime.now(),
-          locale: LocaleType.ko,
-        );
-      },
-      child: _buildDisplayField(
-        label: "종료 시간",
-        displayText: selectedEndTime ?? "종료 시간 선택",
         icon: Icons.access_time_outlined,
         hasValue: hasValue,
       ),

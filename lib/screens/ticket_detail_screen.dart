@@ -442,7 +442,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                                             color: Color(0xFFEEEDE3)),
                                         Text(
                                             ticketData?["eventComment"] ??
-                                                "관리자 멘트 없음",
+                                                "관리자 행사 멘트 없음",
                                             style: const TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,

@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import '../place_search_screen.dart';
 import 'package:passtime/map_picker_screen.dart';
@@ -22,7 +21,6 @@ class TicketProduceScreen extends StatefulWidget {
 class _TicketProduceScreenState extends State<TicketProduceScreen> {
   String? selectedDate;
   String? selectedStartTime;
-  String? selectedEndTime;
   String? selectedAffiliation;
   List<String> affiliations = [];
 
@@ -114,7 +112,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
         _titleController.text.isNotEmpty &&
         selectedDate != null &&
         selectedStartTime != null &&
-        selectedEndTime != null &&
         _selectedPlace != null &&
         _placeCommentController.text.isNotEmpty &&
         _eventCommentController.text.isNotEmpty &&
@@ -191,8 +188,6 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                         const SizedBox(height: 14),
                         _buildStartTimePickerField(),
                         const SizedBox(height: 14),
-                        _buildEndTimePickerField(),
-                        const SizedBox(height: 14),
                         _buildPlaceSearchField(),
                         const SizedBox(height: 14),
                         _buildKakaoMap(),
@@ -204,8 +199,8 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                         const SizedBox(height: 14),
                         _buildInputField(
                             controller: _eventCommentController,
-                            label: "관리자 멘트",
-                            hintText: "관리자 멘트 입력"),
+                            label: "관리자 행사 멘트",
+                            hintText: "관리자 행사 멘트 입력"),
                         const SizedBox(height: 14),
                         _buildInputField(
                             controller: _eventCodeController,
@@ -456,6 +451,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
                   ),
                 ),
                 isExpanded: true,
+                isDense: true,
                 items: affiliations.map((affiliation) {
                   return DropdownMenuItem<String>(
                     value: affiliation,
@@ -532,7 +528,7 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
       "eventTitle": _titleController.text,
       "eventDay": selectedDate!.substring(0, 10).replaceAll('.', '-'),
       "eventStartTime": selectedStartTime!,
-      "eventEndTime": selectedEndTime!,
+      "eventEndTime": "",
       "eventPlace": _selectedPlace!['place_name'],
       "eventPlaceComment": _placeCommentController.text,
       "eventComment": _eventCommentController.text,
@@ -684,25 +680,59 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     );
   }
 
+  DateTime _parseSelectedDate() {
+    if (selectedDate != null && selectedDate!.length >= 10) {
+      final parts = selectedDate!.substring(0, 10).split('.');
+      if (parts.length == 3) {
+        final year = int.tryParse(parts[0]);
+        final month = int.tryParse(parts[1]);
+        final day = int.tryParse(parts[2]);
+        if (year != null && month != null && day != null) {
+          return DateTime(year, month, day);
+        }
+      }
+    }
+    return DateTime.now();
+  }
+
   Widget _buildDatePickerField() {
     final bool hasValue = selectedDate != null;
     return GestureDetector(
-      onTap: () {
-        DatePicker.showDatePicker(
-          context,
-          showTitleActions: true,
-          minTime: DateTime(1900, 1, 1),
-          maxTime: DateTime(2100, 1, 1),
-          onConfirm: (date) {
-            setState(() {
-              selectedDate =
-                  "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}(${_getKoreanWeekday(date.weekday)})";
-              _updateButtonState();
-            });
+      onTap: () async {
+        const Color accent = Color(0xFFC10230);
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _parseSelectedDate(),
+          firstDate: DateTime(1900, 1, 1),
+          lastDate: DateTime(2100, 1, 1),
+          helpText: "날짜 선택",
+          cancelText: "취소",
+          confirmText: "확인",
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: accent,
+                  onPrimary: Colors.white,
+                  surface: Colors.white,
+                  onSurface: Colors.black,
+                ),
+                dialogBackgroundColor: Colors.white,
+                textButtonTheme: TextButtonThemeData(
+                  style: TextButton.styleFrom(foregroundColor: accent),
+                ),
+              ),
+              child: child!,
+            );
           },
-          currentTime: DateTime.now(),
-          locale: LocaleType.ko,
         );
+        if (picked != null) {
+          setState(() {
+            selectedDate =
+                "${picked.year}.${picked.month.toString().padLeft(2, '0')}.${picked.day.toString().padLeft(2, '0')}(${_getKoreanWeekday(picked.weekday)})";
+            _updateButtonState();
+          });
+        }
       },
       child: _buildDisplayField(
         label: "날짜",
@@ -713,56 +743,174 @@ class _TicketProduceScreenState extends State<TicketProduceScreen> {
     );
   }
 
+  TimeOfDay _parseTimeOfDay(String? value) {
+    if (value != null && value.contains(':')) {
+      final parts = value.split(':');
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour != null && minute != null) {
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+    return TimeOfDay.now();
+  }
+
+  Future<TimeOfDay?> _showStyledTimePicker(TimeOfDay initialTime) async {
+    const Color accent = Color(0xFFC10230);
+    int tempHour = initialTime.hour;
+    int tempMinute = initialTime.minute;
+    TimeOfDay? result;
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.black.withOpacity(0.08)),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          "취소",
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      ),
+                      const Text(
+                        "시간 선택",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      CupertinoButton(
+                        onPressed: () {
+                          result = TimeOfDay(
+                            hour: tempHour,
+                            minute: tempMinute,
+                          );
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          "확인",
+                          style: TextStyle(
+                            color: accent,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  height: 220,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 70,
+                        child: CupertinoPicker(
+                          scrollController: FixedExtentScrollController(
+                            initialItem: tempHour,
+                          ),
+                          itemExtent: 40,
+                          onSelectedItemChanged: (i) => tempHour = i,
+                          children: List.generate(
+                            24,
+                            (i) => Center(
+                              child: Text(
+                                i.toString().padLeft(2, '0'),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 28),
+                        child: Text(
+                          ":",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 70,
+                        child: CupertinoPicker(
+                          scrollController: FixedExtentScrollController(
+                            initialItem: tempMinute,
+                          ),
+                          itemExtent: 40,
+                          onSelectedItemChanged: (i) => tempMinute = i,
+                          children: List.generate(
+                            60,
+                            (i) => Center(
+                              child: Text(
+                                i.toString().padLeft(2, '0'),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    return result;
+  }
+
   Widget _buildStartTimePickerField() {
     final bool hasValue = selectedStartTime != null;
     return GestureDetector(
-      onTap: () {
-        DatePicker.showTimePicker(
-          context,
-          showTitleActions: true,
-          showSecondsColumn: false,
-          onConfirm: (date) {
-            setState(() {
-              selectedStartTime =
-                  "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
-              _updateButtonState();
-            });
-          },
-          currentTime: DateTime.now(),
-          locale: LocaleType.ko,
+      onTap: () async {
+        final picked = await _showStyledTimePicker(
+          _parseTimeOfDay(selectedStartTime),
         );
+        if (picked != null) {
+          setState(() {
+            selectedStartTime =
+                "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
+            _updateButtonState();
+          });
+        }
       },
       child: _buildDisplayField(
         label: "시작 시간",
         displayText: selectedStartTime ?? "시작 시간 선택",
-        icon: Icons.access_time_outlined,
-        hasValue: hasValue,
-      ),
-    );
-  }
-
-  Widget _buildEndTimePickerField() {
-    final bool hasValue = selectedEndTime != null;
-    return GestureDetector(
-      onTap: () {
-        DatePicker.showTimePicker(
-          context,
-          showTitleActions: true,
-          showSecondsColumn: false,
-          onConfirm: (date) {
-            setState(() {
-              selectedEndTime =
-                  "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
-              _updateButtonState();
-            });
-          },
-          currentTime: DateTime.now(),
-          locale: LocaleType.ko,
-        );
-      },
-      child: _buildDisplayField(
-        label: "종료 시간",
-        displayText: selectedEndTime ?? "종료 시간 선택",
         icon: Icons.access_time_outlined,
         hasValue: hasValue,
       ),
