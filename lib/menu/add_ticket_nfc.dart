@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -29,6 +30,12 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
     final isAvailable = await NfcManager.instance.isAvailable();
     print('[NFC] 지원 여부: $isAvailable');
     if (!mounted) return;
+
+    // NFC가 꺼져 있거나 사용할 수 없으면 설정 이동 안내
+    if (!isAvailable) {
+      _showNfcUnavailableDialog();
+      return;
+    }
 
     // Android에서만 대기 팝업 표시
     if (Platform.isAndroid) _showWaitingDialog();
@@ -77,6 +84,60 @@ class _AddTicketNfcScreenState extends State<AddTicketNfcScreen> {
       if (Platform.isAndroid && _isDialogShowing) Navigator.pop(context);
       _isDialogShowing = false;
       print("[NFC] startSession 예외: $e");
+    }
+  }
+
+  void _showNfcUnavailableDialog() {
+    final message = Platform.isIOS
+        ? 'NFC를 사용할 수 없습니다.\n설정 > PASSTIME에서 상태를 확인해 주세요.'
+        : 'NFC가 꺼져 있습니다.\n설정에서 NFC를 켠 후 다시 시도해 주세요.';
+
+    showCupertinoDialog(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: const Text('NFC 사용 불가'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(message, textAlign: TextAlign.center),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('닫기'),
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              if (mounted) Navigator.of(context).pop();
+            },
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text(
+              '설정 열기',
+              style: TextStyle(color: Color(0xFFC10230)),
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _openNfcSettings();
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const TicketScreen()),
+                (Route<dynamic> route) => false,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const MethodChannel _settingsChannel =
+      MethodChannel('passtime/settings');
+
+  Future<void> _openNfcSettings() async {
+    try {
+      await _settingsChannel.invokeMethod('openNfcSettings');
+    } catch (e) {
+      print('[NFC] 설정 열기 실패: $e');
     }
   }
 

@@ -20,6 +20,28 @@ import KakaoMapsSDK // 카카오맵 SDK import 추가
     }
 
     GeneratedPluginRegistrant.register(with: self)
+
+    if let controller = window?.rootViewController as? FlutterViewController {
+      let settingsChannel = FlutterMethodChannel(
+        name: "passtime/settings",
+        binaryMessenger: controller.binaryMessenger
+      )
+      settingsChannel.setMethodCallHandler { (call, result) in
+        if call.method == "openNfcSettings" {
+          if let url = URL(string: UIApplication.openSettingsURLString),
+             UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url, options: [:]) { success in
+              result(success)
+            }
+          } else {
+            result(false)
+          }
+        } else {
+          result(FlutterMethodNotImplemented)
+        }
+      }
+    }
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }
