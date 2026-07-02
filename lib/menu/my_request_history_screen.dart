@@ -234,29 +234,39 @@ class _MyRequestHistoryScreenState extends State<MyRequestHistoryScreen> {
 
             final requests = snapshot.data ?? [];
             if (requests.isEmpty) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  const SizedBox(height: 80),
-                  Icon(
-                    Icons.assignment_outlined,
-                    size: 64,
-                    color: const Color(0xFF334D61).withOpacity(0.25),
-                  ),
-                  const SizedBox(height: 16),
-                  const Center(
-                    child: Text(
-                      '신청 내역이 없습니다',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF334D61),
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.assignment_outlined,
+                              size: 64,
+                              color: const Color(0xFF334D61).withOpacity(0.25),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '신청 내역이 없습니다',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF334D61),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 100),
-                ],
+                  );
+                },
               );
             }
 

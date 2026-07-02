@@ -319,7 +319,7 @@ class _AffiliationCreationScreenState extends State<AffiliationCreationScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '새 소속을 생성하면 소속 생성 신청이 함께 접수되며, 승인 시 소속장 권한이 부여됩니다.',
+                          '새 소속을 생성하면 자동으로 소속장 권한이 부여됩니다.',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.black.withOpacity(0.5),
